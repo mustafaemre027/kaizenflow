@@ -10,15 +10,15 @@ assignees: ''
 (Hatanın kısa ve açık açıklaması)
 
 ## Yeniden Oluşturma Adımları
-1. 
-2. 
-3. 
+1. <!-- Adımı buraya yazın -->
+2. <!-- Adımı buraya yazın -->
+3. <!-- Adımı buraya yazın -->
 
 ## Beklenen Davranış
-- 
+- <!-- Maddeyi buraya yazın -->
 
 ## Gerçekleşen Davranış
-- 
+- <!-- Maddeyi buraya yazın -->
 
 ## Etkilenen Rol veya Modül
 (EMPLOYEE, OPEX_SPECIALIST, MANAGER, ADMIN veya ilgili teknik modül)

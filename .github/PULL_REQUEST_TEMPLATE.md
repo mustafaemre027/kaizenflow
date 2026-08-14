@@ -13,7 +13,7 @@ Closes #IssueNumber
 - [ ] Yapılandırma veya bakım
 
 ## Yapılan Değişiklikler
-- 
+- <!-- Maddeyi buraya yazın -->
 
 ## Kapsam Dışı
 (Bu PR’da özellikle yapılmayan çalışmalar)
