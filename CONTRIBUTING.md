@@ -104,6 +104,9 @@ Commit formatı (Conventional Commits): `<type>(<scope>): <description>`
 
 **PR başlık formatı:** `<type>(<scope>): <summary>`
 
+- Pull Request başlıkları ve açıklamaları İngilizce yazılmalıdır.
+Proje belgeleri ve Issue içerikleri Türkçe tutulabilir; ancak GitHub üzerindeki PR başlıkları ve PR açıklamaları tutarlı bir geliştirme geçmişi için İngilizce hazırlanır.
+
 Örnekler:
 - `docs: establish KaizenFlow project foundation`
 - `feat(auth): implement authentication and user roles`

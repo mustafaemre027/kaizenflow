@@ -1,78 +1,82 @@
-# Özet
-(Değişikliğin ne yaptığını ve neden gerekli olduğunu açıklayınız)
+# Summary
+<!-- Explain what this change does and why it is required. -->
 
-## İlgili Issue
+## Related Issue
 Closes #IssueNumber
 
-## Değişiklik Türü
-- [ ] Yeni özellik
-- [ ] Hata düzeltmesi
-- [ ] Dokümantasyon
+## Change Type
+- [ ] New feature
+- [ ] Bug fix
+- [ ] Documentation
 - [ ] Test
 - [ ] Refactor
-- [ ] Yapılandırma veya bakım
+- [ ] Configuration or maintenance
 
-## Yapılan Değişiklikler
-- <!-- Maddeyi buraya yazın -->
+## Changes
+- <!-- Describe a focused change. -->
 
-## Kapsam Dışı
-(Bu PR’da özellikle yapılmayan çalışmalar)
+## Out of Scope
+<!-- List work that is intentionally excluded from this PR. -->
 
-## Test ve Doğrulama
-- [ ] İlgili otomatik testler çalıştırıldı
-- [ ] Mevcut testler başarılı
-- [ ] Laravel Pint kontrolü başarılı veya henüz uygulanamıyorsa açıklandı
-- [ ] Manuel kullanıcı akışları kontrol edildi
-- [ ] Test çıktıları aşağıda paylaşıldı
+## Testing and Verification
+- [ ] Relevant automated tests were executed
+- [ ] Existing tests pass
+- [ ] Laravel Pint passed or its current unavailability is explained
+- [ ] Relevant manual user flows were verified
+- [ ] Test evidence is included below
 
-*(Çalıştırılmayan testleri lütfen işaretlemeyin)*
+Do not check tests that were not executed.
 
-**Test Sonuçları:**
-(Test sonuçlarını buraya ekleyiniz)
+**Test results:**
+<!-- Add commands and actual results. Do not claim unexecuted tests passed. -->
 
-## Veritabanı ve Migration
-- [ ] Migration içermiyor
-- [ ] Migration ileri yönde doğrulandı
-- [ ] Migration geri alma doğrulandı
-- [ ] Seed tekrar çalıştırma kontrol edildi
+## Database and Migrations
+- [ ] This PR contains no migration changes
+- [ ] Forward migration was verified
+- [ ] Migration rollback was verified
+- [ ] Seed repeatability was verified
 
-*(Uygulanmayan maddeleri boş bırakınız)*
+Leave non-applicable items unchecked and explain them when necessary.
 
-## Güvenlik ve Gizlilik
-- [ ] Gerçek şirket veya çalışan verisi bulunmuyor
-- [ ] Token, parola, .env veya secret bulunmuyor
-- [ ] Kullanıcı girdileri backend tarafında doğrulanıyor
-- [ ] Yetki ve kayıt sahipliği kontrolleri incelendi
-- [ ] Dosya yükleme varsa tür, boyut ve erişim kontrolleri incelendi
-- [ ] Hassas veri loglanmıyor
+## Security and Privacy
+- [ ] No real company or employee data is included
+- [ ] No token, password, `.env` file, or secret is included
+- [ ] User input is validated on the backend where applicable
+- [ ] Authorization and record ownership were reviewed
+- [ ] File type, size, and access controls were reviewed where applicable
+- [ ] Sensitive values are not written to logs
 
-## Arayüz Kontrolü
-- [ ] UI değişikliği yok
-- [ ] Masaüstü görünüm kontrol edildi
-- [ ] Tablet görünüm kontrol edildi
-- [ ] Mobil görünüm kontrol edildi
-- [ ] Empty, validation, success ve error durumları kontrol edildi
-- [ ] Gerekli ekran görüntüleri eklendi
+## User Interface Verification
+- [ ] This PR contains no UI changes
+- [ ] Desktop layout was verified
+- [ ] Tablet layout was verified
+- [ ] Mobile layout was verified
+- [ ] Empty, validation, success, and error states were verified
+- [ ] Required screenshots are included
 
-## Self-Review Kontrol Listesi
-- [ ] PR yalnızca bağlı Issue kapsamındaki değişiklikleri içeriyor
-- [ ] Commits bölümü incelendi
-- [ ] Files changed baştan sona incelendi
-- [ ] Commit mesajları Conventional Commits biçiminde
-- [ ] Gereksiz veya otomatik üretilmiş dosya yok
-- [ ] Debug kodu veya geçici çıktı yok
-- [ ] Dokümantasyon güncel
-- [ ] Çözümlenmemiş engelleyici sorun yok
-- [ ] PR merge edilmeye hazır
+## Self-Review Checklist
+- [ ] The PR is limited to the related Issue scope
+- [ ] The Commits tab was reviewed
+- [ ] The Files changed tab was reviewed completely
+- [ ] Commit messages follow Conventional Commits
+- [ ] No unnecessary or generated files are included
+- [ ] No debug code or temporary output is included
+- [ ] Documentation is up to date
+- [ ] No unresolved blocking issue remains
+- [ ] The PR is ready to merge
 
-## AI Destekli İnceleme
-(AI incelemesi kullanıldıysa önerilerin tek tek doğrulandığını; AI’nın merge kararı veya insan approval’ı yerine geçmediğini belirtiniz)
+## AI-Assisted Review
+<!-- If AI-assisted review was used, explain how its suggestions were
+verified. AI does not make the final merge decision. -->
 
-## Bilinen Sınırlamalar
-(Varsa bu PR sonrasında devam eden sınırlamalar)
+## Known Limitations
+<!-- Describe any limitations that remain after this PR. -->
 
-## Ekran Görüntüleri
-(Yalnızca arayüz değişikliği varsa ve hassas veri içermiyorsa ekleyiniz)
+## Screenshots
+<!-- Include screenshots only for relevant UI changes and ensure that
+they contain no sensitive information. -->
 
-## Merge Kararı
-Harici approval zorunlu değildir. Bu kontrol listesi tamamlandıktan ve engelleyici sorun kalmadıktan sonra nihai self-merge kararı geliştirici tarafından verilir.
+## Merge Decision
+External approval is not required for this solo repository. The developer
+makes the final self-merge decision only after completing this checklist
+and confirming that no blocking issue remains.
