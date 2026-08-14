@@ -61,7 +61,7 @@ Bu belge projenin geliştirici rehberidir; 20 iş günlük geliştirme süresini
 
 ### Faz 0
 - **Yapılacak teknik çalışmalar:** Repository, GitHub Project panosu, backlog, label yapısı, Issue ve PR şablonları, README, implementation plan, CONTRIBUTING ve solo PR süreci.
-- **Gün sonu teslim çıktısı:** Hazırlanmış repozitory ve başlangıç belgeleri.
+- **Gün sonu teslim çıktısı:** Hazırlanmış repository ve başlangıç belgeleri.
 - **Kontrol noktası:** Tüm temel belgelerin eksiksiz oluşturulması ve yapılandırılması.
 
 ### Faz 1
@@ -173,8 +173,8 @@ Nihai alan ve ilişkilerin Gün 3 ER diyagramıyla kesinleşeceği belirtilmekte
 | SUBMITTED | Reddedildi | REJECTED | OPEX_SPECIALIST |
 | MANAGER_REVIEW | Onaylandı | APPROVED | MANAGER |
 | MANAGER_REVIEW | Reddedildi | REJECTED | MANAGER |
-| APPROVED | Uygulamaya başlandı | IN_PROGRESS | EMPLOYEE, OPEX_SPECIALIST, MANAGER |
-| IN_PROGRESS | Başarıyla tamamlandı | COMPLETED | EMPLOYEE, OPEX_SPECIALIST, MANAGER |
+| APPROVED | Uygulamayı başlat | IN_PROGRESS | OPEX_SPECIALIST / yetkili MANAGER |
+| IN_PROGRESS | Sonuçları kaydet ve tamamla | COMPLETED | OPEX_SPECIALIST / yetkili MANAGER |
 
 Durum geçişlerinin tek bir merkezi servis üzerinden uygulanacağı, controller veya Blade içinde kopyalanmayacağı belirtilmektedir.
 
@@ -190,13 +190,30 @@ Durum geçişlerinin tek bir merkezi servis üzerinden uygulanacağı, controlle
 ## 10. TEST STRATEJİSİ
 
 ### Birim Testleri
-Kimlik doğrulama, roller, policy, Kaizen CRUD, durum geçişleri, dosya yükleme, dashboard, audit log.
+
+- Kaizen durum geçiş kuralları
+- Fayda ve süre hesaplamaları
+- Yetki kararlarını destekleyen saf iş kuralları
+- CSV hücre/formül güvenliği yardımcıları
 
 ### Feature/Entegrasyon Testleri
-Responsive ekran, yetkisiz erişim kontrolü.
+
+- Login ve logout
+- Rol, middleware ve policy kontrolleri
+- Kaizen oluşturma, güncelleme, gönderme ve görüntüleme
+- OPEX ve yönetici değerlendirme akışları
+- Düzeltme ve yeniden gönderme
+- Dosya yükleme doğrulaması ve erişim kontrolü
+- Dashboard ve rapor sorguları
+- Audit log üretimi
 
 ### Manuel Testler
-Uçtan uca kullanıcı senaryolarını kapsar.
+
+- Kritik uçtan uca kullanıcı senaryoları
+- Mobil, tablet ve masaüstü ekran kontrolleri
+- Klavye ile gezinme ve temel erişilebilirlik
+- Empty, validation, success ve error durumları
+- Temiz ortamda kurulum
 
 ## 11. GÜVENLİK VE GİZLİLİK KONTROLLERİ
 - CSRF koruması kapatılmayacaktır.
