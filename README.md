@@ -8,7 +8,7 @@ KaizenFlow, çalışanların süreç iyileştirme fikirlerini dijital ortamda ol
 Proje belirli bir şirkete özel değildir. Farklı üretim ve hizmet kuruluşlarına uyarlanabilecek genel bir sürekli iyileştirme prototipi olarak tasarlanmaktadır. Herhangi bir gerçek kurum veya kuruluşun sistemlerini doğrudan temsil etmez.
 
 ## Proje Durumu
-Proje henüz planlama ve başlangıç dokümantasyonu aşamasındadır. Aşağıda belirtilen tüm özellikler planlanan özellikleri yansıtmakta olup, henüz geliştirilmemiş veya tamamlanmamıştır.
+Proje gereksinim analizi ve iş akışı tasarımı aşamasındadır. Sistem gereksinimleri ve Kaizen durum geçişleri belgelenmiştir. Laravel uygulama iskeleti ve planlanan özellikler henüz geliştirilmemiştir.
 
 ## Gizlilik Notu
 Projede hiçbir gerçek şirket adı, logo, çalışan bilgisi, üretim verisi veya finansal veri kullanılmayacaktır. Geliştirme ve test süreçlerinde yalnızca sentetik demo verileri kullanılacaktır.
@@ -76,7 +76,8 @@ Projede hiçbir gerçek şirket adı, logo, çalışan bilgisi, üretim verisi v
 | Session tabanlı authentication | Kullanıcı kimlik doğrulama yapısı |
 | PHPUnit | Birim testleri (Unit testing) |
 | Laravel Pint | Kod stili denetimi ve biçimlendirme |
-| Laragon | Yerel geliştirme ortamı |
+| PHP CLI ortamı | php.new aracılığıyla kurulan PHP, Composer ve Laravel Installer çalışma ortamı |
+| MySQL Workbench | Yerel MySQL bağlantısı, şema yönetimi ve sorgu doğrulaması |
 | Composer | PHP bağımlılık yöneticisi |
 | Node.js/NPM | Frontend araçları ve paket yöneticisi |
 | Git ve GitHub | Sürüm kontrolü ve kaynak kod yönetimi |
@@ -149,6 +150,8 @@ Projede aşağıdaki güvenlik ve gizlilik ilkeleri uygulanacaktır:
 - Kritik işlemlerin denetim kayıtlarına (audit log) yazılması
 
 ## Proje Belgeleri
+- [Sistem Gereksinimleri](docs/requirements.md)
+- [Kaizen İş Akışı ve Durum Geçişleri](docs/kaizen-workflow.md)
 - [implementation_plan.md](implementation_plan.md)
 - [CONTRIBUTING.md](CONTRIBUTING.md)
 
