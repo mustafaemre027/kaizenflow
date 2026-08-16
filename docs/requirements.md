@@ -8,7 +8,7 @@
 * **Parent Epic:** #3
 
 ## 1. Belgenin Amacı
-Bu belge, KaizenFlow Sürekli İyileştirme Yönetim Sistemi'nin Minimum Canlandırılabilir Ürün (MVP) sürümü için fonksiyonel ve fonksiyonel olmayan gereksinimleri, iş kurallarını, kullanıcı senaryolarını ve güvenlik prensiplerini tanımlamak amacıyla hazırlanmıştır. Geliştirme, mimari tasarım, test ve doğrulama süreçleri bu belge referans alınarak yürütülecektir.
+Bu belge, KaizenFlow Sürekli İyileştirme Yönetim Sistemi'nin Minimum Uygulanabilir Ürün (MVP) sürümü için fonksiyonel ve fonksiyonel olmayan gereksinimleri, iş kurallarını, kullanıcı senaryolarını ve güvenlik prensiplerini tanımlamak amacıyla hazırlanmıştır. Geliştirme, mimari tasarım, test ve doğrulama süreçleri bu belge referans alınarak yürütülecektir.
 
 ## 2. Sistem Kapsamı
 KaizenFlow, bir üretim veya hizmet organizasyonunda çalışanların süreç iyileştirme (Kaizen) önerilerini dijital ortamda oluşturabildiği, ilgili birimlerin (OPEX) ve yöneticilerin bu önerileri standart bir iş akışına göre değerlendirebildiği, onaylanan önerilerin uygulama süreçlerinin ve sağladığı faydanın izlenebildiği genel bir kurumsal prototiptir. MVP aşamasında sistem, temel Kaizen yaşam döngüsünü ve rol tabanlı onay akışını uçtan uca çalıştıracak temel fonksiyonları kapsar.
@@ -35,12 +35,12 @@ KaizenFlow, bir üretim veya hizmet organizasyonunda çalışanların süreç iy
 * **Temel Amaç:** Sisteme gönderilen Kaizen önerilerini format, uygulanabilirlik ve kategori açısından ön incelemeden geçirmek; eksiklikleri raporlamak ve uygun olanları yönetici incelemesine aktarmak.
 * **Görüntüleyebileceği Kayıtlar:** Sistemde SUBMITTED, REVISION_REQUESTED ve sonraki aşamalardaki (MANAGER_REVIEW, APPROVED, IN_PROGRESS, COMPLETED, REJECTED) tüm Kaizen kayıtlarını görebilir. DRAFT kayıtlarını göremez.
 * **Yapabileceği İşlemler:** Gönderilen önerileri değerlendirme, gerekçesiyle reddetme, gerekçesiyle çalışandan düzeltme talep etme ve uygun önerileri değerlendirilmesi için Yöneticiye (MANAGER_REVIEW) sevk etme. Uygulama takibi yapma.
-* **Yapamayacağı Kritik İşlemler:** Kaizen için nihai kararı (Onaylama veya Uygulamaya geçirme) veremez, yönetici veya admin tanımlamaları yapamaz.
+* **Yapamayacağı Kritik İşlemler:** Kaizen için nihai kararı (yönetici onayını) veremez, yönetici veya admin tanımlamaları yapamaz.
 
 ### MANAGER
 * **Temel Amaç:** OPEX tarafından ön değerlendirmesi yapılmış ve kendi sorumluluk alanına yönlendirilmiş Kaizen önerilerini değerlendirmek, onaylamak veya reddetmek.
 * **Görüntüleyebileceği Kayıtlar:** Kendi departmanına, maliyet merkezine veya sorumluluk kapsamına giren ve en az MANAGER_REVIEW aşamasına gelmiş tüm kayıtları ile onaylanmış kayıtları görüntüleyebilir.
-* **Yapabileceği İşlemler:** Yönetici incelemesindeki (MANAGER_REVIEW) önerileri onaylamak (APPROVED) veya gerekçesiyle reddetmek (REJECTED). Uygulamaya geçişleri izlemek.
+* **Yapabileceği İşlemler:** Yönetici incelemesindeki (MANAGER_REVIEW) önerileri onaylamak (APPROVED) veya gerekçesiyle reddetmek (REJECTED). Kendi sorumluluk kapsamındaki onaylanmış Kaizen’i uygulamaya başlatma ve tamamlama.
 * **Yapamayacağı Kritik İşlemler:** Sisteme OPEX kontrolünden geçmemiş (SUBMITTED aşamasındaki) veya başka yöneticilerin sorumluluğundaki önerilere müdahale edemez.
 
 ### ADMIN
@@ -53,7 +53,7 @@ KaizenFlow, bir üretim veya hizmet organizasyonunda çalışanların süreç iy
 * **FR-001:** Sistem, kullanıcıların e-posta ve şifre ile güvenli giriş yapmasını sağlamalıdır.
 * **FR-002:** Sistem, kullanıcıların oturumlarını güvenli bir şekilde kapatmasına (çıkış yapmasına) olanak tanımalıdır.
 * **FR-003:** Sistem, session tabanlı oturum yönetimi sağlamalı ve eylemsizlik durumunda (timeout) oturumu sonlandırmalıdır.
-* **FR-004:** Sistem, yalnızca kullanıcının sahip olduğu role uygun sayfa, menü ve butonları göstererek rol tabanlı yetkilendirme sağlamalıdır.
+* **FR-004:** Sistem, kullanıcının rolüne ve kayıt kapsamına göre bütün korumalı işlemlerde backend yetkilendirmesi uygulamalı; arayüzde yalnızca izin verilen sayfa, menü ve butonları göstermelidir.
 * **FR-005:** ADMIN rolü, sisteme yeni kullanıcı ekleyebilmeli ve kullanıcı bilgilerini güncelleyebilmelidir.
 * **FR-006:** ADMIN rolü, kullanıcılara dört temel rolden birini atayabilmelidir.
 * **FR-007:** ADMIN rolü, sistemdeki departman ve Kaizen kategorilerini tanımlayabilmelidir.
@@ -70,12 +70,16 @@ KaizenFlow, bir üretim veya hizmet organizasyonunda çalışanların süreç iy
 * **FR-018:** MANAGER rolü, MANAGER_REVIEW durumunda olan kendi sorumluluğundaki önerileri onaylayabilmelidir (APPROVED).
 * **FR-019:** MANAGER rolü, incelediği öneriyi zorunlu bir gerekçe girerek reddedebilmelidir (REJECTED).
 * **FR-020:** Öneri APPROVED durumuna geçtiğinde, uygulamadan sorumlu bir personel ve bir hedef uygulama tarihi zorunlu olarak belirlenmelidir.
-* **FR-021:** Uygulama sorumlusu olan kişi, onaylanan Kaizen için uygulama çalışmalarını başlattığını bildirebilmelidir (IN_PROGRESS).
+* **FR-021:** OPEX_SPECIALIST veya yetkili MANAGER, uygulama sorumlusu ve hedef tarihi belirlenmiş APPROVED durumundaki Kaizen’i IN_PROGRESS durumuna geçirebilmelidir.
 * **FR-022:** IN_PROGRESS durumundaki Kaizen tamamlanırken, zorunlu olarak 'Gerçekleşen Sonuç' ve 'Sağlanan Fayda' bilgileri girilmelidir.
-* **FR-023:** İlgili yetkili kişi (MANAGER veya Uygulama Sorumlusu), uygulama sonuçlarını girdikten sonra Kaizen'i başarıyla kapatabilmelidir (COMPLETED).
+* **FR-023:** OPEX_SPECIALIST veya yetkili MANAGER, zorunlu uygulama sonuçları ve gerçekleşen fayda bilgileri girildikten sonra Kaizen’i COMPLETED durumuna geçirebilmelidir.
 * **FR-024:** İlgili rollere sahip kullanıcılar, erişim yetkileri bulunan Kaizen önerilerine yorum ekleyebilmelidir.
 * **FR-025:** Sistem, her Kaizen önerisi için durum değişikliklerini kimin ve ne zaman yaptığını kaydeden değiştirilemez bir durum geçmişi sunmalıdır.
-* **FR-026:** Sistem, kritik veri değişikliklerinde (kullanıcı ekleme, rol değiştirme) detaylı arka plan audit log kayıtları tutmalıdır.
+* **FR-026:** Sistem, kritik veri değişikliklerinde detaylı arka plan audit log kayıtları tutmalıdır. Kritik işlemler en az şunları kapsar:
+  * Kullanıcı ve rol değişiklikleri
+  * Durum geçişleri
+  * Onay ve ret işlemleri
+  * Uygulama başlatma ve tamamlama
 * **FR-027:** Sistem, önerisi reddedilen, düzeltme istenen veya onaylanan kullanıcıya sistem içi bildirim göstermelidir.
 * **FR-028:** Sistem, her rolün kendi iş akışına uygun özet istatistikler ve metrikler içeren dinamik bir dashboard sunmalıdır.
 * **FR-029:** Kullanıcılar, erişimleri olan listede Kaizen numarası, başlık, durum ve tarih gibi alanlara göre arama, filtreleme ve sayfalama yapabilmelidir.
@@ -84,7 +88,7 @@ KaizenFlow, bir üretim veya hizmet organizasyonunda çalışanların süreç iy
 * **FR-032:** Dosya ekleri doğrudan public olarak erişilebilir URL'lerden sunulmamalı; indirme işlemi yetki kontrolü (authentication ve authorization) sonrasında gerçekleşmelidir.
 
 ## 6. Fonksiyonel Olmayan Gereksinimler
-* **NFR-001 (Güvenlik):** Sistemdeki parolalar hash (Bcrypt) kullanılarak şifrelenmeli, düz metin olarak veritabanında saklanmamalıdır.
+* **NFR-001 (Güvenlik):** Sistemdeki parolalar Bcrypt ile hashlenmeli, düz metin olarak veritabanında saklanmamalıdır.
 * **NFR-002 (Güvenlik):** Uygulama, CSRF (Cross-Site Request Forgery) ve XSS (Cross-Site Scripting) saldırılarına karşı framework bazlı korumaları standart olarak uygulamalıdır.
 * **NFR-003 (Gizlilik):** .env dosyası ve uygulama secret key'leri Git repository'sine eklenmemeli, gizlilik kurallarına uyulmalıdır.
 * **NFR-004 (Performans):** Sistem, yerel test ortamında, 10.000 sentetik Kaizen kaydı bulunduğunda standart liste (sayfalamalı) ve detay isteklerine 2 saniyenin altında yanıt vermelidir (MVP doğrulama hedefi).
@@ -95,7 +99,7 @@ KaizenFlow, bir üretim veya hizmet organizasyonunda çalışanların süreç iy
 * **NFR-009 (Bakım Yapılabilirlik):** Kod yapısı, MVC mimari desenine sıkı sıkıya uymalı, controller sınıfları ağır iş mantığından arındırılmalıdır.
 * **NFR-010 (Test Edilebilirlik):** Temel yetkilendirme kuralları ve durum geçişleri (state transitions) izole edilerek otomatik unit testlerle doğrulanabilir yapıda tasarlanmalıdır.
 * **NFR-011 (Veri Bütünlüğü):** Veritabanı şemasında, durum geçişleri enum veya referans tablolarla zorunlu kılınmalı, yabancı anahtar (foreign key) kısıtlamaları kullanılmalıdır.
-* **NFR-012 (Audit Edilebilirlik):** Sistem tablolarında oluşturulma, güncellenme ve silinme zamanları (timestamps ve soft deletes) standart olarak tutulmalıdır.
+* **NFR-012 (Audit Edilebilirlik):** Uygun iş tablolarında timestamps kullanılmalı. Soft delete yalnızca geri alınabilir iş kayıtlarında kullanılmalı. Durum geçmişi ve audit kayıtları uygulama üzerinden silinmemeli veya değiştirilememeli.
 * **NFR-013 (Hata Yönetimi):** Uygulama içerisinde meydana gelen sistem ve veritabanı hataları son kullanıcıya genel bir mesajla gösterilirken, detaylar uygulamanın kendi güvenli log dosyalarına yazılmalıdır.
 * **NFR-014 (Tarayıcı Uyumluluğu):** Uygulama, Chrome, Firefox, Safari ve Edge gibi modern web tarayıcılarının güncel son iki majör sürümünde sorunsuz çalışmalıdır.
 * **NFR-015 (Kurulum ve Yapılandırma):** Sistem kurulumu, migration'lar ve sahte veri aktarımı (seeding), belgelenmiş tek bir komut dizisi ile çalıştırılabilir olmalıdır.
@@ -113,7 +117,7 @@ KaizenFlow, bir üretim veya hizmet organizasyonunda çalışanların süreç iy
   * **Aktör:** OPEX_SPECIALIST
   * **Ön koşul:** OPEX sisteme giriş yapmıştır ve SUBMITTED durumunda bir kayıt vardır.
   * **Ana akış:** OPEX uzmanı kaydın detayına girer, format olarak uygun bulur, 'Yönetici İncelemesine İlet' seçeneğini seçer.
-  * **Alternatif/Hata akışı:** -
+  * **Alternatif/Hata akışı:** OPEX değerlendirme notu eksik veya kullanıcı yetkisizse işlem yapılmaz ve uygun hata döner.
   * **Başarı ölçütü:** Kaydın durumu MANAGER_REVIEW olur.
 
 * **US-003: OPEX'in düzeltme istemesi**
@@ -127,7 +131,7 @@ KaizenFlow, bir üretim veya hizmet organizasyonunda çalışanların süreç iy
   * **Aktör:** EMPLOYEE
   * **Ön koşul:** Çalışanın REVISION_REQUESTED durumunda bekleyen bir önerisi vardır.
   * **Ana akış:** Çalışan öneriyi açar, OPEX gerekçesini okur, formu günceller ve 'Yeniden Gönder' butonuna basar.
-  * **Alternatif/Hata akışı:** -
+  * **Alternatif/Hata akışı:** Zorunlu alanlar geçersizse veya kayıt kullanıcıya ait değilse yeniden gönderme engellenir.
   * **Başarı ölçütü:** Kaydın durumu tekrar SUBMITTED olur.
 
 * **US-005: Yönetici onayı**
@@ -145,9 +149,9 @@ KaizenFlow, bir üretim veya hizmet organizasyonunda çalışanların süreç iy
   * **Başarı ölçütü:** Kaydın durumu REJECTED olur ve çalışan bu gerekçeyi görüntüleyebilir.
 
 * **US-007: Uygulamanın başlatılıp tamamlanması**
-  * **Aktör:** Sorumlu personel
+  * **Aktör:** OPEX_SPECIALIST veya yetkili MANAGER
   * **Ön koşul:** Kayıt APPROVED durumundadır.
-  * **Ana akış:** Sorumlu personel uygulamaya başlar ve durumu IN_PROGRESS yapar. İşlem bittiğinde 'Tamamla' seçeneğini seçer, 'Gerçekleşen Sonuç' ve 'Sağlanan Fayda' bilgilerini girer.
+  * **Ana akış:** Uygulama sorumlusu operasyonel işi gerçekleştirir. Durumun IN_PROGRESS ve COMPLETED yapılması yalnızca OPEX_SPECIALIST veya yetkili MANAGER tarafından gerçekleştirilir. Tamamlama sırasında zorunlu olarak 'Gerçekleşen Sonuç' ve 'Sağlanan Fayda' bilgileri girilir.
   * **Alternatif/Hata akışı:** Sonuç ve fayda alanları doldurulmadan 'Tamamla' işlemine izin verilmez.
   * **Başarı ölçütü:** Kaydın durumu COMPLETED olur, durum geçmişine kaydedilir.
 
@@ -165,7 +169,7 @@ KaizenFlow, bir üretim veya hizmet organizasyonunda çalışanların süreç iy
 * **BR-004:** SUBMITTED durumundaki bir kaydın durum değişikliğini yalnızca OPEX_SPECIALIST gerçekleştirebilir.
 * **BR-005:** Reddetme (REJECTED) ve düzeltme isteme (REVISION_REQUESTED) işlemlerinde gerekçe belirtilmesi mutlak suretle zorunludur.
 * **BR-006:** MANAGER rolü, sistemdeki tüm MANAGER_REVIEW kayıtlarını değil, yalnızca kendi sorumluluk kapsamındaki (örneğin kendi departmanındaki) kayıtları değerlendirebilir.
-* **BR-007:** Bir Kaizen APPROVED durumuna geçirilirken, uygulama sorumlusu ve hedef bitiş tarihi zorunlu olarak tanımlanmalıdır.
+* **BR-007:** Bir Kaizen APPROVED durumuna geçirilirken, uygulama sorumlusu ve hedef bitiş tarihi zorunlu olarak tanımlanmalıdır. Uygulama sorumlusu olarak atanmak operasyonel sorumluluk ifade eder; tek başına durum geçiş yetkisi sağlamaz.
 * **BR-008:** Uygulama tamamlanıp Kaizen kapatılırken (COMPLETED durumuna geçirilirken), gerçekte ulaşılan sonuç ve sağlanan fayda verileri girilmeden kayıt kapatılamaz.
 * **BR-009:** Bir Kaizen üzerinde yapılan her durum geçişi (eski durum, yeni durum, yapan kullanıcı, zaman ve varsa açıklama), veritabanında tarihsel olarak saklanmalı ve değiştirilemez olmalıdır.
 * **BR-010:** Yüklenen dosya eklerine yalnızca oturum açmış ve ilgili kaydı görüntüleme yetkisi olan kullanıcılar erişebilir. URL direkt paylaşılarak dosya indirilemez.
@@ -176,7 +180,7 @@ KaizenFlow, bir üretim veya hizmet organizasyonunda çalışanların süreç iy
 
 ## 9. Veri ve Gizlilik İlkeleri
 * **Repository Gizliliği:** Bu proje genel bir açık kaynak veya portfolyo projesi olabileceğinden, kod deposuna gerçek kurumsal süreçlere ait hassas dökümanlar eklenmemelidir.
-* **Demo Verileri:** Sistemin işleyişini kanıtlamak için yalnızca rastgele isimler (örn: Ahmet Yılmaz yerine John Doe veya sentetik Türkçe isimler), rastgele senaryolar ve sahte şirket metrikleri barındıran seed'ler kullanılmalıdır.
+* **Demo Verileri:** Sistemin işleyişini kanıtlamak için tamamen sentetik isimler ve senaryolar ile sahte şirket metrikleri barındıran seed'ler kullanılmalıdır.
 * **Loglar:** Geliştirme ortamındaki uygulama hataları ve log dosyaları `.gitignore` ile Git takibinden dışlanmalıdır.
 * **Dosya Ekleri:** Kullanıcıların test amaçlı yüklediği ekler, `storage/app` gibi public olmayan bir dizinde saklanmalı ve sürüm kontrolüne dahil edilmemelidir.
 * **Çevresel Değişkenler:** Veritabanı şifreleri, API anahtarları gibi bilgiler barındıran `.env` dosyası hiçbir zaman repository'ye gönderilmemeli, bunun yerine örnek bir `.env.example` dosyası kullanılmalıdır.

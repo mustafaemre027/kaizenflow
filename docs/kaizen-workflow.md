@@ -9,7 +9,7 @@
 * **İlgili gereksinim belgesi:** `docs/requirements.md`
 
 ## 1. Belgenin Amacı
-Bu belge, KaizenFlow sistemindeki durum (state) geçiş kurallarını, yetkilendirmeleri ve reddetme/düzeltme yollarını merkezi olarak tanımlar. Bu döküman, uygulama geliştirme (Laravel backend policy ve transition servisleri) aşamasına mimari yönlendirme yapacak ve otomatik geçiş testlerinin (unit/feature) yazılmasında temel senaryo referansı olarak kullanılacaktır.
+Bu belge, KaizenFlow sistemindeki durum (state) geçiş kurallarını, yetkilendirmeleri ve reddetme/düzeltme yollarını merkezi olarak tanımlar. Bu doküman, uygulama geliştirme (Laravel backend policy ve transition servisleri) aşamasına mimari yönlendirme yapacak ve otomatik geçiş testlerinin (unit/feature) yazılmasında temel senaryo referansı olarak kullanılacaktır.
 
 ## 2. İş Akışı İlkeleri
 * **Sabit iş akışı:** Sistemde durumlar arası geçiş yolları statik olarak tanımlanmıştır. Beklenmeyen bir geçiş talep edilemez.
@@ -53,8 +53,8 @@ stateDiagram-v2
     SUBMITTED --> REJECTED : TR-005 (OPEX Reddeder)
     MANAGER_REVIEW --> APPROVED : TR-006 (MANAGER Onaylar)
     MANAGER_REVIEW --> REJECTED : TR-007 (MANAGER Reddeder)
-    APPROVED --> IN_PROGRESS : TR-008 (Sorumlu Başlatır)
-    IN_PROGRESS --> COMPLETED : TR-009 (Sorumlu Tamamlar)
+    APPROVED --> IN_PROGRESS : TR-008 (OPEX/Yetkili MANAGER Başlatır)
+    IN_PROGRESS --> COMPLETED : TR-009 (OPEX/Yetkili MANAGER Tamamlar)
     REJECTED --> [*]
     COMPLETED --> [*]
 ```
@@ -68,7 +68,7 @@ stateDiagram-v2
 | TR-003 | SUBMITTED | Düzeltme iste | REVISION_REQUESTED | OPEX_SPECIALIST | Sistemde OPEX yetkisi olmalı. | Düzeltme gerekçesi zorunludur. | Durum geçmişine gerekçeyle birlikte yazılır. | Gerekçe yoksa 422. |
 | TR-004 | SUBMITTED | Yönetici değerlendirmesine ilet | MANAGER_REVIEW | OPEX_SPECIALIST | Sistemde OPEX yetkisi olmalı. | OPEX değerlendirme notu bulunmalıdır. | Durum geçmişine log atılır. | Not yoksa 422. |
 | TR-005 | SUBMITTED | Gerekçeli reddet | REJECTED | OPEX_SPECIALIST | Sistemde OPEX yetkisi olmalı. | Ret gerekçesi zorunludur. | Durum geçmişine ret gerekçesi yazılır. | Gerekçe yoksa 422. |
-| TR-006 | MANAGER_REVIEW | Onayla | APPROVED | MANAGER | Kayıt yöneticinin yetki alanında olmalı. | - | Uygulama sorumlusu ve hedef tarih kaydedilir, durum geçmişine log atılır. | Yetkisiz erişim 403. |
+| TR-006 | MANAGER_REVIEW | Onayla | APPROVED | MANAGER | Kayıt yöneticinin yetki alanında olmalı. | Uygulama sorumlusu ve hedef tarih zorunludur. | Uygulama sorumlusu ve hedef tarih kaydedilir, durum geçmişine log atılır. | Yetkisiz erişim 403. |
 | TR-007 | MANAGER_REVIEW | Gerekçeli reddet | REJECTED | MANAGER | Kayıt yöneticinin yetki alanında olmalı. | Ret gerekçesi zorunludur. | Durum geçmişine ret gerekçesi yazılır. | Gerekçe yoksa 422. |
 | TR-008 | APPROVED | Uygulamayı başlat | IN_PROGRESS | OPEX_SPECIALIST veya yetkili MANAGER | Uygulama sorumlusu atanmış ve hedef tarih belirlenmiş olmalı. | - | Durum geçmişine log atılır. | Sorumlu atanmamışsa işlem engellenir. |
 | TR-009 | IN_PROGRESS | Sonuçları kaydet ve tamamla | COMPLETED | OPEX_SPECIALIST veya yetkili MANAGER | - | Sonuç açıklaması ve gerçekleşen fayda zorunludur. | Terminal duruma alınır ve geçmiş güncellenir. | Girdi eksikse 422. |
@@ -76,9 +76,9 @@ stateDiagram-v2
 ## 7. Temel Başarılı Akış
 1. **DRAFT → SUBMITTED:** Aktör: EMPLOYEE. İşlem: Kaydet ve Gönder. Sistem: Zorunlu alan doğrulaması yapar. Oluşan durum: SUBMITTED. Audit/History: Geçiş history'e loglanır.
 2. **SUBMITTED → MANAGER_REVIEW:** Aktör: OPEX_SPECIALIST. İşlem: Yöneticiye ilet. Sistem: OPEX yetkisi doğrular. Oluşan durum: MANAGER_REVIEW. Audit/History: Geçiş history'e loglanır.
-3. **MANAGER_REVIEW → APPROVED:** Aktör: MANAGER. İşlem: Onayla. Sistem: Yönetici yetkisi ve sorumluluk doğrulması. Oluşan durum: APPROVED. Audit/History: Geçiş history'e loglanır.
-4. **APPROVED → IN_PROGRESS:** Aktör: Sorumlu personel (OPEX/MANAGER). İşlem: Başlat. Sistem: Sorumlu ataması kontrolü. Oluşan durum: IN_PROGRESS. Audit/History: Geçiş history'e loglanır.
-5. **IN_PROGRESS → COMPLETED:** Aktör: Sorumlu personel. İşlem: Tamamla. Sistem: Sonuç verisi kontrolü. Oluşan durum: COMPLETED. Audit/History: Geçiş history'e loglanır.
+3. **MANAGER_REVIEW → APPROVED:** Aktör: MANAGER. İşlem: Onayla. Sistem: Yönetici yetkisi ve sorumluluk kapsamı doğrulaması. Oluşan durum: APPROVED. Audit/History: Geçiş history'e loglanır.
+4. **APPROVED → IN_PROGRESS:** Aktör: OPEX_SPECIALIST veya yetkili MANAGER. İşlem: Başlat. Sistem: Sorumlu ataması kontrolü. Oluşan durum: IN_PROGRESS. Audit/History: Geçiş history'e loglanır.
+5. **IN_PROGRESS → COMPLETED:** Aktör: OPEX_SPECIALIST veya yetkili MANAGER. İşlem: Tamamla. Sistem: Sonuç verisi kontrolü. Oluşan durum: COMPLETED. Audit/History: Geçiş history'e loglanır.
 
 ## 8. Düzeltme ve Yeniden Gönderme Akışı
 **Yol:** SUBMITTED → REVISION_REQUESTED → SUBMITTED
@@ -107,6 +107,8 @@ stateDiagram-v2
 
 ## 10. Uygulama ve Tamamlama Akışı
 **Yol:** APPROVED → IN_PROGRESS → COMPLETED
+
+Uygulama sorumlusu operasyonel çalışmayı yürütür; bu atama tek başına durum geçiş yetkisi sağlamaz. APPROVED → IN_PROGRESS ve IN_PROGRESS → COMPLETED geçişlerini yalnızca OPEX_SPECIALIST veya yetkili MANAGER gerçekleştirir.
 
 * **Başlangıç:** Onaylanan kayıt, uygulama sorumlusu ve hedef tarih belirlendikten sonra başlatma işlemi tetiklenir. Yetkili rol kontrolü sağlanır.
 * **Sonuçlandırma:** İşlem tamamlanırken zorunlu olarak "Sonuç Açıklaması", "Tahmini Fayda" ve "Gerçekleşen Fayda", "Fayda Türü ve Birimi" alanları istenir.

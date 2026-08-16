@@ -150,8 +150,8 @@ Projede aşağıdaki güvenlik ve gizlilik ilkeleri uygulanacaktır:
 - Kritik işlemlerin denetim kayıtlarına (audit log) yazılması
 
 ## Proje Belgeleri
-- [Sistem Gereksinimleri](https://chatgpt.com/c/docs/requirements.md)
-- [Kaizen İş Akışı ve Durum Geçişleri](https://chatgpt.com/c/docs/kaizen-workflow.md)
+- [Sistem Gereksinimleri](docs/requirements.md)
+- [Kaizen İş Akışı ve Durum Geçişleri](docs/kaizen-workflow.md)
 - [implementation_plan.md](implementation_plan.md)
 - [CONTRIBUTING.md](CONTRIBUTING.md)
 
