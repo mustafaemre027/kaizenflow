@@ -8,7 +8,7 @@ KaizenFlow, çalışanların süreç iyileştirme fikirlerini dijital ortamda ol
 Proje belirli bir şirkete özel değildir. Farklı üretim ve hizmet kuruluşlarına uyarlanabilecek genel bir sürekli iyileştirme prototipi olarak tasarlanmaktadır. Herhangi bir gerçek kurum veya kuruluşun sistemlerini doğrudan temsil etmez.
 
 ## Proje Durumu
-Proje gereksinim analizi ve iş akışı tasarımı aşamasındadır. Sistem gereksinimleri ve Kaizen durum geçişleri belgelenmiştir. Laravel uygulama iskeleti ve planlanan özellikler henüz geliştirilmemiştir.
+Gereksinim analizi, Kaizen iş akışı, sistem mimarisi ve veritabanı tasarımı tamamlanmıştır. Proje, Laravel uygulama altyapısının kurulması aşamasına hazırdır.
 
 ## Gizlilik Notu
 Projede hiçbir gerçek şirket adı, logo, çalışan bilgisi, üretim verisi veya finansal veri kullanılmayacaktır. Geliştirme ve test süreçlerinde yalnızca sentetik demo verileri kullanılacaktır.
@@ -154,6 +154,8 @@ Projede aşağıdaki güvenlik ve gizlilik ilkeleri uygulanacaktır:
 - [Kaizen İş Akışı ve Durum Geçişleri](docs/kaizen-workflow.md)
 - [implementation_plan.md](implementation_plan.md)
 - [CONTRIBUTING.md](CONTRIBUTING.md)
+- [Sistem Mimarisi](docs/architecture/system-architecture.md)
+- [Veritabanı Tasarımı](docs/architecture/database-design.md)
 
 ## Lisans
 Projenin lisansı henüz belirlenmemiştir. Lisans seçilene kadar kaynak kod otomatik olarak açık kaynak kabul edilmemelidir.
