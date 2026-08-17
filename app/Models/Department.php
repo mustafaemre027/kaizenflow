@@ -34,4 +34,9 @@ class Department extends Model
     {
         return $this->hasMany(User::class);
     }
+
+    public function kaizens(): HasMany
+    {
+        return $this->hasMany(Kaizen::class);
+    }
 }
