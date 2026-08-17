@@ -94,18 +94,60 @@ Uygulama, Laravel MVC yapısını temel alan aşağıdaki bileşenlerle inşa ed
 
 *Karmaşık iş kuralları controller sınıflarında tutulmayacak; onay ve durum geçişleri servis katmanında merkezi olarak yönetilecektir.*
 
-## Planlanan Kurulum
-Aşağıdaki komutlar projenin planlanan kurulum adımlarını göstermektedir (proje iskeleti oluşturulduktan sonra doğrulanarak güncellenecektir):
+## Yerel Kurulum ve Çalıştırma
 
-```bash
+Gereksinimler:
+- PHP 8.3 veya üzeri
+- Composer 2
+- Node.js ve npm
+- MySQL 8
+- Git
+
+Kurulum sırası:
+
+```powershell
+git clone https://github.com/mustafaemre027/kaizenflow.git
+cd kaizenflow
 composer install
 Copy-Item .env.example .env
 php artisan key:generate
-php artisan migrate --seed
-npm install
-npm run build
+npm.cmd install --no-audit --no-fund
+```
+
+MySQL hazırlığı:
+- `kaizenflow` isimli UTF-8 veritabanı oluşturulmalıdır.
+- Yalnızca bu veritabanına yetkili `kaizenflow_app` gibi ayrı bir yerel uygulama kullanıcısı kullanılmalıdır.
+- Gerçek parolalar README veya `.env.example` içine yazılmamalıdır.
+- Yerel bağlantı bilgileri yalnızca sürüm kontrolü dışında tutulan (ignored) `.env` dosyasına eklenmelidir.
+
+Migration:
+
+```powershell
+php artisan config:clear
+php artisan migrate
+php artisan migrate:status
+```
+
+Geliştirme ortamını çalıştırma:
+
+Terminal 1:
+```powershell
 php artisan serve
-npm run dev
+```
+
+Terminal 2:
+```powershell
+npm.cmd run dev
+```
+
+Uygulama adresi:
+http://127.0.0.1:8000
+
+Test ve production build:
+
+```powershell
+php artisan test
+npm.cmd run build
 ```
 
 ## 20 İş Günlük Yol Haritası
