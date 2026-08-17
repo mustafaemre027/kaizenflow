@@ -6,145 +6,255 @@ KaizenFlow, çalışanların süreç iyileştirme fikirlerini kaydettiği, OPEX 
 Bu belge projenin geliştirici rehberidir; 20 iş günlük geliştirme süresini, MVP kapsamını, teknik kararları, günlük çıktıları, riskleri ve tamamlanma ölçütlerini tanımlar.
 
 ## 2. TEMEL PROJE KARARLARI
-- Proje tek geliştirici tarafından yürütülecektir.
-- Backend ve sunucu taraflı arayüz PHP ve Laravel olacaktır.
-- Arayüz Laravel Blade, Bootstrap ve gerektiğinde sade JavaScript ile geliştirilecektir.
-- MySQL ana veritabanıdır.
-- Proje genel bir kurumsal prototip olacaktır.
-- Çoklu kiracılık MVP kapsamında olmayacaktır.
-- Gerçek şirket adı, logosu, çalışan bilgileri veya operasyon verileri kullanılmayacaktır.
-- Her iş günü Issue, branch ve odaklı PR ile izlenecektir.
-- Harici incelemeci bulunmadığı için PR, test ve self-review sonrasında geliştirici tarafından merge edilecektir.
-- Önce zorunlu MVP tamamlanacaktır.
-- Ek özellikler yalnızca çekirdek akış kararlıysa ele alınacaktır.
+- Proje genel ve kurumsal bağımsızdır.
+- Gerçek şirket adı, logosu, çalışanı veya operasyon verisi kullanılmaz.
+- Teknoloji yığını Laravel, PHP, MySQL, Blade, Bootstrap, Vite ve Chart.js’tir.
+- Roller:
+  - EMPLOYEE
+  - OPEX_SPECIALIST
+  - MANAGER
+  - ADMIN
+- Kaizen durumları:
+  - DRAFT
+  - SUBMITTED
+  - REVISION_REQUESTED
+  - MANAGER_REVIEW
+  - APPROVED
+  - IN_PROGRESS
+  - COMPLETED
+  - REJECTED
+- Belgelenmiş dokuz kanonik durum geçişi korunur.
+- `OPEX_REVIEW` adında bir durum eklenmez.
+- ADMIN rolüne otomatik iş onayı yetkisi verilmez.
+- Atanmış olmak tek başına durum değiştirme yetkisi sağlamaz.
+- COMPLETED ve REJECTED terminal durumlardır.
+- Laravel katmanlı monolit mimari, Service katmanı, Policy, transaction ve test yaklaşımı korunur.
+- PR başlıkları ve açıklamaları İngilizce; proje belgeleri ve Issue içerikleri Türkçedir.
+- Solo GitHub akışı Issue → branch → atomik commit → push → PR → self-review → self-merge şeklindedir.
 
-## 3. AŞAMA YAPISI
+## 3. ÖZELLİK ÖNCELİKLERİ VE KAPSAM
 
-| Faz | Aşama Adı | Gün |
-|---|---|---|
-| Faz 0 | Proje Yönetimi ve Başlangıç Dokümantasyonu | Gün 1 |
-| Faz 1 | Gereksinim Analizi ve Sistem Tasarımı | Gün 2–3 |
-| Faz 2 | Laravel Temeli, Veritabanı ve Yetkilendirme | Gün 4–5 |
-| Faz 3 | Kaizen Öneri Yönetimi | Gün 6–8 |
-| Faz 4 | Değerlendirme ve Onay İş Akışı | Gün 9–11 |
-| Faz 5 | Uygulama, Fayda ve Denetim Takibi | Gün 12–14 |
-| Faz 6 | Dashboard, Arama ve Raporlama | Gün 15–16 |
-| Faz 7 | Test, Güvenlik ve Kullanıcı Deneyimi | Gün 17–18 |
-| Faz 8 | Yayınlama Hazırlığı ve Final Teslimi | Gün 19–20 |
+### Zorunlu Çekirdek Kapsam
+- Authentication
+- RBAC ve Policy
+- Kaizen CRUD
+- Güvenli dosya ve yorum yönetimi
+- Dokuz geçişli onay iş akışı
+- Durum geçmişi ve audit log
+- Bildirimler
+- Dashboard ve raporlama
+- Testler ve güvenlik kontrolleri
 
-## 4. GÜNLÜK GELİŞTİRME VE PR PLANI
+### Kesin Genişletilmiş Kapsam
+- Gerçek SMTP e-posta bildirimi
+- Bulut depolamaya hazır Laravel Storage
+- Termin ve gecikme takibi
+- Değerlendirme puanı ve öncelik matrisi
+- Hedeflenen ve gerçekleşen fayda
+- CSV dışa aktarma
+- Responsive arayüz ve PWA
 
-| Gün | Çalışma Odağı | Gün Sonu Teslimi | Önerilen Branch Türü |
-|---|---|---|---|
-| Gün 1 | Repository, kapsam, GitHub çalışma sistemi, README, uygulama planı, katkı rehberi, şablonlar ve backlog. | Planlama dokümanları | docs/ |
-| Gün 2 | Fonksiyonel gereksinimler, roller, kullanıcı senaryoları, iş kuralları ve durum geçişleri. | Gereksinim belgesi | docs/ |
-| Gün 3 | ER diyagramı, tablo sözlüğü, mimari kararlar, yetki matrisi ve wireframe’ler. | Tasarım belgesi | docs/ |
-| Gün 4 | Laravel iskeleti, ortam ayarları, MySQL bağlantısı, temel layout, sağlık kontrolü ve ilk test. | Çalışan Laravel iskeleti | chore/ |
-| Gün 5 | Authentication, kullanıcı rolleri, yetkilendirme ve sentetik kullanıcı seed verileri. | Giriş sistemi ve roller | feature/ |
-| Gün 6 | Kaizen, departman, kategori ve ilgili veritabanı modelleri. | Veritabanı modelleri | feature/ |
-| Gün 7 | Kaizen önerisi oluşturma, doğrulama ve listeleme. | Form ve listeleme ekranı | feature/ |
-| Gün 8 | Detay görüntüleme, taslak güncelleme, güvenli dosya ekleri ve kayıt sahipliği kontrolü. | Detay ekranı ve dosya eki | feature/ |
-| Gün 9 | OPEX ön değerlendirmesi, kabul, ret ve düzeltme işlemleri. | OPEX işlem akışı | feature/ |
-| Gün 10 | Yönetici onayı, ret işlemleri ve yetkilendirme testleri. | Yönetici onay akışı | feature/ |
-| Gün 11 | Yorum, durum geçmişi, düzeltme sonrası yeniden gönderme ve zaman çizelgesi. | Geçmiş ve yorum özellikleri | feature/ |
-| Gün 12 | Uygulama sorumlusu, hedef tarih, uygulama adımları ve IN_PROGRESS geçişi. | Uygulama ataması | feature/ |
-| Gün 13 | Sonuç kaydı, tahmini ve gerçekleşen fayda, COMPLETED geçişi. | Sonuç ve fayda kaydı | feature/ |
-| Gün 14 | Audit log, uygulama içi bildirim ve hassas veri kontrolleri. | Log mekanizması | feature/ |
-| Gün 15 | Dashboard kartları, grafikler ve rol uyumlu metrikler. | Dashboard görünümü | feature/ |
-| Gün 16 | Arama, gelişmiş filtreler, sayfalama ve güvenli CSV dışa aktarma. | Filtreleme ve export | feature/ |
-| Gün 17 | Kritik iş akışları, policy, validation ve durum geçişi testleri. | Entegrasyon testleri | test/ |
-| Gün 18 | Güvenlik, yetkisiz erişim, dosya güvenliği, responsive tasarım ve erişilebilirlik kontrolleri. | Güvenlik ve arayüz testleri | fix/ |
-| Gün 19 | Demo seed verileri, .env.example, production ayarları ve dağıtım hazırlığı. | Dağıtım paketi | chore/ |
-| Gün 20 | Temiz kurulum, bütün testler, README güncellemesi, ekran görüntüleri, sunum ve final doğrulaması. | Final proje | docs/ |
-
-## 5. FAZLARIN AYRINTILARI
-
-### Faz 0
-- **Yapılacak teknik çalışmalar:** Repository, GitHub Project panosu, backlog, label yapısı, Issue ve PR şablonları, README, implementation plan, CONTRIBUTING ve solo PR süreci.
-- **Gün sonu teslim çıktısı:** Hazırlanmış repository ve başlangıç belgeleri.
-- **Kontrol noktası:** Tüm temel belgelerin eksiksiz oluşturulması ve yapılandırılması.
-
-### Faz 1
-- **Yapılacak teknik çalışmalar:** Roller, gereksinimler, sabit onay akışı, durum geçişleri, ER diyagramı, tablo sözlüğü, wireframe ve yetki matrisi.
-- **Gün sonu teslim çıktısı:** Sistem tasarımı ve gereksinim dokümanı.
-- **Kontrol noktası:** İş kurallarının netleştirilmesi ve onaylanması.
-
-### Faz 2
-- **Yapılacak teknik çalışmalar:** Laravel temeli, MySQL, Blade, Bootstrap, authentication, session güvenliği, roller, middleware, policy ve demo kullanıcıları.
-- **Gün sonu teslim çıktısı:** Çalışan login sistemi, temel arayüz ve yetkilendirme altyapısı.
-- **Kontrol noktası:** Her role uygun girişin başarıyla test edilmesi.
-
-### Faz 3
-- **Yapılacak teknik çalışmalar:** Kaizen modelleri, migration’lar, ilişkiler, form doğrulama, taslaklar, listeleme, detay, güncelleme ve güvenli dosya yükleme.
-- **Gün sonu teslim çıktısı:** Kaizen oluşturma, düzenleme ve dosya yükleme işlemleri.
-- **Kontrol noktası:** Form validation kurallarının ve dosya yükleme güvenliğinin doğrulanması.
-
-### Faz 4
-- **Yapılacak teknik çalışmalar:** OPEX değerlendirme kuyruğu, yönetici onayı, düzeltme, gerekçeli ret, yorumlar ve değiştirilemez durum geçmişi.
-- **Gün sonu teslim çıktısı:** Başarılı bir şekilde ilerleyen onay akışı mekanizması.
-- **Kontrol noktası:** Durum geçişlerinin iş kurallarına (sadece yetkililer tarafından) uygun yapıldığının testi.
-
-### Faz 5
-- **Yapılacak teknik çalışmalar:** Uygulama planı, sorumlu kişi, hedef tarihler, sonuç ve fayda kayıtları, audit log ve uygulama içi bildirimler.
-- **Gün sonu teslim çıktısı:** Kaizen uygulama ve fayda yönetimi modülü.
-- **Kontrol noktası:** Hedeflenen fayda ile gerçekleşen faydanın doğru kaydedilmesi.
-
-### Faz 6
-- **Yapılacak teknik çalışmalar:** Dashboard, Chart.js grafikleri, arama, filtreleme, sayfalama ve güvenli CSV dışa aktarma.
-- **Gün sonu teslim çıktısı:** Rol bazlı görsel istatistik paneli ve gelişmiş arama araçları.
-- **Kontrol noktası:** Raporlama esnasında veri izolasyonu kontrolü.
-
-### Faz 7
-- **Yapılacak teknik çalışmalar:** Otomatik testler, policy kontrolleri, IDOR önleme, CSRF, validation, dosya güvenliği, responsive tasarım ve temel erişilebilirlik.
-- **Gün sonu teslim çıktısı:** Başarılı test raporu ve güvenlik denetimleri.
-- **Kontrol noktası:** Bütün kritik iş kurallarının (Policy/Gates vb.) güvenli çalıştığının teyidi.
-
-### Faz 8
-- **Yapılacak teknik çalışmalar:** Demo verileri, production hazırlığı, temiz kurulum testi, final dokümantasyonu, ekran görüntüleri ve sunum.
-- **Gün sonu teslim çıktısı:** Projenin nihai yayına hazır versiyonu.
-- **Kontrol noktası:** Temiz kurulum adımlarının eksiksiz çalışması.
-
-## 6. MVP KAPSAMI
-
-### Zorunlu Özellikler
-- Session tabanlı giriş ve çıkış
-- EMPLOYEE, OPEX_SPECIALIST, MANAGER ve ADMIN rolleri
-- Departman ve kategori yönetimi
-- Kaizen oluşturma, düzenleme, gönderme, listeleme ve detay
-- Güvenli görsel/PDF ekleri
-- OPEX değerlendirmesi
-- Yönetici onayı
-- Düzeltme ve gerekçeli ret
-- Yorum ve durum geçmişi
-- Uygulama sorumlusu ve hedef tarih
-- Tahmini ve gerçekleşen fayda
-- Rol uyumlu dashboard
-- Arama, filtreleme ve sayfalama
-- Audit log
-- Sentetik demo verileri
-- Kritik iş kuralları için otomatik testler
-
-### Zaman Kalırsa
-- PDF raporu
-- Excel dışa aktarma
-- E-posta bildirimi
-- Puanlama ve önceliklendirme
-- Departman hedefleri
-- Rozet veya takdir sistemi
-- Gelişmiş tarih karşılaştırmaları
+### Koşullu Kapsam
+- AI destekli Kaizen taslak yardımcısı
 
 ### Kapsam Dışı
-- ERP/MES/İK entegrasyonu
-- SSO, Active Directory veya LDAP
-- Dinamik onay akışı tasarım ekranı
-- Yapay zekâ ile otomatik karar
-- Otomatik finansal doğrulama
-- Zorunlu SMS/e-posta entegrasyonu
-- Mobil uygulama
-- Multi-tenancy
+- SMS gönderimi
+- Gerçek zamanlı sohbet
+- Native Android veya iOS uygulaması
+- Multi-tenant yapı
+- Gerçek ERP bağlantısı
+- Yapay zekânın otomatik kayıt veya onay yapması
 - Gerçek şirket verileri
-- Mikroservis mimarisi
-- Gerçek zamanlı mesajlaşma
+
+## 4. GÜNLÜK ÇALIŞMA YAKLAŞIMI
+- Günlük yaklaşık 4–6 saat aktif çalışma
+- Kısa öğrenme ve tasarım bölümü
+- Kullanıcının seviyesine uygun manuel PHP/Laravel/MySQL uygulaması
+- Antigravity ile iskelet, tekrar eden kod, test ve inceleme desteği
+- Günlük kapsama göre yaklaşık 2–5 anlamlı atomik commit
+- Yapay commit veya gereksiz dosya bölme yapılmaması
+- Her gün test, güvenlik, GitHub self-review ve staj defteri kaydı
+- Büyük paket indirmelerinden önce kullanıcıya haber verilmesi
+
+## 5. GÜNLÜK GELİŞTİRME PLANI VE ÇIKTILAR
+
+| Gün | Çalışma Odağı | Önerilen Branch Türü |
+|---|---|---|
+| Gün 1 | Repository, kapsam, GitHub çalışma sistemi, README, uygulama planı, katkı rehberi, şablonlar ve backlog. | docs/ |
+| Gün 2 | Fonksiyonel gereksinimler, roller, kullanıcı senaryoları, iş kuralları ve durum geçişleri. | docs/ |
+| Gün 3 | ER diyagramı, tablo sözlüğü, mimari kararlar, yetki matrisi ve wireframe’ler. | docs/ |
+| Gün 4 | Laravel iskeleti, ortam ayarları, MySQL bağlantısı, temel layout, sağlık kontrolü ve ilk test. | chore/ |
+| Gün 5 | Domain modeli, referans verileri, rol/durum enum'ları, departman/kategori modelleri ve sentetik demo verileri. | feature/ |
+| Gün 6 | Kimlik doğrulama, oturum güvenliği, özel Blade giriş ekranı ve aktif/pasif kullanıcı kontrolü. | feature/ |
+| Gün 7 | Rol tabanlı yetkilendirme, Role middleware, Laravel Policy, kullanıcı ve departman yönetimi. | feature/ |
+| Gün 8 | Kaizen oluşturma, taslak yönetimi, form doğrulama, detay ekranı ve güvenli mass-assignment. | feature/ |
+| Gün 9 | Kaizen listeleme, yetkiye göre arama/filtreleme, sayfalama ve taslak düzenleme. | feature/ |
+| Gün 10 | Güvenli dosya ekleri, tür/boyut kontrolü, yorumlar ve bulut depolamaya hazır Laravel Storage. | feature/ |
+| Gün 11 | Merkezi durum geçiş motoru, Service katmanı işlemleri, transaction ve durum geçmişi kaydı. | feature/ |
+| Gün 12 | OPEX inceleme, revizyon isteme, reddetme, yöneticiye iletme ve açıklama zorunlulukları. | feature/ |
+| Gün 13 | Yönetici onayı, sorumlusu atama, uygulama takibi ve terminal durum (COMPLETED) geçişleri. | feature/ |
+| Gün 14 | Uygulama içi bildirim merkezi, SMTP e-posta bildirimleri, termin/gecikme takibi ve audit log. | feature/ |
+| Gün 15 | Değerlendirme puanı, öncelik matrisi (etki, maliyet, vb.), puanlama kuralları ve yetkili ekran. | feature/ |
+| Gün 16 | Fayda ve tasarruf takibi, hedef/gerçekleşen mali ve zaman kazancı, departman bazlı özetler. | feature/ |
+| Gün 17 | Role göre dashboard, Chart.js grafikleri, tarih filtreleri, responsive erişilebilirlik ve PWA. | feature/ |
+| Gün 18 | Gelişmiş raporlama, CSV dışa aktarma, regresyon testleri, N+1/indeks/güvenlik kontrolleri. | test/ |
+| Gün 19 | Uçtan uca test, demo senaryosu, kurulum, koşullu AI taslak yardımcısı (şartlar sağlanırsa). | chore/ |
+| Gün 20 | Final teslim, tam regresyon testi, sürüm etiketi, README final güncellemesi ve sunum hazırlığı. | docs/ |
+
+## 6. GÜNLÜK FAZLARIN AYRINTILARI (Gün 5-20)
+
+### Gün 5 — Domain Temeli ve Referans Verileri
+- Kalan uygulama planının güncellenmesi
+- Rol ve Kaizen durum PHP backed enum’ları
+- Departman ve kategori migration/model yapıları
+- Kullanıcı tablosunun rol ve departman alanlarıyla genişletilmesi
+- Foreign key, unique ve indeks kuralları
+- Factory, seeder ve sentetik demo verileri
+- Migration, model, enum ve ilişki testleri
+- Manuel öğrenme: PHP enum, migration ve Eloquent ilişki temelleri
+
+### Gün 6 — Kimlik Doğrulama ve Oturum Güvenliği
+- Özel Blade giriş ekranı
+- Login, logout ve session yenileme
+- Rate limit ve güvenli yönlendirme
+- Aktif/pasif kullanıcı kontrolü
+- Authentication feature testleri
+- Manuel öğrenme: request validation, controller ve session akışı
+
+### Gün 7 — Rol Tabanlı Yetkilendirme ve Yönetim
+- Role middleware
+- Laravel Policy yapısı
+- Yetkisiz erişim ekranları
+- Kullanıcı, departman ve kategori yönetimi
+- Yetkilendirme testleri
+- Manuel öğrenme: middleware, policy ve authorization
+
+### Gün 8 — Kaizen Oluşturma ve Taslak Yönetimi
+- Kaizen oluşturma formu
+- Taslak kaydetme
+- Validasyon
+- Detay ekranı
+- Güvenli mass-assignment
+- Manuel öğrenme: form, validation, model ve controller
+
+### Gün 9 — Kaizen Listeleme ve Düzenleme
+- Yetkiye göre listeleme
+- Arama, filtreleme ve sıralama
+- Sayfalama
+- Taslak düzenleme
+- Empty state ve validation hata gösterimleri
+- Manuel öğrenme: Eloquent sorguları ve pagination
+
+### Gün 10 — Dosya Ekleri ve Yorumlar
+- Güvenli dosya yükleme
+- Dosya türü ve boyut kontrolü
+- Yetkili indirme
+- Kaizen yorumları
+- Laravel Storage abstraction
+- Yerel depolama varsayılan olacak şekilde S3 uyumlu bulut depolamaya hazır tasarım
+- Manuel öğrenme: file validation ve storage işlemleri
+
+### Gün 11 — Merkezi Durum Geçiş Motoru
+- Dokuz kanonik geçişin Service katmanında uygulanması
+- Yetki ve mevcut durum kontrolü
+- Transaction kullanımı
+- Durum geçmişi kaydı
+- Başarılı ve başarısız geçiş testleri
+- Manuel öğrenme: service, transaction ve iş kuralları
+
+### Gün 12 — OPEX İnceleme ve Revizyon Süreci
+- Gönderilen Kaizenleri inceleme
+- Revizyon isteme
+- Reddetme
+- Yönetici değerlendirmesine yönlendirme
+- Açıklama zorunlulukları
+- Feature ve authorization testleri
+
+### Gün 13 — Yönetici Onayı ve Uygulama Takibi
+- Yönetici onayı
+- Uygulama sorumlusu atama
+- Uygulamaya alma
+- Tamamlanma kaydı
+- Hedef tarih ve sorumlu takibi
+- Yetki ve terminal durum testleri
+
+### Gün 14 — Bildirim, Termin ve İşlem Geçmişi
+- Uygulama içi bildirim merkezi
+- Gerçek SMTP tabanlı e-posta bildirimleri
+- Geliştirmede güvenli test posta kutusu yaklaşımı
+- Yaklaşan termin ve geciken Kaizen göstergeleri
+- Audit log ve etkinlik zaman çizelgesi
+- Bildirim gönderim hatalarının ana işlemi bozmaması
+- Manuel öğrenme: mail, notification ve audit mantığı
+
+### Gün 15 — Değerlendirme Puanı ve Öncelik Matrisi
+- Etki, maliyet, uygulanabilirlik ve aciliyet puanları
+- Sunucu tarafında hesaplanan toplam değerlendirme puanı
+- Düşük, orta ve yüksek öncelik sınıflandırması
+- Yetkili değerlendirme ekranı
+- Puanlama kuralları ve sınır değer testleri
+
+### Gün 16 — Fayda ve Tasarruf Takibi
+- Hedeflenen ve gerçekleşen mali fayda
+- Zaman kazancı
+- Kalite ve süreç iyileştirme göstergeleri
+- Para birimi ve sayısal değer validasyonları
+- Hedef/gerçekleşen karşılaştırması
+- Departman ve kategori bazlı özetler
+
+### Gün 17 — Dashboard, Grafikler ve PWA
+- Role göre dashboard
+- Chart.js grafiklerinin gerçek verilerle hazırlanması
+- Durum, departman, kategori ve tarih filtreleri
+- Responsive erişilebilirlik iyileştirmeleri
+- PWA manifest ve temel kurulum desteği
+- Native mobil uygulama geliştirilmeyeceği açıkça belirtilmeli
+
+### Gün 18 — Raporlama, Dışa Aktarma ve Kalite Güvencesi
+- Gelişmiş raporlama
+- CSV dışa aktarma
+- Yetkilendirme regresyon testleri
+- N+1 sorgu ve indeks kontrolleri
+- Güvenlik, validation ve dosya erişim testleri
+- Performans ve hata senaryoları
+- Production build doğrulaması
+
+### Gün 19 — Uçtan Uca Test, Demo ve Koşullu AI Kararı
+Öncelikli işler:
+- Uçtan uca iş akışı testleri
+- Güvenli sentetik demo verileri
+- Kullanıcı ve teknik dokümantasyon
+- Kurulum ve demo senaryosu
+- Hata düzeltmeleri
+- Sunum hazırlığı
+
+Koşullu AI özelliği yalnızca aşağıdaki kontrol kapısı geçilirse geliştirilebilir:
+- Tüm zorunlu modüller tamamlanmış olmalı
+- Test ve production build başarılı olmalı
+- Kritik veya yüksek seviye açık bulgu bulunmamalı
+- Yetkilendirme ve dokuz durum geçişi eksiksiz çalışmalı
+- Dashboard ve raporlama tamamlanmış olmalı
+- En az Gün 19 ve Gün 20 süresi kalmış olmalı
+
+Kontrol kapısı geçilirse:
+- Kullanıcının verdiği bilgilerden başlık, problem tanımı, öneri ve beklenen fayda taslağı üreten AI yardımcısı hazırlanabilir.
+- AI yalnızca öneri üretir.
+- Otomatik kayıt, gönderim, onay, ret veya durum değişikliği yapamaz.
+- API anahtarı yalnızca environment variable üzerinden okunur.
+- Özellik varsayılan olarak feature flag ile kapalı tutulur.
+- Testlerde gerçek dış API çağrısı yerine mock/fake kullanılır.
+
+Kontrol kapısı geçilmezse AI özelliği iptal edilir ve Gün 19 tamamen test, güvenlik, dokümantasyon ve demo hazırlığına ayrılır.
+
+### Gün 20 — Final Teslim ve Sürüm
+- Tam regresyon testi
+- Güvenlik ve secret taraması
+- Production build
+- Demo akışının son doğrulaması
+- README ve teknik belgelerin final güncellemesi
+- Sürüm etiketi ve release notları
+- Sunum ve proje teslim hazırlığı
+- Staj defteri ve final proje özeti
 
 ## 7. PLANLANAN VERİ MODELİ
 
@@ -187,35 +297,7 @@ Durum geçişlerinin tek bir merkezi servis üzerinden uygulanacağı, controlle
 - Durum değiştiren her işlem backend policy ve iş kuralı kontrolünden geçer.
 - Arayüzde buton gizlemek tek başına yetkilendirme değildir.
 
-## 10. TEST STRATEJİSİ
-
-### Birim Testleri
-
-- Kaizen durum geçiş kuralları
-- Fayda ve süre hesaplamaları
-- Yetki kararlarını destekleyen saf iş kuralları
-- CSV hücre/formül güvenliği yardımcıları
-
-### Feature/Entegrasyon Testleri
-
-- Login ve logout
-- Rol, middleware ve policy kontrolleri
-- Kaizen oluşturma, güncelleme, gönderme ve görüntüleme
-- OPEX ve yönetici değerlendirme akışları
-- Düzeltme ve yeniden gönderme
-- Dosya yükleme doğrulaması ve erişim kontrolü
-- Dashboard ve rapor sorguları
-- Audit log üretimi
-
-### Manuel Testler
-
-- Kritik uçtan uca kullanıcı senaryoları
-- Mobil, tablet ve masaüstü ekran kontrolleri
-- Klavye ile gezinme ve temel erişilebilirlik
-- Empty, validation, success ve error durumları
-- Temiz ortamda kurulum
-
-## 11. GÜVENLİK VE GİZLİLİK KONTROLLERİ
+## 10. GÜVENLİK VE GİZLİLİK KONTROLLERİ
 - CSRF koruması kapatılmayacaktır.
 - Girdiler sunucu tarafında doğrulanacaktır.
 - Parolalar Laravel hash mekanizmasıyla tutulacaktır.
@@ -227,20 +309,20 @@ Durum geçişlerinin tek bir merkezi servis üzerinden uygulanacağı, controlle
 - Hassas veriler loglanmayacaktır.
 - Demo kayıtları yalnızca sentetik olacaktır.
 
-## 12. RİSKLER VE ÖNLEMLER
+## 11. RİSKLER VE ÖNLEMLER
 
 | Risk | Etki | Önlem |
 |---|---|---|
-| Laravel öğrenme süresi | Teslim gecikmesi | Sade dokümantasyon, AI desteği |
-| Onay akışının büyümesi | Karışıklık | Sabit akış kullanılması |
-| Günlük PR kapsamının büyümesi | Kontrol zorluğu | İşlerin küçültülmesi, düzenli commit |
-| Tek geliştiricide inceleme eksikliği | Bug sızıntısı | Self-review, kapsamlı testler |
-| Gerçek şirket verisinin eklenmesi | Gizlilik ihlali | Sıkı kontrol, sentetik seed verisi kullanma |
-| Dosya yükleme güvenliği | Sisteme zarar | Validasyon, public olmayan dizin saklaması |
-| Dashboard kapsamının büyümesi | Süre yetersizliği | Yalnızca temel özet ve grafiklerin sunulması |
-| Dağıtım ortamının belirsizliği | Deployment hatası | Net .env.example tanımlanması |
+| Kapsam büyümesi | Teslim gecikmesi | Zorunlu/koşullu/kapsam dışı ayrımına kesin uyulması |
+| AI API bağımlılığı | Sistemin kilitlenmesi | Feature flag kullanımı, mock test, iptal kontrol kapısı |
+| E-posta yapılandırması | Kurumsal spama düşme | Test ortamı ve güvenli environment variables |
+| Dosya güvenliği | Sisteme zararlı kod | Tür, boyut, uzantı, erişim ve depolama kontrolleri |
+| Yetki açığı (IDOR vs) | Veri sızıntısı | Policy kullanımı, feature ve authorization testleri |
+| Multi-tenant ve ERP karmaşıklığı | Projenin tamamlanamaması | MVP kapsamı dışında tutulması |
+| Zaman riski | Yarım kalan ürün | Gün 18 kontrol noktası ve koşullu özelliklerin iptali |
+| Gerçek veri riski | Gizlilik ihlali | Yalnızca sentetik demo verilerinin kullanılması |
 
-## 13. SOLO GITHUB VE PULL REQUEST AKIŞI
+## 12. SOLO GITHUB VE PULL REQUEST AKIŞI
 1. Issue oluşturma
 2. Project In Progress aşamasına alma
 3. Issue branch’i oluşturma
@@ -258,38 +340,7 @@ Durum geçişlerinin tek bir merkezi servis üzerinden uygulanacağı, controlle
 - Yapay zekâ incelemesi insan onayı değildir.
 - Nihai merge kararı geliştiriciye aittir.
 
-## 14. GÜNLÜK PR TAMAMLANMA KRİTERLERİ
-- [ ] Issue kriterleri
-- [ ] Dar dosya kapsamı
-- [ ] İlgili ve mevcut testler
-- [ ] Laravel Pint
-- [ ] Migration kontrolleri
-- [ ] Policy ve rol kontrolleri
-- [ ] Sunucu taraflı doğrulama
-- [ ] Secret ve gerçek şirket verisi kontrolü
-- [ ] Responsive kontrol
-- [ ] Dokümantasyon
-- [ ] Staged diff ve Files changed incelemesi
-- [ ] Commit kalitesi
-- [ ] Closes #IssueNumber
-- [ ] Engelleyici hata bulunmaması
-- [ ] Project kartının Review durumunda olması
-
-## 15. PROJE GENELİ TAMAMLANMA KRİTERLERİ
-- [ ] MVP
-- [ ] Testler
-- [ ] Migration/seed
-- [ ] Yetkisiz erişim kontrolü
-- [ ] Secret kontrolü
-- [ ] Temiz kurulum
-- [ ] Dashboard
-- [ ] Responsive tasarım
-- [ ] Dokümantasyon
-- [ ] Demo kayıtları
-- [ ] Ekran görüntüleri
-- [ ] Issue/PR durumları
-
-## 16. DEĞİŞİKLİK YÖNETİMİ
+## 13. DEĞİŞİKLİK YÖNETİMİ
 MVP kapsamını, rol yetkilerini, durum geçişlerini veya güvenlik yaklaşımını değiştiren kararların:
 - Ayrı Issue ile gerekçelendirilmesi
 - İlgili dokümanların aynı PR’da güncellenmesi
