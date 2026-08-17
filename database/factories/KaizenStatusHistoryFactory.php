@@ -20,7 +20,7 @@ class KaizenStatusHistoryFactory extends Factory
         return [
             'kaizen_id' => Kaizen::factory(),
             'actor_user_id' => User::factory(),
-            'transition_code' => 'DRAFT_TO_SUBMITTED',
+            'transition_code' => 'TR-001',
             'from_status' => KaizenStatus::DRAFT->value,
             'to_status' => KaizenStatus::SUBMITTED->value,
             'reason' => $this->faker->optional()->sentence(),
