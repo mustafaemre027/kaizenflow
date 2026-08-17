@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Actions\Kaizens\CreateKaizenDraft;
+use App\Actions\Kaizens\SubmitKaizen;
 use App\Actions\Kaizens\UpdateKaizenDraft;
 use App\Http\Requests\Kaizens\StoreKaizenRequest;
+use App\Http\Requests\Kaizens\SubmitKaizenRequest;
 use App\Http\Requests\Kaizens\UpdateKaizenDraftRequest;
 use App\Models\Category;
 use App\Models\Kaizen;
@@ -62,5 +64,29 @@ class KaizenController extends Controller
         }
 
         return back()->with('success', 'Kaizen taslağı başarıyla güncellendi.');
+    }
+
+    public function submit(SubmitKaizenRequest $request, Kaizen $kaizen, SubmitKaizen $submitAction)
+    {
+        $validated = $request->validated();
+        $user = $request->user();
+
+        $reason = $validated['reason'] ?? null;
+
+        $submittedKaizen = $submitAction->execute($user, $kaizen, $reason);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => 'Kaizen başarıyla gönderildi.',
+                'kaizen' => $submittedKaizen->only([
+                    'id',
+                    'code',
+                    'status',
+                    'submitted_at',
+                ]),
+            ], 200);
+        }
+
+        return back()->with('success', 'Kaizen başarıyla gönderildi.');
     }
 }

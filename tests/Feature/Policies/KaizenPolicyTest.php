@@ -249,9 +249,12 @@ class KaizenPolicyTest extends TestCase
         $this->assertFalse($this->policy->update($manager, $kaizen));
     }
 
-    public function test_creator_can_submit_draft_or_revision_requested(): void
+    public function test_active_employee_creator_can_submit_draft_or_revision_requested(): void
     {
-        $creator = User::factory()->create(['is_active' => true]);
+        $creator = User::factory()->create([
+            'is_active' => true,
+            'role' => UserRole::EMPLOYEE,
+        ]);
 
         $kaizenDraft = Kaizen::factory()->withStatus(KaizenStatus::DRAFT)->create([
             'creator_user_id' => $creator->id,
@@ -265,26 +268,64 @@ class KaizenPolicyTest extends TestCase
         $this->assertTrue($this->policy->submit($creator, $kaizenRev));
     }
 
-    public function test_creator_cannot_submit_other_statuses(): void
+    public function test_other_user_cannot_submit(): void
     {
-        $creator = User::factory()->create(['is_active' => true]);
+        $creator = User::factory()->create(['is_active' => true, 'role' => UserRole::EMPLOYEE]);
+        $otherUser = User::factory()->create(['is_active' => true, 'role' => UserRole::EMPLOYEE]);
 
-        $kaizen = Kaizen::factory()->withStatus(KaizenStatus::SUBMITTED)->create([
+        $kaizen = Kaizen::factory()->withStatus(KaizenStatus::DRAFT)->create([
+            'creator_user_id' => $creator->id,
+        ]);
+
+        $this->assertFalse($this->policy->submit($otherUser, $kaizen));
+    }
+
+    public function test_inactive_user_cannot_submit(): void
+    {
+        $creator = User::factory()->create(['is_active' => false, 'role' => UserRole::EMPLOYEE]);
+
+        $kaizen = Kaizen::factory()->withStatus(KaizenStatus::DRAFT)->create([
             'creator_user_id' => $creator->id,
         ]);
 
         $this->assertFalse($this->policy->submit($creator, $kaizen));
     }
 
-    public function test_inactive_creator_cannot_update_or_submit(): void
+    public function test_opex_manager_and_admin_cannot_submit_even_if_creator(): void
     {
-        $creator = User::factory()->create(['is_active' => false]);
-        $kaizen = Kaizen::factory()->withStatus(KaizenStatus::DRAFT)->create([
-            'creator_user_id' => $creator->id,
-        ]);
+        $roles = [UserRole::OPEX_SPECIALIST, UserRole::MANAGER, UserRole::ADMIN];
 
-        $this->assertFalse($this->policy->update($creator, $kaizen));
-        $this->assertFalse($this->policy->submit($creator, $kaizen));
+        foreach ($roles as $role) {
+            $creator = User::factory()->create(['is_active' => true, 'role' => $role]);
+
+            $kaizen = Kaizen::factory()->withStatus(KaizenStatus::DRAFT)->create([
+                'creator_user_id' => $creator->id,
+            ]);
+
+            $this->assertFalse($this->policy->submit($creator, $kaizen));
+        }
+    }
+
+    public function test_creator_cannot_submit_other_statuses_like_submitted_or_terminal(): void
+    {
+        $creator = User::factory()->create(['is_active' => true, 'role' => UserRole::EMPLOYEE]);
+
+        $invalidStatuses = [
+            KaizenStatus::SUBMITTED,
+            KaizenStatus::MANAGER_REVIEW,
+            KaizenStatus::APPROVED,
+            KaizenStatus::IN_PROGRESS,
+            KaizenStatus::COMPLETED,
+            KaizenStatus::REJECTED,
+        ];
+
+        foreach ($invalidStatuses as $status) {
+            $kaizen = Kaizen::factory()->withStatus($status)->create([
+                'creator_user_id' => $creator->id,
+            ]);
+
+            $this->assertFalse($this->policy->submit($creator, $kaizen));
+        }
     }
 
     public function test_no_role_can_delete_restore_or_force_delete(): void
