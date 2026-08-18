@@ -10,7 +10,6 @@ use App\Models\Department;
 use App\Models\Kaizen;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
 
 class KaizenControllerTest extends TestCase
@@ -37,12 +36,32 @@ class KaizenControllerTest extends TestCase
 
     public function test_create_unauthenticated_returns_302_redirect(): void
     {
-        Route::get('/login', fn () => 'login')->name('login');
-        Route::getRoutes()->refreshNameLookups();
-
         $response = $this->get(route('kaizens.create'));
         $response->assertStatus(302);
-        $response->assertRedirect('/login');
+        $response->assertRedirect(route('login'));
+    }
+
+    public function test_intended_redirect_works_for_kaizen_create(): void
+    {
+        // 1. Unauthenticated request to protected route
+        $response = $this->get(route('kaizens.create'));
+        $response->assertStatus(302);
+        $response->assertRedirect(route('login'));
+
+        // 2. Login with valid credentials
+        $loginResponse = $this->post(route('login.store'), [
+            'email' => $this->user->email,
+            'password' => 'password',
+        ]);
+
+        // 3. Assert successful login and intended redirect
+        $this->assertAuthenticatedAs($this->user);
+        $loginResponse->assertRedirect(route('kaizens.create'));
+
+        // 4. Assert following the redirect leads to the protected page
+        $intendedResponse = $this->get(route('kaizens.create'));
+        $intendedResponse->assertStatus(200);
+        $intendedResponse->assertViewIs('kaizens.create');
     }
 
     public function test_create_authorized_user_can_view_create_form(): void
