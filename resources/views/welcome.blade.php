@@ -1,36 +1,22 @@
 @extends('layouts.app')
 
-@section('title', 'KaizenFlow - Hoş Geldiniz')
+@section('title', 'KaizenFlow')
 
 @section('content')
-<div class="row justify-content-center">
-    <div class="col-md-8 text-center">
-        <h1 class="display-4 fw-bold mb-3">KaizenFlow</h1>
-        <p class="lead text-muted mb-5">Dijital Kaizen ve Sürekli İyileştirme Yönetim Sistemi</p>
+<div class="d-flex flex-column justify-content-center align-items-center text-center" style="min-height: 60vh; padding: 2rem 1rem;">
+    <h1 class="fw-bold mb-3 text-dark" style="font-size: 3rem; letter-spacing: -0.03em;">KaizenFlow</h1>
+    <p class="mb-5" style="font-size: 1.25rem; color: var(--kf-text-secondary); max-width: 600px; line-height: 1.6;">
+        Sürekli iyileştirme süreçlerini tek merkezden yönetin. Kaizen fikirlerini oluşturun, değerlendirin ve iyileştirme sürecini izlenebilir hale getirin.
+    </p>
 
-        <div class="card shadow-sm mb-4 text-start">
-            <div class="card-header bg-white">
-                <h5 class="mb-0">Sistem Durumu</h5>
-            </div>
-            <ul class="list-group list-group-flush">
-                <li class="list-group-item d-flex align-items-center">
-                    <span class="badge bg-success me-3">Hazır</span>
-                    Laravel 13 altyapısı kuruldu ve çalışıyor.
-                </li>
-                <li class="list-group-item d-flex align-items-center">
-                    <span class="badge bg-success me-3">Hazır</span>
-                    Blade görünüm yapısı oluşturuldu.
-                </li>
-                <li class="list-group-item d-flex align-items-center">
-                    <span class="badge bg-success me-3">Hazır</span>
-                    Bootstrap varlıkları Vite üzerinden derleniyor.
-                </li>
-                <li class="list-group-item d-flex align-items-center text-muted">
-                    <span class="badge bg-secondary me-3">Beklemede</span>
-                    MySQL veritabanı yapılandırması bir sonraki adımda yapılacaktır.
-                </li>
-            </ul>
-        </div>
-    </div>
+    @guest
+        <a href="{{ route('login') }}" class="kf-btn kf-btn-primary" style="padding: 0.85rem 2.5rem; font-size: 1.1rem; border-radius: 8px;">
+            Giriş Yap
+        </a>
+    @else
+        <a href="{{ route('kaizens.create') }}" class="kf-btn kf-btn-primary" style="padding: 0.85rem 2.5rem; font-size: 1.1rem; border-radius: 8px;">
+            Yeni Kaizen Oluştur
+        </a>
+    @endguest
 </div>
 @endsection

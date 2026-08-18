@@ -417,20 +417,30 @@ body {
 .kf-app-nav-link {
     color: rgba(255, 255, 255, 0.75);
     font-weight: 500;
-    padding: 0.5rem 1rem;
-    border-radius: var(--kf-radius-sm);
-    transition: color 0.15s ease, background-color 0.15s ease;
+    padding: 0.5rem 0.25rem;
+    margin: 0 0.75rem;
+    position: relative;
+    transition: color 0.15s ease;
     text-decoration: none;
 }
 
 .kf-app-nav-link:hover {
     color: #ffffff;
-    background-color: rgba(255, 255, 255, 0.05);
 }
 
 .kf-app-nav-link.active {
     color: #ffffff;
-    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.kf-app-nav-link.active::after {
+    content: '';
+    position: absolute;
+    bottom: -6px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background-color: #ffffff;
+    border-radius: 2px 2px 0 0;
 }
 
 /* User Dropdown */
@@ -517,9 +527,9 @@ body {
 /* Surfaces / Cards */
 .kf-panel {
     background-color: var(--kf-surface);
-    border-radius: var(--kf-radius-md);
+    border-radius: var(--kf-radius-lg);
     border: 1px solid var(--kf-border-light);
-    box-shadow: var(--kf-shadow-sm);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02), 0 1px 2px rgba(0, 0, 0, 0.01);
     overflow: hidden;
 }
 
