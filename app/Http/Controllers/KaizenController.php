@@ -10,9 +10,19 @@ use App\Http\Requests\Kaizens\SubmitKaizenRequest;
 use App\Http\Requests\Kaizens\UpdateKaizenDraftRequest;
 use App\Models\Category;
 use App\Models\Kaizen;
+use Illuminate\Support\Facades\Gate;
 
 class KaizenController extends Controller
 {
+    public function create()
+    {
+        Gate::authorize('create', Kaizen::class);
+
+        $categories = Category::active()->orderBy('name')->get();
+
+        return view('kaizens.create', compact('categories'));
+    }
+
     public function store(StoreKaizenRequest $request, CreateKaizenDraft $createAction)
     {
         $validated = $request->validated();

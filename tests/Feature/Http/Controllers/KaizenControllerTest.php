@@ -10,6 +10,7 @@ use App\Models\Department;
 use App\Models\Kaizen;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
 
 class KaizenControllerTest extends TestCase
@@ -28,6 +29,46 @@ class KaizenControllerTest extends TestCase
         $this->department = Department::factory()->create(['is_active' => true]);
         $this->user = User::factory()->create(['is_active' => true, 'department_id' => $this->department->id]);
         $this->category = Category::factory()->create(['is_active' => true]);
+    }
+
+    // ==========================================
+    // CREATE METHOD TESTS
+    // ==========================================
+
+    public function test_create_unauthenticated_returns_302_redirect(): void
+    {
+        Route::get('/login', fn () => 'login')->name('login');
+        Route::getRoutes()->refreshNameLookups();
+
+        $response = $this->get(route('kaizens.create'));
+        $response->assertStatus(302);
+        $response->assertRedirect('/login');
+    }
+
+    public function test_create_authorized_user_can_view_create_form(): void
+    {
+        $response = $this->actingAs($this->user)->get(route('kaizens.create'));
+
+        $response->assertStatus(200);
+        $response->assertViewIs('kaizens.create');
+        $response->assertViewHas('categories');
+
+        $categories = $response->viewData('categories');
+        $this->assertTrue($categories->contains($this->category));
+
+        $inactiveCategory = Category::factory()->create(['is_active' => false]);
+        $response = $this->actingAs($this->user)->get(route('kaizens.create'));
+        $categories = $response->viewData('categories');
+        $this->assertFalse($categories->contains($inactiveCategory));
+    }
+
+    public function test_create_unauthorized_user_returns_403(): void
+    {
+        $this->user->is_active = false;
+        $this->user->save();
+
+        $response = $this->actingAs($this->user)->get(route('kaizens.create'));
+        $response->assertStatus(403);
     }
 
     // ==========================================

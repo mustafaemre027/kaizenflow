@@ -8,6 +8,7 @@ Route::get('/', function () {
 });
 
 Route::middleware('auth')->group(function () {
+    Route::get('/kaizens/create', [KaizenController::class, 'create'])->name('kaizens.create');
     Route::post('/kaizens', [KaizenController::class, 'store'])->name('kaizens.store');
     Route::patch('/kaizens/{kaizen}', [KaizenController::class, 'update'])->name('kaizens.update');
     Route::post('/kaizens/{kaizen}/submit', [KaizenController::class, 'submit'])->name('kaizens.submit');
