@@ -8,6 +8,7 @@
 </head>
 <body class="d-flex flex-column min-vh-100">
 
+    @if (!request()->routeIs('login'))
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
             <a class="navbar-brand" href="{{ url('/') }}">KaizenFlow</a>
@@ -37,18 +38,25 @@
             </div>
         </div>
     </nav>
+    @endif
 
-    <main class="flex-grow-1 py-4">
+    <main class="flex-grow-1 {{ !request()->routeIs('login') ? 'py-4' : '' }}">
+        @if (!request()->routeIs('login'))
         <div class="container">
             @yield('content')
         </div>
+        @else
+            @yield('content')
+        @endif
     </main>
 
+    @if (!request()->routeIs('login'))
     <footer class="bg-light text-center py-3 mt-auto">
         <div class="container text-muted">
             <small>&copy; {{ date('Y') }} KaizenFlow. Tüm hakları saklıdır.</small>
         </div>
     </footer>
+    @endif
 
 </body>
 </html>
