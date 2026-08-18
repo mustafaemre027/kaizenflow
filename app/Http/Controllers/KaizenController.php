@@ -23,6 +23,15 @@ class KaizenController extends Controller
         return view('kaizens.create', compact('categories'));
     }
 
+    public function show(Kaizen $kaizen)
+    {
+        Gate::authorize('view', $kaizen);
+
+        $kaizen->load(['creator', 'assignedUser', 'department', 'category']);
+
+        return view('kaizens.show', compact('kaizen'));
+    }
+
     public function store(StoreKaizenRequest $request, CreateKaizenDraft $createAction)
     {
         $validated = $request->validated();

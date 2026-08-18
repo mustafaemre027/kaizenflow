@@ -16,6 +16,7 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
     Route::get('/kaizens/create', [KaizenController::class, 'create'])->name('kaizens.create');
+    Route::get('/kaizens/{kaizen}', [KaizenController::class, 'show'])->name('kaizens.show');
     Route::post('/kaizens', [KaizenController::class, 'store'])->name('kaizens.store');
     Route::patch('/kaizens/{kaizen}', [KaizenController::class, 'update'])->name('kaizens.update');
     Route::post('/kaizens/{kaizen}/submit', [KaizenController::class, 'submit'])->name('kaizens.submit');

@@ -431,4 +431,64 @@ class KaizenControllerTest extends TestCase
         $payload = ['title' => 'Action Mock Title'];
         $this->actingAs($this->user)->patchJson(route('kaizens.update', $kaizen), $payload);
     }
+
+    // ==========================================
+    // SHOW METHOD TESTS
+    // ==========================================
+
+    public function test_show_unauthenticated_returns_302_redirect(): void
+    {
+        $kaizen = Kaizen::factory()->create();
+        $response = $this->get(route('kaizens.show', $kaizen));
+        $response->assertStatus(302);
+        $response->assertRedirect(route('login'));
+    }
+
+    public function test_show_authorized_creator_returns_200(): void
+    {
+        $kaizen = Kaizen::factory()->create([
+            'creator_user_id' => $this->user->id,
+            'title' => 'My Kaizen Title',
+            'current_situation' => 'Current sit',
+            'proposed_situation' => 'Proposed sit',
+            'expected_benefit' => 'Expected ben',
+        ]);
+
+        $response = $this->actingAs($this->user)->get(route('kaizens.show', $kaizen));
+
+        $response->assertStatus(200);
+        $response->assertViewIs('kaizens.show');
+        $response->assertSee('My Kaizen Title');
+        $response->assertSee('Current sit');
+        $response->assertSee('Proposed sit');
+        $response->assertSee('Expected ben');
+        $response->assertSee($kaizen->code);
+    }
+
+    public function test_show_unauthorized_user_returns_403(): void
+    {
+        $otherUser = User::factory()->create(['is_active' => true]);
+        $kaizen = Kaizen::factory()->create(); // creator is another user by default
+
+        $response = $this->actingAs($otherUser)->get(route('kaizens.show', $kaizen));
+        $response->assertStatus(403);
+    }
+
+    public function test_show_eager_loads_relations_and_handles_null_states(): void
+    {
+        $kaizen = Kaizen::factory()->create([
+            'creator_user_id' => $this->user->id,
+            'assigned_user_id' => null,
+            'target_date' => null,
+            'submitted_at' => null,
+            'actual_result' => null,
+        ]);
+
+        $response = $this->actingAs($this->user)->get(route('kaizens.show', $kaizen));
+
+        $response->assertStatus(200);
+        $response->assertSee('Atanmadı');
+        $response->assertSee('Belirtilmedi');
+        $response->assertSee('Henüz gönderilmedi');
+    }
 }
