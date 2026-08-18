@@ -15,7 +15,8 @@
                 <div class="d-flex align-items-center gap-4">
                     <a class="kf-app-brand" href="{{ url('/') }}">KaizenFlow</a>
                     @auth
-                        <nav class="d-none d-md-flex gap-2">
+                        <nav class="d-none d-md-flex gap-2 ms-4">
+                            <a href="{{ url('/') }}" class="kf-app-nav-link {{ request()->is('/') ? 'active' : '' }}">Ana Sayfa</a>
                             <a href="{{ route('kaizens.create') }}" class="kf-app-nav-link {{ request()->routeIs('kaizens.create') ? 'active' : '' }}">Yeni Kaizen</a>
                         </nav>
                     @endauth
@@ -47,7 +48,7 @@
 
                 @guest
                     @if (!request()->routeIs('login'))
-                        <a href="{{ route('login') }}" class="kf-btn kf-btn-primary kf-btn-sm">Giriş Yap</a>
+                        <a href="{{ route('login') }}" class="kf-btn kf-btn-header-guest kf-btn-sm">Giriş Yap</a>
                     @endif
                 @endguest
             </div>
