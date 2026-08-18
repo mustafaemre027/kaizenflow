@@ -11,26 +11,54 @@
             KaizenFlow
         </div>
 
-        <h1 class="kf-auth-headline">
-            Sürekli iyileştirmeyi <br> tek bir akışta yönetin.
-        </h1>
+        <div class="kf-auth-brand-content">
+            <h1 class="kf-auth-headline">
+                Sürekli iyileştirmeyi <br> tek bir akışta yönetin.
+            </h1>
 
-        <p class="kf-auth-subhead">
-            Kaizen fikirlerinin oluşturulması, değerlendirilmesi ve uygulama sürecini tek merkezden izleyin.
-        </p>
+            <p class="kf-auth-subhead">
+                Kaizen fikirlerinin oluşturulması, değerlendirilmesi ve uygulama sürecini tek merkezden izleyin.
+            </p>
 
-        <ul class="kf-auth-features">
-            <li>Fikirleri tek merkezde yönetin</li>
-            <li>Değerlendirme süreçlerini takip edin</li>
-            <li>İyileştirme sonuçlarını görünür hale getirin</li>
-        </ul>
+            <ul class="kf-auth-features">
+                <li>Fikirleri tek merkezde yönetin</li>
+                <li>Değerlendirme süreçlerini takip edin</li>
+                <li>İyileştirme sonuçlarını görünür hale getirin</li>
+            </ul>
+        </div>
+
+        <!-- Process Visual -->
+        <div class="kf-auth-process d-none d-md-flex">
+            <div class="kf-process-step">
+                <div class="kf-process-marker"></div>
+                <div class="kf-process-label">Fikir</div>
+            </div>
+            <div class="kf-process-connector" aria-hidden="true"></div>
+            <div class="kf-process-step">
+                <div class="kf-process-marker"></div>
+                <div class="kf-process-label">Değerlendirme</div>
+            </div>
+            <div class="kf-process-connector" aria-hidden="true"></div>
+            <div class="kf-process-step">
+                <div class="kf-process-marker"></div>
+                <div class="kf-process-label">Uygulama</div>
+            </div>
+            <div class="kf-process-connector" aria-hidden="true"></div>
+            <div class="kf-process-step">
+                <div class="kf-process-marker"></div>
+                <div class="kf-process-label">Sonuç</div>
+            </div>
+        </div>
     </div>
 
     <!-- Right Form Side -->
     <div class="kf-auth-content">
         <div class="kf-auth-form-container">
-            <h2 class="kf-auth-title">Tekrar hoş geldiniz</h2>
-            <p class="kf-auth-desc">Hesabınızla devam edin.</p>
+            <div class="kf-auth-header-group">
+                <span class="kf-auth-eyebrow">GÜVENLİ ERİŞİM</span>
+                <h2 class="kf-auth-title">Hesabınıza giriş yapın</h2>
+                <p class="kf-auth-desc">KaizenFlow’a devam etmek için bilgilerinizi girin.</p>
+            </div>
 
             <form method="POST" action="{{ route('login.store') }}" novalidate>
                 @csrf
@@ -55,13 +83,14 @@
                     @enderror
                 </div>
 
-                <button type="submit" class="kf-auth-submit">
-                    Giriş Yap
-                </button>
-
-                <p class="kf-auth-trust">
-                    Oturumunuz güvenli şekilde korunur.
-                </p>
+                <div class="kf-auth-actions">
+                    <button type="submit" class="kf-auth-submit">
+                        Giriş Yap
+                    </button>
+                    <p class="kf-auth-trust">
+                        Oturumunuz güvenli şekilde korunur.
+                    </p>
+                </div>
             </form>
 
             <div class="kf-auth-footer">
