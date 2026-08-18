@@ -3,28 +3,24 @@
 @section('title', 'Yeni Kaizen Oluştur')
 
 @section('content')
-<div class="row justify-content-center">
-    <div class="col-md-8">
-        <div class="card shadow-sm">
-            <div class="card-header bg-primary text-white">
-                <h4 class="mb-0">Yeni Kaizen Taslağı Oluştur</h4>
-            </div>
-            <div class="card-body">
-                <p class="text-muted mb-4">Lütfen önerdiğiniz iyileştirmeyle ilgili bilgileri detaylı bir şekilde doldurun. Formu kaydederek daha sonra düzenlemeye devam edebilirsiniz.</p>
+<div class="kf-page-header">
+    <span class="kf-page-eyebrow">Kaizen Yönetimi</span>
+    <h1 class="kf-page-title">Yeni Kaizen Oluştur</h1>
+    <p class="kf-page-desc">İyileştirme fikrinizi tanımlayın; taslak olarak kaydedip daha sonra geliştirebilirsiniz.</p>
+</div>
 
-                @if(session('success'))
-                    <div class="alert alert-success">
-                        {{ session('success') }}
-                    </div>
-                @endif
+<div class="kf-panel">
+    <div class="kf-panel-body p-4 p-md-5">
+        <form method="POST" action="{{ route('kaizens.store') }}">
+            @csrf
 
-                <form method="POST" action="{{ route('kaizens.store') }}">
-                    @csrf
-
-                    <div class="mb-3">
-                        <label for="category_id" class="form-label fw-bold">Kategori</label>
-                        <select name="category_id" id="category_id" class="form-select @error('category_id') is-invalid @enderror" required>
-                            <option value="">-- Kategori Seçin --</option>
+            <div class="kf-form-section">
+                <h2 class="kf-form-section-title">Temel Bilgiler</h2>
+                <div class="row g-4">
+                    <div class="col-md-4">
+                        <label for="category_id" class="kf-form-label">Kategori</label>
+                        <select name="category_id" id="category_id" class="kf-form-control @error('category_id') is-invalid @enderror" required>
+                            <option value="">-- Seçiniz --</option>
                             @foreach($categories as $category)
                                 <option value="{{ $category->id }}" {{ old('category_id') == $category->id ? 'selected' : '' }}>
                                     {{ $category->name }}
@@ -36,50 +32,56 @@
                         @enderror
                     </div>
 
-                    <div class="mb-3">
-                        <label for="title" class="form-label fw-bold">Başlık</label>
-                        <input type="text" name="title" id="title" class="form-control @error('title') is-invalid @enderror" value="{{ old('title') }}" required maxlength="255">
-                        <div class="form-text">Kaizen'inizi özetleyen kısa ve net bir başlık girin (en az 5 karakter).</div>
+                    <div class="col-md-8">
+                        <label for="title" class="kf-form-label">Başlık</label>
+                        <input type="text" name="title" id="title" class="kf-form-control @error('title') is-invalid @enderror" value="{{ old('title') }}" required maxlength="255" placeholder="Kaizen'inizi özetleyen kısa başlık">
+                        <span class="kf-form-help">Örn: Depo alanındaki etiketleme sürecinin iyileştirilmesi</span>
                         @error('title')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
-
-                    <div class="mb-3">
-                        <label for="current_situation" class="form-label fw-bold">Mevcut Durum</label>
-                        <textarea name="current_situation" id="current_situation" class="form-control @error('current_situation') is-invalid @enderror" rows="4" required maxlength="5000">{{ old('current_situation') }}</textarea>
-                        <div class="form-text">Şu anki süreci ve yaşanan problemi detaylı olarak açıklayın.</div>
-                        @error('current_situation')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="proposed_situation" class="form-label fw-bold">Önerilen Durum</label>
-                        <textarea name="proposed_situation" id="proposed_situation" class="form-control @error('proposed_situation') is-invalid @enderror" rows="4" required maxlength="5000">{{ old('proposed_situation') }}</textarea>
-                        <div class="form-text">İyileştirme sonrasında sürecin nasıl işleyeceğini açıklayın.</div>
-                        @error('proposed_situation')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="expected_benefit" class="form-label fw-bold">Beklenen Fayda</label>
-                        <textarea name="expected_benefit" id="expected_benefit" class="form-control @error('expected_benefit') is-invalid @enderror" rows="4" required maxlength="5000">{{ old('expected_benefit') }}</textarea>
-                        <div class="form-text">Öneriniz uygulandığında elde edilecek zaman, maliyet veya kalite faydalarını belirtin.</div>
-                        @error('expected_benefit')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
-                    </div>
-
-                    <div class="d-flex justify-content-end gap-2 mt-4">
-                        <button type="submit" class="btn btn-primary px-4">
-                            Taslağı Kaydet
-                        </button>
-                    </div>
-                </form>
+                </div>
             </div>
-        </div>
+
+            <div class="kf-form-section">
+                <h2 class="kf-form-section-title">Problem ve İyileştirme</h2>
+
+                <div class="kf-form-group">
+                    <label for="current_situation" class="kf-form-label">Mevcut Durum</label>
+                    <textarea name="current_situation" id="current_situation" class="kf-form-control @error('current_situation') is-invalid @enderror" rows="4" required maxlength="5000" placeholder="Şu anki süreci ve yaşanan problemi detaylı olarak açıklayın...">{{ old('current_situation') }}</textarea>
+                    @error('current_situation')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+
+                <div class="kf-form-group mb-0">
+                    <label for="proposed_situation" class="kf-form-label">Önerilen Durum</label>
+                    <textarea name="proposed_situation" id="proposed_situation" class="kf-form-control @error('proposed_situation') is-invalid @enderror" rows="4" required maxlength="5000" placeholder="İyileştirme sonrasında sürecin nasıl işleyeceğini açıklayın...">{{ old('proposed_situation') }}</textarea>
+                    @error('proposed_situation')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+            </div>
+
+            <div class="kf-form-section border-bottom-0 pb-0 mb-0">
+                <h2 class="kf-form-section-title">Beklenen Etki</h2>
+
+                <div class="kf-form-group mb-0">
+                    <label for="expected_benefit" class="kf-form-label">Beklenen Fayda</label>
+                    <textarea name="expected_benefit" id="expected_benefit" class="kf-form-control @error('expected_benefit') is-invalid @enderror" rows="4" required maxlength="5000" placeholder="Öneriniz uygulandığında elde edilecek zaman, maliyet veya kalite faydalarını belirtin...">{{ old('expected_benefit') }}</textarea>
+                    @error('expected_benefit')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-end align-items-center mt-5 gap-3 border-top pt-4">
+                <span class="text-muted small">Taslak olarak kaydedilir.</span>
+                <button type="submit" class="kf-btn kf-btn-primary">
+                    Taslağı Kaydet
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 @endsection

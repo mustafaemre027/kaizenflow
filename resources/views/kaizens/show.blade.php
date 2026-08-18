@@ -3,78 +3,99 @@
 @section('title', 'Kaizen Detayı: ' . $kaizen->code)
 
 @section('content')
-<div class="row justify-content-center">
-    <div class="col-lg-8 mb-4">
-        <div class="card shadow-sm h-100">
-            <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <span class="text-muted small fw-bold">{{ $kaizen->code }}</span>
-                    <div>
-                        <span class="badge bg-secondary">{{ $kaizen->status->label() }}</span>
-                        @if($kaizen->priority)
-                            <span class="badge bg-info text-dark">{{ $kaizen->priority->label() }}</span>
-                        @endif
-                    </div>
-                </div>
-                <h2 class="h4 mb-0 text-primary">{{ $kaizen->title }}</h2>
-            </div>
-            <div class="card-body">
-                <div class="mb-4">
-                    <h5 class="fw-bold text-dark border-bottom pb-2">Mevcut Durum</h5>
-                    <p class="mb-0 text-muted" style="white-space: pre-line;">{{ $kaizen->current_situation }}</p>
-                </div>
-                <div class="mb-4">
-                    <h5 class="fw-bold text-dark border-bottom pb-2">Önerilen Durum</h5>
-                    <p class="mb-0 text-muted" style="white-space: pre-line;">{{ $kaizen->proposed_situation }}</p>
-                </div>
-                <div class="mb-4">
-                    <h5 class="fw-bold text-dark border-bottom pb-2">Beklenen Fayda</h5>
-                    <p class="mb-0 text-muted" style="white-space: pre-line;">{{ $kaizen->expected_benefit }}</p>
-                </div>
-                @if($kaizen->status->isTerminal() || $kaizen->actual_result)
-                <div class="mb-4">
-                    <h5 class="fw-bold text-dark border-bottom pb-2">Gerçekleşen Sonuç</h5>
-                    @if($kaizen->actual_result)
-                        <p class="mb-0 text-muted" style="white-space: pre-line;">{{ $kaizen->actual_result }}</p>
-                    @else
-                        <p class="mb-0 text-muted fst-italic">Henüz sonuç girilmedi.</p>
-                    @endif
-                </div>
-                @endif
-            </div>
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end mb-4 kf-page-header">
+    <div>
+        <span class="kf-page-eyebrow">Kaizen Detayı</span>
+        <h1 class="kf-page-title mb-2">{{ $kaizen->title }}</h1>
+        <div class="d-flex align-items-center gap-2">
+            <span class="fw-bold text-muted" style="font-family: monospace; font-size: 0.95rem;">{{ $kaizen->code }}</span>
+            <span class="text-muted">•</span>
+            <span class="kf-badge kf-badge-neutral">{{ $kaizen->status->label() }}</span>
+            @if($kaizen->priority)
+                <span class="kf-badge kf-badge-priority">{{ $kaizen->priority->label() }}</span>
+            @endif
         </div>
     </div>
-    
-    <div class="col-lg-4 mb-4">
-        <div class="card shadow-sm">
-            <div class="card-header bg-light">
-                <h5 class="h6 mb-0 fw-bold">Kaizen Bilgileri</h5>
+    <div class="mt-3 mt-md-0">
+        <a href="{{ route('kaizens.create') }}" class="kf-btn kf-btn-secondary">
+            Yeni Kaizen Oluştur
+        </a>
+    </div>
+</div>
+
+<div class="kf-detail-grid">
+    <div class="kf-panel">
+        <div class="kf-panel-body p-4 p-md-5">
+            <div class="kf-detail-section">
+                <h3 class="kf-detail-section-title">Mevcut Durum</h3>
+                <p class="kf-detail-text">{{ $kaizen->current_situation }}</p>
             </div>
-            <div class="card-body">
-                <ul class="list-unstyled mb-0">
-                    <li class="mb-3">
-                        <span class="d-block text-muted small fw-bold text-uppercase">Kategori</span>
-                        <span class="text-dark">{{ $kaizen->category->name }}</span>
+
+            <div class="kf-detail-section">
+                <h3 class="kf-detail-section-title">Önerilen Durum</h3>
+                <p class="kf-detail-text">{{ $kaizen->proposed_situation }}</p>
+            </div>
+
+            <div class="kf-detail-section">
+                <h3 class="kf-detail-section-title">Beklenen Fayda</h3>
+                <p class="kf-detail-text">{{ $kaizen->expected_benefit }}</p>
+            </div>
+
+            @if($kaizen->status->isTerminal() || $kaizen->actual_result)
+            <div class="kf-detail-section pt-3 mt-4 border-top">
+                <h3 class="kf-detail-section-title">Gerçekleşen Sonuç</h3>
+                @if($kaizen->actual_result)
+                    <p class="kf-detail-text">{{ $kaizen->actual_result }}</p>
+                @else
+                    <p class="kf-detail-text text-muted fst-italic">Henüz sonuç girilmedi.</p>
+                @endif
+            </div>
+            @endif
+        </div>
+    </div>
+
+    <div>
+        <div class="kf-panel sticky-top" style="top: 2rem;">
+            <div class="kf-panel-header">
+                <h2 class="kf-panel-title">Kaizen Bilgileri</h2>
+            </div>
+            <div class="kf-panel-body p-4">
+                <ul class="kf-meta-list">
+                    <li class="kf-meta-item">
+                        <span class="kf-meta-label">Kategori</span>
+                        <span class="kf-meta-value">{{ $kaizen->category->name }}</span>
                     </li>
-                    <li class="mb-3">
-                        <span class="d-block text-muted small fw-bold text-uppercase">Departman</span>
-                        <span class="text-dark">{{ $kaizen->department->name }}</span>
+                    <li class="kf-meta-item">
+                        <span class="kf-meta-label">Departman</span>
+                        <span class="kf-meta-value">{{ $kaizen->department->name }}</span>
                     </li>
-                    <li class="mb-3">
-                        <span class="d-block text-muted small fw-bold text-uppercase">Oluşturan</span>
-                        <span class="text-dark">{{ $kaizen->creator->name }}</span>
+                    <li class="kf-meta-item border-top pt-3 mt-3">
+                        <span class="kf-meta-label">Oluşturan</span>
+                        <span class="kf-meta-value">{{ $kaizen->creator->name }}</span>
                     </li>
-                    <li class="mb-3">
-                        <span class="d-block text-muted small fw-bold text-uppercase">Atanan Kişi</span>
-                        <span class="text-dark">{{ $kaizen->assignedUser ? $kaizen->assignedUser->name : 'Atanmadı' }}</span>
+                    <li class="kf-meta-item">
+                        <span class="kf-meta-label">Atanan Kişi</span>
+                        @if($kaizen->assignedUser)
+                            <span class="kf-meta-value">{{ $kaizen->assignedUser->name }}</span>
+                        @else
+                            <span class="kf-meta-value text-muted fst-italic">Atanmadı</span>
+                        @endif
                     </li>
-                    <li class="mb-3">
-                        <span class="d-block text-muted small fw-bold text-uppercase">Hedef Tarih</span>
-                        <span class="text-dark">{{ $kaizen->target_date ? $kaizen->target_date->format('d.m.Y') : 'Belirtilmedi' }}</span>
+                    <li class="kf-meta-item border-top pt-3 mt-3">
+                        <span class="kf-meta-label">Hedef Tarih</span>
+                        @if($kaizen->target_date)
+                            <span class="kf-meta-value">{{ $kaizen->target_date->format('d.m.Y') }}</span>
+                        @else
+                            <span class="kf-meta-value text-muted fst-italic">Belirtilmedi</span>
+                        @endif
                     </li>
-                    <li>
-                        <span class="d-block text-muted small fw-bold text-uppercase">Gönderim Tarihi</span>
-                        <span class="text-dark">{{ $kaizen->submitted_at ? $kaizen->submitted_at->format('d.m.Y H:i') : 'Henüz gönderilmedi' }}</span>
+                    <li class="kf-meta-item">
+                        <span class="kf-meta-label">Gönderim Tarihi</span>
+                        @if($kaizen->submitted_at)
+                            <span class="kf-meta-value">{{ $kaizen->submitted_at->format('d.m.Y H:i') }}</span>
+                        @else
+                            <span class="kf-meta-value text-muted fst-italic">Henüz gönderilmedi</span>
+                        @endif
                     </li>
                 </ul>
             </div>
