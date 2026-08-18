@@ -1,35 +1,73 @@
 @extends('layouts.app')
 
-@section('title', 'KaizenFlow - Hoş Geldiniz')
+@section('title', 'KaizenFlow')
 
 @section('content')
-<div class="row justify-content-center">
-    <div class="col-md-8 text-center">
-        <h1 class="display-4 fw-bold mb-3">KaizenFlow</h1>
-        <p class="lead text-muted mb-5">Dijital Kaizen ve Sürekli İyileştirme Yönetim Sistemi</p>
+<div class="kf-hero-container">
+    <div class="kf-hero-content">
+        <h1 class="kf-display mb-4">
+            Sürekli iyileştirmeyi<br>
+            <span style="color: var(--kf-primary);">görünür bir sürece</span><br>
+            dönüştürün.
+        </h1>
 
-        <div class="card shadow-sm mb-4 text-start">
-            <div class="card-header bg-white">
-                <h5 class="mb-0">Sistem Durumu</h5>
+        <p class="kf-lead mb-5" style="max-width: 500px;">
+            Kaizen fikirlerini oluşturun, değerlendirme sürecine hazırlayın ve iyileştirmeyi izlenebilir hale getirin.
+        </p>
+
+        <div class="d-flex align-items-center gap-3">
+            @guest
+                <a href="{{ route('login') }}" class="kf-btn kf-btn-primary px-4 py-3" style="font-size: 1.05rem;">
+                    Giriş Yap
+                </a>
+            @else
+                <a href="{{ route('kaizens.create') }}" class="kf-btn kf-btn-primary px-4 py-3" style="font-size: 1.05rem;">
+                    Yeni Kaizen Oluştur
+                </a>
+            @endguest
+        </div>
+
+        <div class="kf-capability-strip">
+            <div class="kf-capability-item">
+                <h4>Güvenli Erişim</h4>
+                <p>Session tabanlı güvenli kullanıcı girişi ile verilerinizi koruyun.</p>
             </div>
-            <ul class="list-group list-group-flush">
-                <li class="list-group-item d-flex align-items-center">
-                    <span class="badge bg-success me-3">Hazır</span>
-                    Laravel 13 altyapısı kuruldu ve çalışıyor.
-                </li>
-                <li class="list-group-item d-flex align-items-center">
-                    <span class="badge bg-success me-3">Hazır</span>
-                    Blade görünüm yapısı oluşturuldu.
-                </li>
-                <li class="list-group-item d-flex align-items-center">
-                    <span class="badge bg-success me-3">Hazır</span>
-                    Bootstrap varlıkları Vite üzerinden derleniyor.
-                </li>
-                <li class="list-group-item d-flex align-items-center text-muted">
-                    <span class="badge bg-secondary me-3">Beklemede</span>
-                    MySQL veritabanı yapılandırması bir sonraki adımda yapılacaktır.
-                </li>
-            </ul>
+            <div class="kf-capability-item">
+                <h4>Kaizen Taslağı</h4>
+                <p>İyileştirme fikrini yapılandırılmış bir form ile kolayca kaydedin.</p>
+            </div>
+            <div class="kf-capability-item">
+                <h4>Detaylı Takip</h4>
+                <p>Kaizen içeriğini ve durumunu tek ekranda görüntüleyin.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="kf-hero-visual">
+        <div class="kf-process-canvas">
+            <div class="kf-process-canvas-title">Süreç Mimarisi</div>
+            <div class="kf-process-track">
+                <div class="kf-process-node active">
+                    <div class="kf-process-node-marker"></div>
+                    <span class="kf-process-node-label">Fikir</span>
+                </div>
+                <div class="kf-process-node active">
+                    <div class="kf-process-node-marker"></div>
+                    <span class="kf-process-node-label">Taslak</span>
+                </div>
+                <div class="kf-process-node">
+                    <div class="kf-process-node-marker"></div>
+                    <span class="kf-process-node-label">Değerlendirme</span>
+                </div>
+                <div class="kf-process-node">
+                    <div class="kf-process-node-marker"></div>
+                    <span class="kf-process-node-label">Uygulama</span>
+                </div>
+                <div class="kf-process-node">
+                    <div class="kf-process-node-marker"></div>
+                    <span class="kf-process-node-label">Sonuç</span>
+                </div>
+            </div>
         </div>
     </div>
 </div>

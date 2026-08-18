@@ -6,56 +6,79 @@
     <title>@yield('title', 'KaizenFlow')</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="d-flex flex-column min-vh-100">
+<body class="{{ !request()->routeIs('login') ? 'kf-app-body' : '' }}">
 
     @if (!request()->routeIs('login'))
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container">
-            <a class="navbar-brand" href="{{ url('/') }}">KaizenFlow</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    @guest
-                        @if (!request()->routeIs('login'))
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ route('login') }}">Giriş Yap</a>
-                            </li>
-                        @endif
-                    @endguest
-
+    <div class="kf-app-wrapper">
+        <header class="kf-app-header">
+            <div class="container-fluid px-4 d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-4">
+                    <a class="kf-app-brand" href="{{ url('/') }}">KaizenFlow</a>
                     @auth
-                        <li class="nav-item d-flex align-items-center">
-                            <span class="nav-link text-white me-2">{{ auth()->user()->name }}</span>
-                            <form action="{{ route('logout') }}" method="POST" class="d-inline m-0">
-                                @csrf
-                                <button type="submit" class="btn btn-outline-light btn-sm">Çıkış Yap</button>
-                            </form>
-                        </li>
+                        <nav class="d-none d-md-flex gap-2 ms-4">
+                            <a href="{{ url('/') }}" class="kf-app-nav-link {{ request()->is('/') ? 'active' : '' }}">Ana Sayfa</a>
+                            <a href="{{ route('kaizens.create') }}" class="kf-app-nav-link {{ request()->routeIs('kaizens.create') ? 'active' : '' }}">Yeni Kaizen</a>
+                        </nav>
                     @endauth
-                </ul>
+                </div>
+
+                @auth
+                    <div class="dropdown">
+                        <button class="kf-user-dropdown-btn" type="button" id="userMenuDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <div class="rounded-circle bg-white text-dark d-flex align-items-center justify-content-center" style="width: 28px; height: 28px; font-weight: 700; font-size: 0.8rem;">
+                                {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
+                            </div>
+                            <span class="d-none d-sm-inline">{{ auth()->user()->name }}</span>
+                            <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                                <path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/>
+                            </svg>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end kf-user-dropdown-menu" aria-labelledby="userMenuDropdown">
+                            <li><h6 class="dropdown-header text-muted">{{ auth()->user()->email }}</h6></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <form action="{{ route('logout') }}" method="POST">
+                                    @csrf
+                                    <button type="submit" class="dropdown-item kf-user-dropdown-item text-danger fw-medium">Çıkış Yap</button>
+                                </form>
+                            </li>
+                        </ul>
+                    </div>
+                @endauth
+
+                @guest
+                    @if (!request()->routeIs('login'))
+                        <a href="{{ route('login') }}" class="kf-btn kf-btn-header-guest kf-btn-sm">Giriş Yap</a>
+                    @endif
+                @endguest
             </div>
-        </div>
-    </nav>
-    @endif
+        </header>
 
-    <main class="flex-grow-1 {{ !request()->routeIs('login') ? 'py-4' : '' }}">
-        @if (!request()->routeIs('login'))
-        <div class="container">
+        <main class="flex-grow-1">
+            <div class="kf-page-container">
+                @if (session('success'))
+                    <div class="kf-alert kf-alert-success" role="alert">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd" />
+                        </svg>
+                        {{ session('success') }}
+                    </div>
+                @endif
+
+                @yield('content')
+            </div>
+        </main>
+
+        <footer class="kf-app-footer">
+            <div class="container">
+                <span>&copy; {{ date('Y') }} KaizenFlow. Tüm hakları saklıdır.</span>
+            </div>
+        </footer>
+    </div>
+    @else
+        <div class="kf-auth-shell">
             @yield('content')
         </div>
-        @else
-            @yield('content')
-        @endif
-    </main>
-
-    @if (!request()->routeIs('login'))
-    <footer class="bg-light text-center py-3 mt-auto">
-        <div class="container text-muted">
-            <small>&copy; {{ date('Y') }} KaizenFlow. Tüm hakları saklıdır.</small>
-        </div>
-    </footer>
     @endif
 
 </body>

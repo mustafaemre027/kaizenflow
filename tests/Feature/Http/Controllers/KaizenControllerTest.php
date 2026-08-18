@@ -31,6 +31,66 @@ class KaizenControllerTest extends TestCase
     }
 
     // ==========================================
+    // CREATE METHOD TESTS
+    // ==========================================
+
+    public function test_create_unauthenticated_returns_302_redirect(): void
+    {
+        $response = $this->get(route('kaizens.create'));
+        $response->assertStatus(302);
+        $response->assertRedirect(route('login'));
+    }
+
+    public function test_intended_redirect_works_for_kaizen_create(): void
+    {
+        // 1. Unauthenticated request to protected route
+        $response = $this->get(route('kaizens.create'));
+        $response->assertStatus(302);
+        $response->assertRedirect(route('login'));
+
+        // 2. Login with valid credentials
+        $loginResponse = $this->post(route('login.store'), [
+            'email' => $this->user->email,
+            'password' => 'password',
+        ]);
+
+        // 3. Assert successful login and intended redirect
+        $this->assertAuthenticatedAs($this->user);
+        $loginResponse->assertRedirect(route('kaizens.create'));
+
+        // 4. Assert following the redirect leads to the protected page
+        $intendedResponse = $this->get(route('kaizens.create'));
+        $intendedResponse->assertStatus(200);
+        $intendedResponse->assertViewIs('kaizens.create');
+    }
+
+    public function test_create_authorized_user_can_view_create_form(): void
+    {
+        $response = $this->actingAs($this->user)->get(route('kaizens.create'));
+
+        $response->assertStatus(200);
+        $response->assertViewIs('kaizens.create');
+        $response->assertViewHas('categories');
+
+        $categories = $response->viewData('categories');
+        $this->assertTrue($categories->contains($this->category));
+
+        $inactiveCategory = Category::factory()->create(['is_active' => false]);
+        $response = $this->actingAs($this->user)->get(route('kaizens.create'));
+        $categories = $response->viewData('categories');
+        $this->assertFalse($categories->contains($inactiveCategory));
+    }
+
+    public function test_create_unauthorized_user_returns_403(): void
+    {
+        $this->user->is_active = false;
+        $this->user->save();
+
+        $response = $this->actingAs($this->user)->get(route('kaizens.create'));
+        $response->assertStatus(403);
+    }
+
+    // ==========================================
     // STORE METHOD TESTS
     // ==========================================
 
@@ -136,7 +196,7 @@ class KaizenControllerTest extends TestCase
         $response->assertStatus(422);
     }
 
-    public function test_store_html_request_redirects_back_with_flash_message(): void
+    public function test_store_html_request_redirects_to_show_with_flash_message(): void
     {
         $payload = [
             'category_id' => $this->category->id,
@@ -146,10 +206,11 @@ class KaizenControllerTest extends TestCase
             'expected_benefit' => 'Expected ben',
         ];
 
-        // Simulate a request coming from /home
-        $response = $this->from('/home')->actingAs($this->user)->post(route('kaizens.store'), $payload);
+        $response = $this->actingAs($this->user)->post(route('kaizens.store'), $payload);
 
-        $response->assertRedirect('/home');
+        $kaizen = Kaizen::where('title', 'HTML Test Kaizen')->firstOrFail();
+
+        $response->assertRedirect(route('kaizens.show', $kaizen));
         $response->assertSessionHas('success', 'Kaizen taslağı başarıyla oluşturuldu.');
     }
 
@@ -370,5 +431,89 @@ class KaizenControllerTest extends TestCase
 
         $payload = ['title' => 'Action Mock Title'];
         $this->actingAs($this->user)->patchJson(route('kaizens.update', $kaizen), $payload);
+    }
+
+    // ==========================================
+    // SHOW METHOD TESTS
+    // ==========================================
+
+    public function test_show_unauthenticated_returns_302_redirect(): void
+    {
+        $kaizen = Kaizen::factory()->create();
+        $response = $this->get(route('kaizens.show', $kaizen));
+        $response->assertStatus(302);
+        $response->assertRedirect(route('login'));
+    }
+
+    public function test_show_authorized_creator_returns_200(): void
+    {
+        $kaizen = Kaizen::factory()->create([
+            'creator_user_id' => $this->user->id,
+            'title' => 'My Kaizen Title',
+            'current_situation' => 'Current sit',
+            'proposed_situation' => 'Proposed sit',
+            'expected_benefit' => 'Expected ben',
+        ]);
+
+        $response = $this->actingAs($this->user)->get(route('kaizens.show', $kaizen));
+
+        $response->assertStatus(200);
+        $response->assertViewIs('kaizens.show');
+        $response->assertSee('My Kaizen Title');
+        $response->assertSee('Current sit');
+        $response->assertSee('Proposed sit');
+        $response->assertSee('Expected ben');
+        $response->assertSee($kaizen->code);
+    }
+
+    public function test_show_unauthorized_user_returns_403(): void
+    {
+        $otherUser = User::factory()->create(['is_active' => true]);
+        $kaizen = Kaizen::factory()->create(); // creator is another user by default
+
+        $response = $this->actingAs($otherUser)->get(route('kaizens.show', $kaizen));
+        $response->assertStatus(403);
+    }
+
+    public function test_show_eager_loads_relations_and_handles_null_states(): void
+    {
+        $kaizen = Kaizen::factory()->create([
+            'creator_user_id' => $this->user->id,
+            'assigned_user_id' => null,
+            'target_date' => null,
+            'submitted_at' => null,
+            'actual_result' => null,
+        ]);
+
+        $response = $this->actingAs($this->user)->get(route('kaizens.show', $kaizen));
+
+        $response->assertStatus(200);
+        $response->assertSee('Atanmadı');
+        $response->assertSee('Belirtilmedi');
+        $response->assertSee('Henüz gönderilmedi');
+    }
+
+    public function test_show_renders_special_state_revision_requested(): void
+    {
+        $kaizen = Kaizen::factory()->withStatus(KaizenStatus::REVISION_REQUESTED)->create([
+            'creator_user_id' => $this->user->id,
+        ]);
+
+        $response = $this->actingAs($this->user)->get(route('kaizens.show', $kaizen));
+
+        $response->assertStatus(200);
+        $response->assertSee('Revizyon İstendi');
+    }
+
+    public function test_show_renders_special_state_rejected(): void
+    {
+        $kaizen = Kaizen::factory()->withStatus(KaizenStatus::REJECTED)->create([
+            'creator_user_id' => $this->user->id,
+        ]);
+
+        $response = $this->actingAs($this->user)->get(route('kaizens.show', $kaizen));
+
+        $response->assertStatus(200);
+        $response->assertSee('Reddedildi');
     }
 }
