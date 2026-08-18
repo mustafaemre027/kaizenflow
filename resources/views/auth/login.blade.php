@@ -53,49 +53,51 @@
 
     <!-- Right Form Side -->
     <div class="kf-auth-content">
-        <div class="kf-auth-form-container">
-            <div class="kf-auth-header-group">
-                <span class="kf-auth-eyebrow">GÜVENLİ ERİŞİM</span>
-                <h2 class="kf-auth-title">Hesabınıza giriş yapın</h2>
-                <p class="kf-auth-desc">KaizenFlow’a devam etmek için bilgilerinizi girin.</p>
+        <div class="kf-auth-form-wrapper">
+            <div class="kf-auth-form-container">
+                <div class="kf-auth-header-group">
+                    <span class="kf-auth-eyebrow">GÜVENLİ ERİŞİM</span>
+                    <h2 class="kf-auth-title">Hesabınıza giriş yapın</h2>
+                    <p class="kf-auth-desc">KaizenFlow’a devam etmek için bilgilerinizi girin.</p>
+                </div>
+
+                <form method="POST" action="{{ route('login.store') }}" novalidate>
+                    @csrf
+
+                    <div class="mb-4">
+                        <label for="email" class="kf-auth-label">E-posta Adresi</label>
+                        <input id="email" type="email" class="form-control kf-auth-field @error('email') is-invalid @enderror" name="email" value="{{ old('email') }}" required autocomplete="username" autofocus>
+                        @error('email')
+                            <div class="invalid-feedback">
+                                {{ $message }}
+                            </div>
+                        @enderror
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="password" class="kf-auth-label">Parola</label>
+                        <input id="password" type="password" class="form-control kf-auth-field @error('password') is-invalid @enderror" name="password" required autocomplete="current-password">
+                        @error('password')
+                            <div class="invalid-feedback">
+                                {{ $message }}
+                            </div>
+                        @enderror
+                    </div>
+
+                    <div class="kf-auth-actions">
+                        <button type="submit" class="kf-auth-submit">
+                            Giriş Yap
+                        </button>
+                        <p class="kf-auth-trust">
+                            Oturumunuz güvenli şekilde korunur.
+                        </p>
+                    </div>
+                </form>
             </div>
+        </div>
 
-            <form method="POST" action="{{ route('login.store') }}" novalidate>
-                @csrf
-
-                <div class="mb-4">
-                    <label for="email" class="kf-auth-label">E-posta Adresi</label>
-                    <input id="email" type="email" class="form-control kf-auth-field @error('email') is-invalid @enderror" name="email" value="{{ old('email') }}" required autocomplete="username" autofocus>
-                    @error('email')
-                        <div class="invalid-feedback">
-                            {{ $message }}
-                        </div>
-                    @enderror
-                </div>
-
-                <div class="mb-4">
-                    <label for="password" class="kf-auth-label">Parola</label>
-                    <input id="password" type="password" class="form-control kf-auth-field @error('password') is-invalid @enderror" name="password" required autocomplete="current-password">
-                    @error('password')
-                        <div class="invalid-feedback">
-                            {{ $message }}
-                        </div>
-                    @enderror
-                </div>
-
-                <div class="kf-auth-actions">
-                    <button type="submit" class="kf-auth-submit">
-                        Giriş Yap
-                    </button>
-                    <p class="kf-auth-trust">
-                        Oturumunuz güvenli şekilde korunur.
-                    </p>
-                </div>
-            </form>
-
-            <div class="kf-auth-footer">
-                &copy; {{ date('Y') }} KaizenFlow. Tüm hakları saklıdır.
-            </div>
+        <div class="kf-auth-footer">
+            &copy; {{ date('Y') }} KaizenFlow. Tüm hakları saklıdır.
         </div>
     </div>
 
