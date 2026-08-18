@@ -196,7 +196,7 @@ class KaizenControllerTest extends TestCase
         $response->assertStatus(422);
     }
 
-    public function test_store_html_request_redirects_back_with_flash_message(): void
+    public function test_store_html_request_redirects_to_show_with_flash_message(): void
     {
         $payload = [
             'category_id' => $this->category->id,
@@ -206,10 +206,11 @@ class KaizenControllerTest extends TestCase
             'expected_benefit' => 'Expected ben',
         ];
 
-        // Simulate a request coming from /home
-        $response = $this->from('/home')->actingAs($this->user)->post(route('kaizens.store'), $payload);
+        $response = $this->actingAs($this->user)->post(route('kaizens.store'), $payload);
 
-        $response->assertRedirect('/home');
+        $kaizen = Kaizen::where('title', 'HTML Test Kaizen')->firstOrFail();
+
+        $response->assertRedirect(route('kaizens.show', $kaizen));
         $response->assertSessionHas('success', 'Kaizen taslağı başarıyla oluşturuldu.');
     }
 

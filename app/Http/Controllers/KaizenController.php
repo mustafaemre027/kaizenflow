@@ -56,7 +56,7 @@ class KaizenController extends Controller
             );
         }
 
-        return back()->with('success', 'Kaizen taslağı başarıyla oluşturuldu.');
+        return redirect()->route('kaizens.show', $kaizen)->with('success', 'Kaizen taslağı başarıyla oluşturuldu.');
     }
 
     public function update(UpdateKaizenDraftRequest $request, Kaizen $kaizen, UpdateKaizenDraft $updateAction)
