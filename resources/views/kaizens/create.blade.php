@@ -13,7 +13,7 @@
     <div class="kf-context-rail">
         <h2 class="kf-context-rail-title">Kaizen Oluştur</h2>
         <p class="kf-context-rail-desc">Sürekli iyileştirme fikrinizi yapılandırılmış bir form ile tanımlayın.</p>
-        
+
         <div class="kf-rail-steps">
             <div class="kf-rail-step">
                 <span class="kf-rail-step-num">01</span>
@@ -22,7 +22,7 @@
                     <p>Fikrinizi sınıflandırın ve net bir başlık verin.</p>
                 </div>
             </div>
-            
+
             <div class="kf-rail-step">
                 <span class="kf-rail-step-num">02</span>
                 <div class="kf-rail-step-content">
@@ -30,7 +30,7 @@
                     <p>Mevcut problemi ve önerilen çözümü açıklayın.</p>
                 </div>
             </div>
-            
+
             <div class="kf-rail-step">
                 <span class="kf-rail-step-num">03</span>
                 <div class="kf-rail-step-content">
@@ -64,7 +64,7 @@
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
-                        
+
                         <div class="col-md-8">
                             <label for="title" class="kf-form-label">Başlık</label>
                             <input type="text" name="title" id="title" class="kf-form-control @error('title') is-invalid @enderror" value="{{ old('title') }}" required maxlength="255" placeholder="Kaizen'inizi özetleyen kısa başlık">
@@ -78,7 +78,7 @@
 
                 <div class="kf-form-section">
                     <h2 class="kf-form-section-title">02 &nbsp; Problem ve İyileştirme</h2>
-                    
+
                     <div class="kf-form-group">
                         <label for="current_situation" class="kf-form-label">Mevcut Durum</label>
                         <textarea name="current_situation" id="current_situation" class="kf-form-control @error('current_situation') is-invalid @enderror" rows="3" required maxlength="5000" placeholder="Şu anki süreci ve yaşanan problemi detaylı olarak açıklayın...">{{ old('current_situation') }}</textarea>
@@ -98,7 +98,7 @@
 
                 <div class="kf-form-section border-bottom-0 pb-0 mb-0">
                     <h2 class="kf-form-section-title">03 &nbsp; Beklenen Etki</h2>
-                    
+
                     <div class="kf-form-group mb-0">
                         <label for="expected_benefit" class="kf-form-label">Beklenen Fayda</label>
                         <textarea name="expected_benefit" id="expected_benefit" class="kf-form-control @error('expected_benefit') is-invalid @enderror" rows="3" required maxlength="5000" placeholder="Öneriniz uygulandığında elde edilecek zaman, maliyet veya kalite faydalarını belirtin...">{{ old('expected_benefit') }}</textarea>

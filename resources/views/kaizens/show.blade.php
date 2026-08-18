@@ -36,13 +36,13 @@
                 \App\Enums\KaizenStatus::IN_PROGRESS,
                 \App\Enums\KaizenStatus::COMPLETED,
             ];
-            
+
             $currentIndex = array_search($kaizen->status, $statuses);
-            
+
             // Handle special states like REVISION_REQUESTED or REJECTED which break the linear flow
             $isRevision = $kaizen->status === \App\Enums\KaizenStatus::REVISION_REQUESTED;
             $isRejected = $kaizen->status === \App\Enums\KaizenStatus::REJECTED;
-            
+
             // If in a special state, we approximate its position for the linear track visually
             if ($isRevision) $currentIndex = 1; // Generally happens after SUBMITTED
             if ($isRejected) $currentIndex = 2; // Generally happens during MANAGER_REVIEW
@@ -57,7 +57,7 @@
                     $itemClass = 'current';
                 }
             @endphp
-            
+
             <div class="kf-workflow-item {{ $itemClass }}">
                 <div class="kf-workflow-marker"></div>
                 <span class="kf-workflow-label">{{ $status->label() }}</span>
@@ -69,7 +69,7 @@
                     <span class="kf-workflow-label">Revizyon İstendi</span>
                 </div>
             @endif
-            
+
             @if($isRejected && $index === 2)
                 <div class="kf-workflow-item rejected">
                     <div class="kf-workflow-marker"></div>
@@ -91,7 +91,7 @@
                 </div>
                 <p class="kf-detail-text">{{ $kaizen->current_situation }}</p>
             </div>
-            
+
             <div class="kf-content-block">
                 <div class="kf-content-block-header">
                     <span class="kf-content-num">02</span>
@@ -99,7 +99,7 @@
                 </div>
                 <p class="kf-detail-text">{{ $kaizen->proposed_situation }}</p>
             </div>
-            
+
             <div class="kf-content-block">
                 <div class="kf-content-block-header">
                     <span class="kf-content-num">03</span>
@@ -123,7 +123,7 @@
             @endif
         </div>
     </div>
-    
+
     <!-- Metadata Panel -->
     <div class="align-self-start">
         <div class="kf-panel">

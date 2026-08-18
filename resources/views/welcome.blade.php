@@ -10,7 +10,7 @@
             <span style="color: var(--kf-primary);">görünür bir sürece</span><br>
             dönüştürün.
         </h1>
-        
+
         <p class="kf-lead mb-5" style="max-width: 500px;">
             Kaizen fikirlerini oluşturun, değerlendirme sürecine hazırlayın ve iyileştirmeyi izlenebilir hale getirin.
         </p>
