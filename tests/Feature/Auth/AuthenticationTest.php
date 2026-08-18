@@ -18,6 +18,29 @@ class AuthenticationTest extends TestCase
         $response->assertViewIs('auth.login');
     }
 
+    public function test_navbar_shows_login_link_for_guest(): void
+    {
+        $response = $this->get('/');
+
+        $response->assertStatus(200);
+        $response->assertSee(route('login'));
+        $response->assertSee('Giriş Yap');
+        $response->assertDontSee('Çıkış Yap');
+    }
+
+    public function test_navbar_shows_user_name_and_logout_for_authenticated_user(): void
+    {
+        $user = User::factory()->create(['name' => 'Demo User']);
+
+        $response = $this->actingAs($user)->get('/');
+
+        $response->assertStatus(200);
+        $response->assertSee('Demo User');
+        $response->assertSee('Çıkış Yap');
+        $response->assertSee(route('logout'));
+        $response->assertDontSee('Giriş Yap');
+    }
+
     public function test_authenticated_user_redirects_from_login_screen(): void
     {
         $user = User::factory()->create();

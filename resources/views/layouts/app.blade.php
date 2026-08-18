@@ -16,7 +16,23 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
-                    <!-- Future links can go here -->
+                    @guest
+                        @if (!request()->routeIs('login'))
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ route('login') }}">Giriş Yap</a>
+                            </li>
+                        @endif
+                    @endguest
+
+                    @auth
+                        <li class="nav-item d-flex align-items-center">
+                            <span class="nav-link text-white me-2">{{ auth()->user()->name }}</span>
+                            <form action="{{ route('logout') }}" method="POST" class="d-inline m-0">
+                                @csrf
+                                <button type="submit" class="btn btn-outline-light btn-sm">Çıkış Yap</button>
+                            </form>
+                        </li>
+                    @endauth
                 </ul>
             </div>
         </div>
