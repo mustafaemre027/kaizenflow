@@ -28,33 +28,23 @@
     <h3 class="kf-workflow-title">Süreç Durumu</h3>
     <div class="kf-workflow-track">
         @php
-            $statuses = [
-                \App\Enums\KaizenStatus::DRAFT,
-                \App\Enums\KaizenStatus::SUBMITTED,
-                \App\Enums\KaizenStatus::MANAGER_REVIEW,
-                \App\Enums\KaizenStatus::APPROVED,
-                \App\Enums\KaizenStatus::IN_PROGRESS,
-                \App\Enums\KaizenStatus::COMPLETED,
-            ];
-
-            $currentIndex = array_search($kaizen->status, $statuses);
-
-            // Handle special states like REVISION_REQUESTED or REJECTED which break the linear flow
-            $isRevision = $kaizen->status === \App\Enums\KaizenStatus::REVISION_REQUESTED;
-            $isRejected = $kaizen->status === \App\Enums\KaizenStatus::REJECTED;
-
-            // If in a special state, we approximate its position for the linear track visually
-            if ($isRevision) $currentIndex = 1; // Generally happens after SUBMITTED
-            if ($isRejected) $currentIndex = 2; // Generally happens during MANAGER_REVIEW
+            $hasReachedCurrent = false;
+            $isLinearState = false;
+            foreach($workflowStatuses as $status) {
+                if ($kaizen->status === $status) {
+                    $isLinearState = true;
+                }
+            }
         @endphp
 
-        @foreach($statuses as $index => $status)
+        @foreach($workflowStatuses as $status)
             @php
                 $itemClass = '';
-                if ($currentIndex !== false && $index < $currentIndex) {
-                    $itemClass = 'past';
-                } elseif ($currentIndex !== false && $index === $currentIndex && !$isRevision && !$isRejected) {
+                if ($kaizen->status === $status) {
                     $itemClass = 'current';
+                    $hasReachedCurrent = true;
+                } elseif (!$hasReachedCurrent && $isLinearState) {
+                    $itemClass = 'past';
                 }
             @endphp
 
@@ -62,21 +52,14 @@
                 <div class="kf-workflow-marker"></div>
                 <span class="kf-workflow-label">{{ $status->label() }}</span>
             </div>
-
-            @if($isRevision && $index === 1)
-                <div class="kf-workflow-item revision">
-                    <div class="kf-workflow-marker"></div>
-                    <span class="kf-workflow-label">Revizyon İstendi</span>
-                </div>
-            @endif
-
-            @if($isRejected && $index === 2)
-                <div class="kf-workflow-item rejected">
-                    <div class="kf-workflow-marker"></div>
-                    <span class="kf-workflow-label">Reddedildi</span>
-                </div>
-            @endif
         @endforeach
+
+        @if(!$isLinearState)
+            <div class="kf-workflow-item current {{ $kaizen->status === \App\Enums\KaizenStatus::REJECTED ? 'rejected' : 'revision' }}">
+                <div class="kf-workflow-marker"></div>
+                <span class="kf-workflow-label">{{ $kaizen->status->label() }}</span>
+            </div>
+        @endif
     </div>
 </div>
 
@@ -108,7 +91,6 @@
                 <p class="kf-detail-text">{{ $kaizen->expected_benefit }}</p>
             </div>
 
-            @if($kaizen->status->isTerminal() || $kaizen->actual_result)
             <div class="kf-content-block">
                 <div class="kf-content-block-header">
                     <span class="kf-content-num">04</span>
@@ -120,7 +102,6 @@
                     <p class="kf-detail-text text-muted fst-italic">Henüz sonuç girilmedi.</p>
                 @endif
             </div>
-            @endif
         </div>
     </div>
 

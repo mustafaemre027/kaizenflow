@@ -492,4 +492,28 @@ class KaizenControllerTest extends TestCase
         $response->assertSee('Belirtilmedi');
         $response->assertSee('Henüz gönderilmedi');
     }
+
+    public function test_show_renders_special_state_revision_requested(): void
+    {
+        $kaizen = Kaizen::factory()->withStatus(KaizenStatus::REVISION_REQUESTED)->create([
+            'creator_user_id' => $this->user->id,
+        ]);
+
+        $response = $this->actingAs($this->user)->get(route('kaizens.show', $kaizen));
+
+        $response->assertStatus(200);
+        $response->assertSee('Revizyon İstendi');
+    }
+
+    public function test_show_renders_special_state_rejected(): void
+    {
+        $kaizen = Kaizen::factory()->withStatus(KaizenStatus::REJECTED)->create([
+            'creator_user_id' => $this->user->id,
+        ]);
+
+        $response = $this->actingAs($this->user)->get(route('kaizens.show', $kaizen));
+
+        $response->assertStatus(200);
+        $response->assertSee('Reddedildi');
+    }
 }

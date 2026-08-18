@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Actions\Kaizens\CreateKaizenDraft;
 use App\Actions\Kaizens\SubmitKaizen;
 use App\Actions\Kaizens\UpdateKaizenDraft;
+use App\Enums\KaizenStatus;
 use App\Http\Requests\Kaizens\StoreKaizenRequest;
 use App\Http\Requests\Kaizens\SubmitKaizenRequest;
 use App\Http\Requests\Kaizens\UpdateKaizenDraftRequest;
@@ -29,7 +30,16 @@ class KaizenController extends Controller
 
         $kaizen->load(['creator', 'assignedUser', 'department', 'category']);
 
-        return view('kaizens.show', compact('kaizen'));
+        $workflowStatuses = [
+            KaizenStatus::DRAFT,
+            KaizenStatus::SUBMITTED,
+            KaizenStatus::MANAGER_REVIEW,
+            KaizenStatus::APPROVED,
+            KaizenStatus::IN_PROGRESS,
+            KaizenStatus::COMPLETED,
+        ];
+
+        return view('kaizens.show', compact('kaizen', 'workflowStatuses'));
     }
 
     public function store(StoreKaizenRequest $request, CreateKaizenDraft $createAction)

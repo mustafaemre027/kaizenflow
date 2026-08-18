@@ -753,7 +753,7 @@ body {
 }
 
 .kf-badge-neutral {
-    background-color: var(--kf-surface-strong);
+    background-color: var(--kf-surface-subtle);
     color: var(--kf-text-secondary);
     border: 1px solid var(--kf-border-strong);
 }
