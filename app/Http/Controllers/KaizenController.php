@@ -39,7 +39,9 @@ class KaizenController extends Controller
             KaizenStatus::COMPLETED,
         ];
 
-        return view('kaizens.show', compact('kaizen', 'workflowStatuses'));
+        $specialWorkflowStatus = in_array($kaizen->status, $workflowStatuses, true) ? null : $kaizen->status;
+
+        return view('kaizens.show', compact('kaizen', 'workflowStatuses', 'specialWorkflowStatus'));
     }
 
     public function store(StoreKaizenRequest $request, CreateKaizenDraft $createAction)

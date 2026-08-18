@@ -27,37 +27,17 @@
 <div class="kf-workflow-panel">
     <h3 class="kf-workflow-title">Süreç Durumu</h3>
     <div class="kf-workflow-track">
-        @php
-            $hasReachedCurrent = false;
-            $isLinearState = false;
-            foreach($workflowStatuses as $status) {
-                if ($kaizen->status === $status) {
-                    $isLinearState = true;
-                }
-            }
-        @endphp
-
         @foreach($workflowStatuses as $status)
-            @php
-                $itemClass = '';
-                if ($kaizen->status === $status) {
-                    $itemClass = 'current';
-                    $hasReachedCurrent = true;
-                } elseif (!$hasReachedCurrent && $isLinearState) {
-                    $itemClass = 'past';
-                }
-            @endphp
-
-            <div class="kf-workflow-item {{ $itemClass }}">
+            <div class="kf-workflow-item {{ $kaizen->status === $status ? 'current' : '' }}">
                 <div class="kf-workflow-marker"></div>
                 <span class="kf-workflow-label">{{ $status->label() }}</span>
             </div>
         @endforeach
 
-        @if(!$isLinearState)
-            <div class="kf-workflow-item current {{ $kaizen->status === \App\Enums\KaizenStatus::REJECTED ? 'rejected' : 'revision' }}">
+        @if($specialWorkflowStatus)
+            <div class="kf-workflow-item current {{ $specialWorkflowStatus === \App\Enums\KaizenStatus::REJECTED ? 'rejected' : 'revision' }}">
                 <div class="kf-workflow-marker"></div>
-                <span class="kf-workflow-label">{{ $kaizen->status->label() }}</span>
+                <span class="kf-workflow-label">{{ $specialWorkflowStatus->label() }}</span>
             </div>
         @endif
     </div>
