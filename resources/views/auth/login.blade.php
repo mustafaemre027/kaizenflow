@@ -33,17 +33,14 @@
                 <div class="kf-process-marker"></div>
                 <div class="kf-process-label">Fikir</div>
             </div>
-            <div class="kf-process-connector" aria-hidden="true"></div>
             <div class="kf-process-step">
                 <div class="kf-process-marker"></div>
                 <div class="kf-process-label">Değerlendirme</div>
             </div>
-            <div class="kf-process-connector" aria-hidden="true"></div>
             <div class="kf-process-step">
                 <div class="kf-process-marker"></div>
                 <div class="kf-process-label">Uygulama</div>
             </div>
-            <div class="kf-process-connector" aria-hidden="true"></div>
             <div class="kf-process-step">
                 <div class="kf-process-marker"></div>
                 <div class="kf-process-label">Sonuç</div>

@@ -9,7 +9,7 @@
     --kf-background: #ffffff; /* Use pure white for form side to increase premium feel */
     --kf-surface: #ffffff;
     --kf-text: #1a202c; /* Slightly darker text for premium contrast */
-    --kf-muted: #718096;
+    --kf-muted: #4a5568; /* Slightly darker muted text for better contrast */
     --kf-border: #cbd5e0; /* Softer border */
     --kf-danger: #e53e3e;
 }
@@ -144,7 +144,7 @@ body {
 
 .kf-auth-features li {
     position: relative;
-    padding-left: 28px;
+    padding-left: 20px;
     margin-bottom: 1.125rem;
     font-size: 1.05rem;
     color: rgba(255,255,255,0.9);
@@ -157,64 +157,69 @@ body {
     left: 0;
     top: 50%;
     transform: translateY(-50%);
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    border: 2px solid rgba(255,255,255,0.25);
-}
-
-.kf-auth-features li::after {
-    display: block;
-    content: '';
-    position: absolute;
-    left: 4px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 6px;
-    height: 6px;
-    background-color: rgba(255,255,255,0.85);
-    border-radius: 50%;
+    width: 10px;
+    height: 2px;
+    background-color: rgba(255,255,255,0.4);
+    border-radius: 1px;
 }
 
 /* Process Visual */
 .kf-auth-process {
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
-    margin-top: 3rem;
-    opacity: 0.8;
+    margin-top: 3rem; /* Fallback for mobile */
+    width: 100%;
+    max-width: 85%;
+    opacity: 0.85;
     position: relative;
     z-index: 1;
+}
+
+@media (min-width: 992px) {
+    .kf-auth-process {
+        margin-bottom: 3rem; /* Pushes timeline up from the bottom */
+        margin-top: auto;
+    }
+}
+
+/* Continuous background track */
+.kf-auth-process::before {
+    content: '';
+    position: absolute;
+    top: 3px; /* Optically centered with the 6px marker */
+    left: 0;
+    right: 0;
+    height: 1px;
+    background-color: rgba(255,255,255,0.15);
+    z-index: 0;
 }
 
 .kf-process-step {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.6rem;
+    flex: 1; /* Ensures equal spacing */
+    position: relative;
+    z-index: 1;
 }
 
 .kf-process-marker {
-    width: 10px;
-    height: 10px;
+    width: 6px;
+    height: 6px;
     border-radius: 50%;
-    background-color: var(--kf-primary-hover);
-    border: 2px solid rgba(255,255,255,0.8);
+    background-color: var(--kf-surface);
+    box-shadow: 0 0 0 4px rgba(255,255,255,0.1);
+    position: relative;
 }
 
 .kf-process-label {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: rgba(255,255,255,0.8);
-}
-
-.kf-process-connector {
-    flex: 1;
-    height: 1px;
-    background-color: rgba(255,255,255,0.25);
-    margin: 0 1rem;
-    transform: translateY(-10px);
+    letter-spacing: 0.04em;
+    color: rgba(255,255,255,0.7);
+    text-align: center;
 }
 
 /* Right Form Side */
@@ -287,14 +292,14 @@ body {
     border: 1px solid var(--kf-border);
     padding: 0.75rem 1rem;
     font-size: 1rem;
-    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
     background-color: #ffffff;
     color: var(--kf-text);
 }
 
 .kf-auth-field:focus {
     border-color: var(--kf-primary);
-    box-shadow: 0 0 0 3px rgba(10, 58, 96, 0.1);
+    box-shadow: 0 0 0 2px rgba(10, 58, 96, 0.08);
     outline: none;
 }
 
@@ -303,7 +308,7 @@ body {
 }
 
 .kf-auth-field.is-invalid:focus {
-    box-shadow: 0 0 0 3px rgba(229, 62, 62, 0.15);
+    box-shadow: 0 0 0 2px rgba(229, 62, 62, 0.15);
 }
 
 .kf-auth-actions {
@@ -347,9 +352,14 @@ body {
 .kf-auth-footer {
     text-align: center;
     font-size: 0.85rem;
-    color: var(--kf-muted);
-    margin-top: auto;
-    padding-top: 3rem;
+    color: rgba(74, 85, 104, 0.8); /* Muted but readable */
+    padding-bottom: 2rem;
+}
+
+@media (min-width: 992px) {
+    .kf-auth-footer {
+        padding-bottom: 2rem;
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {
