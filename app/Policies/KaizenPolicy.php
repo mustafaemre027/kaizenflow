@@ -6,6 +6,7 @@ use App\Enums\KaizenStatus;
 use App\Enums\UserRole;
 use App\Models\Kaizen;
 use App\Models\User;
+use App\Services\Kaizens\KaizenTransitionMap;
 
 class KaizenPolicy
 {
@@ -100,10 +101,10 @@ class KaizenPolicy
             return false;
         }
 
-        return in_array($kaizen->status, [
-            KaizenStatus::DRAFT,
-            KaizenStatus::REVISION_REQUESTED,
-        ], true);
+        /** @var KaizenTransitionMap $transitionMap */
+        $transitionMap = app(KaizenTransitionMap::class);
+
+        return $transitionMap->canRolePerformTransition($kaizen->status, KaizenStatus::SUBMITTED, $user->role);
     }
 
     public function delete(User $user, Kaizen $kaizen): bool

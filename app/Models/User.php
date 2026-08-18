@@ -49,4 +49,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(Kaizen::class, 'assigned_user_id');
     }
+
+    public function kaizenStatusHistories(): HasMany
+    {
+        return $this->hasMany(KaizenStatusHistory::class, 'actor_user_id');
+    }
 }

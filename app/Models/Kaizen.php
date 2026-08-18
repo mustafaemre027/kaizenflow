@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Kaizen extends Model
 {
@@ -76,5 +77,10 @@ class Kaizen extends Model
     public function scopeWithStatus(Builder $query, KaizenStatus $status): void
     {
         $query->where('status', $status->value);
+    }
+
+    public function statusHistories(): HasMany
+    {
+        return $this->hasMany(KaizenStatusHistory::class);
     }
 }
