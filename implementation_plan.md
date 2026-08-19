@@ -79,6 +79,8 @@ Bu belge projenin geliştirici rehberidir; 20 iş günlük geliştirme süresini
 
 ## 5. GÜNLÜK GELİŞTİRME PLANI VE ÇIKTILAR
 
+Günlük yaklaşım: 2 ana ürün capability + entegrasyon + security + tests + Chrome review.
+
 | Gün | Çalışma Odağı | Önerilen Branch Türü |
 |---|---|---|
 | Gün 1 | Repository, kapsam, GitHub çalışma sistemi, README, uygulama planı, katkı rehberi, şablonlar ve backlog. | docs/ |
@@ -90,17 +92,17 @@ Bu belge projenin geliştirici rehberidir; 20 iş günlük geliştirme süresini
 | Gün 7 | Rol tabanlı yetkilendirme, Role middleware, Laravel Policy, kullanıcı ve departman yönetimi. | feature/ |
 | Gün 8 | Kaizen oluşturma, taslak yönetimi, form doğrulama, detay ekranı ve güvenli mass-assignment. | feature/ |
 | Gün 9 | Listeleme, taslak düzenleme ve dynamic business audit (Müşteriye özel sabit kodların tespiti). | feature/ |
-| Gün 10 | Mevcut ve Önerilen Durum alanlarına güvenli çoklu fotoğraf/dosya ekleri (metin alanları zorunlu kalacak). | feature/ |
-| Gün 11 | Onay sürecinin sabit kod yerine dinamik approval workflow/stage altyapısına geçirilmesi ve durum geçmişi. | feature/ |
-| Gün 12 | OPEX inceleme, revizyon, ret ve sonraki (yönetici) aşamaya gönderme. | feature/ |
-| Gün 13 | Yönetici -> Kurul -> Nihai onay geçişleri (Nihai onay Yönetici'den değil Kurul'dan çıkacak) ve uygulama sorumlusu atama. | feature/ |
-| Gün 14 | Uygulama içi bildirim merkezi, SMTP e-posta bildirimleri, termin/gecikme takibi ve audit log. | feature/ |
-| Gün 15 | Dinamik değerlendirme kriterleri ve ağırlıkları. | feature/ |
-| Gün 16 | Dinamik, opsiyonel fayda türleri (Zaman, Kalite vb.) ve gerçekleşen fayda (Realized Benefit). | feature/ |
-| Gün 17 | Gerçek dinamik veri ve konfigürasyonlarla çalışan Role göre dashboard ve genel UI/UX turu. | feature/ |
-| Gün 18 | Raporlama ve dışa aktarma. | test/ |
-| Gün 19 | Final hard-code business audit, uçtan uca test, demo akışı (AI opsiyonu dahil). | chore/ |
-| Gün 20 | Final teslim, tam regresyon testi, sürüm etiketi, README final güncellemesi ve sunum hazırlığı. | docs/ |
+| Gün 10 | Enterprise evidence/media/attachment module | feature/ |
+| Gün 11 | Dynamic approval workflow + stage config + history | feature/ |
+| Gün 12 | OPEX workspace + queue + revision/reject/handoff | feature/ |
+| Gün 13 | Manager + Committee + final approval + assignments | feature/ |
+| Gün 14 | User/organization management + notifications + work queue | feature/ |
+| Gün 15 | Dynamic evaluation criteria + weighted scoring | feature/ |
+| Gün 16 | Dynamic optional benefit types + target/realized metrics | feature/ |
+| Gün 17 | Implementation/execution tracking + responsibility + deadlines | feature/ |
+| Gün 18 | Dashboard + reporting + export | feature/ |
+| Gün 19 | Enterprise hardening + final hard-code/security/performance audit | chore/ |
+| Gün 20 | Final product UI/UX + documentation + demo + delivery | docs/ |
 
 ## 6. GÜNLÜK FAZLARIN AYRINTILARI (Gün 5-20)
 
@@ -112,7 +114,6 @@ Bu belge projenin geliştirici rehberidir; 20 iş günlük geliştirme süresini
 - Foreign key, unique ve indeks kuralları
 - Factory, seeder ve sentetik demo verileri
 - Migration, model, enum ve ilişki testleri
-- Manuel öğrenme: PHP enum, migration ve Eloquent ilişki temelleri
 
 ### Gün 6 — Kimlik Doğrulama ve Oturum Güvenliği
 - Özel Blade giriş ekranı
@@ -120,7 +121,6 @@ Bu belge projenin geliştirici rehberidir; 20 iş günlük geliştirme süresini
 - Rate limit ve güvenli yönlendirme
 - Aktif/pasif kullanıcı kontrolü
 - Authentication feature testleri
-- Manuel öğrenme: request validation, controller ve session akışı
 
 ### Gün 7 — Rol Tabanlı Yetkilendirme ve Yönetim
 - Role middleware
@@ -128,7 +128,6 @@ Bu belge projenin geliştirici rehberidir; 20 iş günlük geliştirme süresini
 - Yetkisiz erişim ekranları
 - Kullanıcı, departman ve kategori yönetimi
 - Yetkilendirme testleri
-- Manuel öğrenme: middleware, policy ve authorization
 
 ### Gün 8 — Kaizen Oluşturma ve Taslak Yönetimi
 - Kaizen oluşturma formu
@@ -136,7 +135,6 @@ Bu belge projenin geliştirici rehberidir; 20 iş günlük geliştirme süresini
 - Validasyon
 - Detay ekranı
 - Güvenli mass-assignment
-- Manuel öğrenme: form, validation, model ve controller
 
 ### Gün 9 — Kaizen Listeleme, Düzenleme ve Dinamiklik Denetimi
 - Yetkiye göre listeleme, arama, filtreleme ve sayfalama
@@ -144,98 +142,58 @@ Bu belge projenin geliştirici rehberidir; 20 iş günlük geliştirme süresini
 - Empty state ve validation hata gösterimleri
 - Gün 1-8 hard-coded business value audit ve dinamik mimari yol haritası güncellemesi
 
-### Gün 10 — Güvenli Çoklu Fotoğraf ve Ekler
-- Mevcut Durum ve Önerilen Durum alanlarına güvenli çoklu fotoğraf/dosya ekleri (metin alanları zorunlu kalacak)
-- Fotoğraflar hangi bölüme ait olduğunu (`attachment context/type`) taşıyacak
+### Gün 10 — Enterprise evidence/media/attachment module
+- Attachment domain, private storage configuration, upload security
+- Mevcut ve Önerilen Durum alanlarına güvenli çoklu fotoğraf/dosya ekleri (metin alanları zorunlu kalacak)
 - Dosya türü ve boyut kontrolü
-- Laravel Storage abstraction ve yerel/bulut ayrımı
+- Create/edit/detail entegrasyonu ve yetkilendirme
 
-### Gün 11 — Dinamik Approval Workflow ve Durum Geçmişi
-- Onay sürecinin sabit kod (TransitionMap) yerine dinamik `approval_workflows` / `approval_stages` altyapısına geçirilmesi
+### Gün 11 — Dynamic approval workflow + stage config + history
+- Onay sürecinin sabit kod yerine dinamik `approval_workflows` / `approval_stages` altyapısına geçirilmesi
 - Merkezi durum geçiş motoru, yetki/durum kontrolü
 - İşlem/durum geçmişi kaydı ve transaction kullanımı
 
-### Gün 12 — OPEX Değerlendirme
-- Gönderilen Kaizenleri OPEX incelemesi
-- Revizyon isteme, reddetme veya sonraki aşamaya (Yönetici) gönderme
+### Gün 12 — OPEX workspace + queue + revision/reject/handoff
+- Gönderilen Kaizenleri OPEX incelemesi ve çalışma alanı
+- Revizyon isteme, reddetme veya sonraki aşamaya (Yönetici vb.) gönderme
 - Açıklama zorunlulukları ve UI entegrasyonu
 
-### Gün 13 — Kurul Onayı ve Uygulama Takibi
-- Varsayılan süreç (OPEX -> Yönetici -> Kurul -> Nihai Onay) işletimi
-- Yönetici nihai onay vermeyecek, onay Kurul aşamasından çıkacak
+### Gün 13 — Manager + Committee + final approval + assignments
+- Yönetici -> Kurul -> Nihai Onay geçişleri
 - Dinamik Kurul ve kurul üyelik yapısı
-- Uygulama sorumlusu atama ve takip
-- Tamamlanma ve terminal durum testleri
+- Uygulama sorumlusu atama
 
-### Gün 14 — Bildirim, Termin ve İşlem Geçmişi
-- Uygulama içi bildirim merkezi
-- Gerçek SMTP tabanlı e-posta bildirimleri
-- Geliştirmede güvenli test posta kutusu yaklaşımı
-- Yaklaşan termin ve geciken Kaizen göstergeleri
-- Audit log ve etkinlik zaman çizelgesi
-- Bildirim gönderim hatalarının ana işlemi bozmaması
-- Manuel öğrenme: mail, notification ve audit mantığı
+### Gün 14 — User/organization management + notifications + work queue
+- Kullanıcı ve organizasyon yönetimi tamamlanması
+- SMTP e-posta bildirimleri ve uygulama içi bildirim merkezi
+- Termin ve iş kuyruğu (work queue) oluşturulması
 
-### Gün 15 — Dinamik Değerlendirme Kriterleri
+### Gün 15 — Dynamic evaluation criteria + weighted scoring
 - Dinamik değerlendirme kriterleri ve puanlama/ağırlık sistemleri oluşturulacak (Etki, maliyet vb.)
-- Yönetilebilir değerlendirme yapısı
 - Puanlama kuralları ve yetkili ekran
 
-### Gün 16 — Dinamik Fayda Türleri ve Tasarruf Takibi
-- Opsiyonel ve dinamik fayda türleri (Zaman, Kalite, Maliyet, Çevre, İş Güvenliği vb.) eklenecek
-- Hedeflenen ve gerçekleşen mali/zaman faydaları (Realized Benefit) yapısı
-- Para birimi ve sayısal validasyonlar
-- Hedef/gerçekleşen karşılaştırması ve departman bazlı özetler
+### Gün 16 — Dynamic optional benefit types + target/realized metrics
+- Dinamik fayda türleri (Zaman, Kalite, Maliyet, Çevre, İş Güvenliği vb.) eklenecek
+- Hedeflenen ve gerçekleşen mali/zaman faydaları takibi
 
-### Gün 17 — Dashboard, UI/UX Turu ve PWA
-- Gerçek dinamik veri ve yapılandırmalarla (config) çalışan dashboard
-- Profesyonel final UI/UX turu (gerçek modüller tamamlandıktan sonra ürün genelinde)
-- Chart.js grafikleri ve tarih filtreleri
-- Responsive erişilebilirlik ve PWA kurulumu
-- Native mobil uygulama geliştirilmeyeceği açıkça belirtilmeli
+### Gün 17 — Implementation/execution tracking + responsibility + deadlines
+- Uygulama takibi, sorumluluk atamaları ve termin (deadline) yönetimi
+- İlerleme kaydetme ve terminal durum testleri
 
-### Gün 18 — Raporlama, Dışa Aktarma ve Kalite Güvencesi
-- Gelişmiş raporlama (fayda raporları vb.)
-- CSV dışa aktarma
-- Yetkilendirme regresyon testleri, performans ve güvenlik kontrolleri
-- N+1 sorgu ve indeks kontrolleri
-- Production build doğrulaması
+### Gün 18 — Dashboard + reporting + export
+- Gerçek dinamik veri ve yapılandırmalarla çalışan role göre dashboard
+- Raporlama (fayda raporları vb.) ve CSV dışa aktarma
 
-### Gün 19 — Final Business Audit, Test ve Koşullu AI
-Öncelikli işler:
-- Final hard-coded business value audit (Tüm sabit adımların, rollerin vb. referans verilerine taşınıp taşınmadığı doğrulanacak)
-- Uçtan uca iş akışı testleri
-- Güvenli sentetik demo verileri
-- Kullanıcı ve teknik dokümantasyon
-- Kurulum ve demo senaryosu
-- Sunum hazırlığı
+### Gün 19 — Enterprise hardening + final hard-code/security/performance audit
+- Final hard-coded business value audit
+- Yetkilendirme regresyon testleri, performans, N+1 sorgu ve indeks kontrolleri
+- Uçtan uca iş akışı testleri ve production build doğrulaması
 
-Koşullu AI özelliği yalnızca aşağıdaki kontrol kapısı geçilirse geliştirilebilir:
-- Tüm zorunlu modüller tamamlanmış olmalı
-- Test ve production build başarılı olmalı
-- Kritik veya yüksek seviye açık bulgu bulunmamalı
-- Dashboard ve raporlama tamamlanmış olmalı
-- En az Gün 19 ve Gün 20 süresi kalmış olmalı
-
-Kontrol kapısı geçilirse:
-- Kullanıcının verdiği bilgilerden başlık, problem tanımı, öneri ve beklenen fayda taslağı üreten AI yardımcısı hazırlanabilir.
-- AI yalnızca öneri üretir.
-- Otomatik kayıt, gönderim, onay, ret veya durum değişikliği yapamaz.
-- API anahtarı yalnızca environment variable üzerinden okunur.
-- Özellik varsayılan olarak feature flag ile kapalı tutulur.
-- Testlerde gerçek dış API çağrısı yerine mock/fake kullanılır.
-
-Kontrol kapısı geçilmezse AI özelliği iptal edilir ve Gün 19 tamamen test, güvenlik, dokümantasyon ve demo hazırlığına ayrılır.
-
-### Gün 20 — Final Teslim ve Sürüm
-- Tam regresyon testi
-- Güvenlik ve secret taraması
-- Production build
-- Demo akışının son doğrulaması
-- README ve teknik belgelerin final güncellemesi
-- Sürüm etiketi ve release notları
-- Sunum ve proje teslim hazırlığı
-- Staj defteri ve final proje özeti
+### Gün 20 — Final product UI/UX + documentation + demo + delivery
+- Profesyonel final UI/UX turu
+- Responsive erişilebilirlik, Chart.js grafikleri ve PWA kurulumu
+- Kullanıcı/teknik dokümantasyon, sürüm etiketi ve README final güncellemesi
+- Sunum ve proje teslim hazırlığı (Staj defteri ve final proje özeti)
 
 ## 7. PLANLANAN VERİ MODELİ
 
