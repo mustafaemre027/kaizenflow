@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Kaizen extends Model
 {
@@ -82,6 +83,11 @@ class Kaizen extends Model
     public function statusHistories(): HasMany
     {
         return $this->hasMany(KaizenStatusHistory::class);
+    }
+
+    public function workflowInstance(): HasOne
+    {
+        return $this->hasOne(KaizenWorkflowInstance::class);
     }
 
     public function attachments(): HasMany
