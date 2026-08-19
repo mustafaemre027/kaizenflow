@@ -66,12 +66,19 @@ class KaizenAttachmentService
 
             return $attachments;
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             DB::rollBack();
 
             // Compensating cleanup of physical files
             foreach ($storedPaths as $path) {
-                Storage::disk($disk)->delete($path);
+                try {
+                    Storage::disk($disk)->delete($path);
+                } catch (\Throwable $cleanupException) {
+                    Log::error('KaizenAttachmentService: Failed to compensate physical file on storeMany failure.', [
+                        'path' => $path,
+                        'error' => $cleanupException->getMessage(),
+                    ]);
+                }
             }
 
             throw $e;
@@ -107,10 +114,8 @@ class KaizenAttachmentService
             }
 
             // Guard: managed path boundary
-            $normalizedPath = str_replace('\\', '/', $attachment->storage_path);
-            $normalizedPrefix = rtrim(str_replace('\\', '/', $managedPrefix), '/');
-            $withinBoundary = str_starts_with($normalizedPath, $normalizedPrefix.'/')
-                || $normalizedPath === $normalizedPrefix;
+            $integrityService = app(KaizenAttachmentIntegrityService::class);
+            $withinBoundary = $integrityService->isPathWithinManagedBoundary($attachment->storage_path, $managedPrefix);
 
             if (! $withinBoundary) {
                 Log::warning('KaizenAttachmentService: Skipped physical delete — path outside managed boundary.', [
@@ -123,7 +128,7 @@ class KaizenAttachmentService
 
             try {
                 Storage::disk($attachment->storage_disk)->delete($attachment->storage_path);
-            } catch (\Exception $e) {
+            } catch (\Throwable $e) {
                 // Log the failure but do not interrupt the process, as the DB transaction is already committed.
                 // An orphan file will remain, which can be cleaned up by the integrity audit command.
                 Log::error('KaizenAttachmentService: Failed to delete physical file.', [

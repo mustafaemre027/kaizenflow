@@ -195,4 +195,28 @@ class KaizenAttachmentServiceTest extends TestCase
 
         Storage::disk('local')->assertMissing($validPath);
     }
+
+    public function test_delete_physical_files_skips_traversal_paths(): void
+    {
+        Storage::fake('local');
+        config(['kaizen.attachments.managed_prefix' => 'kaizens']);
+        config(['kaizen.attachments.allowed_disks' => ['local']]);
+
+        // Synthetic corrupted attachment with path traversal
+        $traversalPath = 'kaizens/../other-module/critical.jpg';
+
+        // Setup the physical file
+        Storage::disk('local')->put('other-module/critical.jpg', 'critical data');
+
+        $attachment = KaizenAttachment::factory()->make([
+            'id' => 1001,
+            'storage_path' => $traversalPath,
+            'storage_disk' => 'local',
+        ]);
+
+        $this->service->deletePhysicalFiles(collect([$attachment]));
+
+        // The critical file must STILL EXIST
+        Storage::disk('local')->assertExists('other-module/critical.jpg');
+    }
 }

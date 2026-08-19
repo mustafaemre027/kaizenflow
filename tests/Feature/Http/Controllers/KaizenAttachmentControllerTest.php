@@ -8,6 +8,7 @@ use App\Models\Department;
 use App\Models\Kaizen;
 use App\Models\KaizenAttachment;
 use App\Models\User;
+use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -252,5 +253,55 @@ class KaizenAttachmentControllerTest extends TestCase
 
         $downloadResponse->assertOk()
             ->assertHeader('Content-Disposition', 'attachment; filename="Original Photo.jpg"');
+    }
+
+    public function test_download_or_show_returns_404_for_traversal_paths()
+    {
+        Storage::fake('local');
+        $kaizen = Kaizen::factory()->create(['creator_user_id' => $this->activeUser->id]);
+
+        $attachment = KaizenAttachment::factory()->create([
+            'kaizen_id' => $kaizen->id,
+            'storage_path' => 'kaizens/../../secret.jpg',
+            'storage_disk' => 'local',
+            'mime_type' => 'image/jpeg',
+        ]);
+
+        // Even if file physically exists, path traversal should cause 404 due to boundary check
+        // or other safeguards. In our case, it might just fail physically, but let's be sure it's 404.
+        $this->actingAs($this->activeUser)
+            ->get(route('kaizens.attachments.show', [$kaizen, $attachment]))
+            ->assertNotFound();
+
+        $this->actingAs($this->activeUser)
+            ->get(route('kaizens.attachments.download', [$kaizen, $attachment]))
+            ->assertNotFound();
+    }
+
+    public function test_show_and_download_return_404_if_stream_fails()
+    {
+        Storage::fake('local');
+        $kaizen = Kaizen::factory()->create(['creator_user_id' => $this->activeUser->id]);
+
+        $attachment = KaizenAttachment::factory()->create([
+            'kaizen_id' => $kaizen->id,
+            'storage_path' => 'kaizens/1/evidence/test.jpg',
+            'storage_disk' => 'local',
+            'mime_type' => 'image/jpeg',
+        ]);
+
+        // Mock the disk to return false for readStream
+        $mockDisk = \Mockery::mock(Filesystem::class);
+        $mockDisk->shouldReceive('exists')->andReturn(true);
+        $mockDisk->shouldReceive('readStream')->andReturn(false);
+        Storage::set('local', $mockDisk);
+
+        $this->actingAs($this->activeUser)
+            ->get(route('kaizens.attachments.show', [$kaizen, $attachment]))
+            ->assertNotFound();
+
+        $this->actingAs($this->activeUser)
+            ->get(route('kaizens.attachments.download', [$kaizen, $attachment]))
+            ->assertNotFound();
     }
 }

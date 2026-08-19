@@ -44,8 +44,13 @@ class KaizenAttachmentController extends Controller
             'Content-Disposition' => 'inline; filename="'.basename($attachment->storage_path).'"',
         ];
 
-        return response()->stream(function () use ($disk, $attachment) {
-            $stream = $disk->readStream($attachment->storage_path);
+        $stream = $disk->readStream($attachment->storage_path);
+
+        if (! is_resource($stream)) {
+            abort(404);
+        }
+
+        return response()->stream(function () use ($stream) {
             fpassthru($stream);
             if (is_resource($stream)) {
                 fclose($stream);
@@ -79,8 +84,13 @@ class KaizenAttachmentController extends Controller
         // Sanitize filename minimally to avoid header injection issues
         $filename = str_replace(['"', "\r", "\n"], '', $filename);
 
-        return response()->streamDownload(function () use ($disk, $attachment) {
-            $stream = $disk->readStream($attachment->storage_path);
+        $stream = $disk->readStream($attachment->storage_path);
+
+        if (! is_resource($stream)) {
+            abort(404);
+        }
+
+        return response()->streamDownload(function () use ($stream) {
             fpassthru($stream);
             if (is_resource($stream)) {
                 fclose($stream);

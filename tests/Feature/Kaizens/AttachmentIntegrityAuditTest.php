@@ -196,6 +196,30 @@ class AttachmentIntegrityAuditTest extends TestCase
         $this->assertEquals(1, $result['summary'][KaizenAttachmentIntegrityService::STATUS_UNSAFE_PATH]);
     }
 
+    public function test_is_path_within_managed_boundary_validations(): void
+    {
+        $prefix = 'kaizens';
+
+        // Valid
+        $this->assertTrue($this->service->isPathWithinManagedBoundary('kaizens/1/evidence/current_situation/a.jpg', $prefix));
+        $this->assertTrue($this->service->isPathWithinManagedBoundary('kaizens/123/evidence/proposed_situation/x.webp', $prefix));
+        $this->assertTrue($this->service->isPathWithinManagedBoundary('kaizens/test.jpg', $prefix));
+
+        // Invalid
+        $this->assertFalse($this->service->isPathWithinManagedBoundary('kaizens/../secret.jpg', $prefix));
+        $this->assertFalse($this->service->isPathWithinManagedBoundary('kaizens/a/../../secret.jpg', $prefix));
+        $this->assertFalse($this->service->isPathWithinManagedBoundary('../kaizens/a.jpg', $prefix));
+        $this->assertFalse($this->service->isPathWithinManagedBoundary('/kaizens/a.jpg', $prefix));
+        $this->assertFalse($this->service->isPathWithinManagedBoundary('kaizens\..\secret.jpg', $prefix));
+        $this->assertFalse($this->service->isPathWithinManagedBoundary('kaizens', $prefix)); // prefix exact match
+        $this->assertFalse($this->service->isPathWithinManagedBoundary('', $prefix)); // empty
+        $this->assertFalse($this->service->isPathWithinManagedBoundary('kaizens/a.jpg'."\0", $prefix)); // null byte
+
+        // Safety prefix tests
+        $this->assertFalse($this->service->isPathWithinManagedBoundary('kaizens/a.jpg', ''));
+        $this->assertFalse($this->service->isPathWithinManagedBoundary('kaizens/a.jpg', '/'));
+    }
+
     // ─── DB audit — hash verification ────────────────────────────────────────
 
     public function test_hash_mismatch_is_reported_with_flag(): void

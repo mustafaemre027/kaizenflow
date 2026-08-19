@@ -318,16 +318,36 @@ class KaizenAttachmentIntegrityService
      */
     public function isPathWithinManagedBoundary(string $path, string $managedPrefix): bool
     {
-        if ($managedPrefix === '' || $managedPrefix === '/') {
+        if (empty($path) || empty($managedPrefix)) {
             return false;
         }
 
-        // Normalize separators and check prefix
+        // Null byte check
+        if (str_contains($path, "\0") || str_contains($managedPrefix, "\0")) {
+            return false;
+        }
+
+        // Normalize separators
         $normalizedPath = str_replace('\\', '/', $path);
         $normalizedPrefix = rtrim(str_replace('\\', '/', $managedPrefix), '/');
 
-        return str_starts_with($normalizedPath, $normalizedPrefix.'/') ||
-            $normalizedPath === $normalizedPrefix;
+        // Reject absolute paths
+        if (str_starts_with($normalizedPath, '/') || preg_match('/^[a-zA-Z]:\//', $normalizedPath)) {
+            return false;
+        }
+
+        // Reject traversal segments
+        $segments = explode('/', $normalizedPath);
+        if (in_array('..', $segments, true)) {
+            return false;
+        }
+
+        // The path must be strictly UNDER the managed prefix, not the prefix itself.
+        if ($normalizedPath === $normalizedPrefix) {
+            return false;
+        }
+
+        return str_starts_with($normalizedPath, $normalizedPrefix.'/');
     }
 
     /**

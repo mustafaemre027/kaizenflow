@@ -576,4 +576,68 @@ class KaizenEditEvidenceTest extends TestCase
         $this->assertCount(1, $files);
         $this->assertEquals($existingPath, $files[0]);
     }
+
+    public function test_update_outer_transaction_rollback_handles_throwable()
+    {
+        Storage::fake('local');
+
+        $kaizen = Kaizen::factory()->create([
+            'creator_user_id' => $this->activeUser->id,
+            'status' => KaizenStatus::DRAFT,
+            'category_id' => $this->category->id,
+            'title' => 'Old Title',
+            'current_situation' => 'Old Current',
+            'proposed_situation' => 'Old Proposed',
+        ]);
+
+        $existingFile = UploadedFile::fake()->create('existing.jpg', 10, 'image/jpeg');
+        $existingPath = $existingFile->store('kaizens/1/evidence/current', 'local');
+
+        $attachment = KaizenAttachment::factory()->create([
+            'kaizen_id' => $kaizen->id,
+            'context' => KaizenAttachmentContext::CURRENT_SITUATION,
+            'storage_path' => $existingPath,
+            'storage_disk' => 'local',
+        ]);
+
+        $newImage = UploadedFile::fake()->create('new.jpg', 10, 'image/jpeg');
+
+        // Force a DB error to trigger an outer transaction rollback after attachment storage
+        $mockAction = \Mockery::mock(UpdateKaizenDraft::class);
+        $mockAction->shouldReceive('execute')->andThrow(new \Error('Simulated core update error.'));
+        $this->app->instance(UpdateKaizenDraft::class, $mockAction);
+
+        try {
+            $this->actingAs($this->activeUser)
+                ->withoutExceptionHandling()
+                ->patch(route('kaizens.update', $kaizen), [
+                    'title' => 'New Title',
+                    'current_situation' => 'New Current',
+                    'proposed_situation' => 'New Proposed',
+                    'category_id' => $this->category->id,
+                    'remove_attachment_ids' => [$attachment->id], // Mark existing for removal
+                    'current_situation_images' => [$newImage], // Add new image
+                ]);
+        } catch (\Throwable $e) {
+            $this->assertEquals('Simulated core update error.', $e->getMessage());
+            $this->assertInstanceOf(\Error::class, $e);
+        }
+
+        // DB state should be rolled back
+        $this->assertDatabaseMissing('kaizen_attachments', [
+            'original_name' => 'new.jpg',
+        ]);
+
+        $this->assertDatabaseHas('kaizen_attachments', [
+            'id' => $attachment->id, // Removed attachment should still be there
+        ]);
+
+        // Storage state
+        $this->assertTrue(Storage::disk('local')->exists($existingPath)); // Existing preserved
+
+        $files = Storage::disk('local')->allFiles();
+        // 1 file should exist: the existing file. The new file should have been cleaned up.
+        $this->assertCount(1, $files);
+        $this->assertEquals($existingPath, $files[0]);
+    }
 }

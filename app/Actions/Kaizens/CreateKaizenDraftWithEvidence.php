@@ -57,7 +57,7 @@ class CreateKaizenDraftWithEvidence
                     $storedPaths = array_merge($storedPaths, $stored->pluck('storage_path')->all());
                 }
 
-            } catch (\Exception $e) {
+            } catch (\Throwable $e) {
                 // Outer transaction will be rolled back. Compensate any physical
                 // files that were written before the failure.
                 $this->compensatePhysicalFiles($storedPaths);
@@ -84,7 +84,7 @@ class CreateKaizenDraftWithEvidence
         foreach ($paths as $path) {
             try {
                 $storage->delete($path);
-            } catch (\Exception $e) {
+            } catch (\Throwable $e) {
                 Log::error('CreateKaizenDraftWithEvidence: Failed to compensate physical file on outer rollback.', [
                     'path_suffix' => basename($path),
                     'error' => $e->getMessage(),

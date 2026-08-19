@@ -101,7 +101,7 @@ class UpdateKaizenDraftWithEvidence
                 // 4. Update core Kaizen scalar data
                 $updatedKaizen = $this->updateKaizenDraft->execute($updater, $kaizen, $validatedData);
 
-            } catch (\Exception $e) {
+            } catch (\Throwable $e) {
                 // Outer transaction will be rolled back. Clean up any physical files
                 // written in steps 2–3 that the inner storeMany did not clean up.
                 $this->compensatePhysicalFiles($storedPaths);
@@ -137,7 +137,7 @@ class UpdateKaizenDraftWithEvidence
         foreach ($paths as $path) {
             try {
                 $storage->delete($path);
-            } catch (\Exception $e) {
+            } catch (\Throwable $e) {
                 Log::error('UpdateKaizenDraftWithEvidence: Failed to compensate physical file on outer rollback.', [
                     'path_suffix' => basename($path),
                     'error' => $e->getMessage(),
