@@ -146,4 +146,81 @@ class KaizenAttachmentControllerTest extends TestCase
 
         $response->assertNotFound();
     }
+
+    public function test_authorized_user_can_download_attachment()
+    {
+        Storage::fake('local');
+        $file = UploadedFile::fake()->create('test.jpg', 10, 'image/jpeg');
+        $path = $file->store('kaizens/1/evidence', 'local');
+
+        $kaizen = Kaizen::factory()->create([
+            'creator_user_id' => $this->activeUser->id,
+        ]);
+
+        $attachment = KaizenAttachment::factory()->create([
+            'kaizen_id' => $kaizen->id,
+            'storage_path' => $path,
+            'storage_disk' => 'local',
+            'mime_type' => 'image/jpeg',
+            'original_name' => 'Original Photo.jpg',
+        ]);
+
+        $response = $this->actingAs($this->activeUser)
+            ->get(route('kaizens.attachments.download', [$kaizen, $attachment]));
+
+        $response->assertOk()
+            ->assertHeader('Content-Type', 'image/jpeg')
+            ->assertHeader('X-Content-Type-Options', 'nosniff')
+            ->assertHeader('Content-Disposition', 'attachment; filename="Original Photo.jpg"');
+    }
+
+    public function test_unauthorized_user_cannot_download_attachment()
+    {
+        Storage::fake('local');
+        $path = UploadedFile::fake()->create('test.jpg', 10, 'image/jpeg')->store('kaizens/1/evidence', 'local');
+
+        $otherDepartment = Department::factory()->create(['is_active' => true]);
+        $otherUser = User::factory()->create([
+            'is_active' => true,
+            'department_id' => $otherDepartment->id,
+            'role' => UserRole::EMPLOYEE,
+        ]);
+
+        $kaizen = Kaizen::factory()->create([
+            'creator_user_id' => $this->activeUser->id,
+            'department_id' => $this->activeUser->department_id,
+        ]);
+
+        $attachment = KaizenAttachment::factory()->create([
+            'kaizen_id' => $kaizen->id,
+            'storage_path' => $path,
+            'storage_disk' => 'local',
+        ]);
+
+        $response = $this->actingAs($otherUser)
+            ->get(route('kaizens.attachments.download', [$kaizen, $attachment]));
+
+        $response->assertForbidden();
+    }
+
+    public function test_download_fails_if_parent_kaizen_does_not_match()
+    {
+        Storage::fake('local');
+        $path = UploadedFile::fake()->create('test.jpg', 10, 'image/jpeg')->store('kaizens/1/evidence', 'local');
+
+        $kaizen1 = Kaizen::factory()->create(['creator_user_id' => $this->activeUser->id]);
+        $kaizen2 = Kaizen::factory()->create(['creator_user_id' => $this->activeUser->id]);
+
+        $attachment = KaizenAttachment::factory()->create([
+            'kaizen_id' => $kaizen2->id, // belongs to kaizen 2
+            'storage_path' => $path,
+            'storage_disk' => 'local',
+        ]);
+
+        // Attempting to access via kaizen 1 URL
+        $response = $this->actingAs($this->activeUser)
+            ->get(route('kaizens.attachments.download', [$kaizen1, $attachment]));
+
+        $response->assertNotFound();
+    }
 }

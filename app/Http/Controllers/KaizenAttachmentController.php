@@ -47,4 +47,37 @@ class KaizenAttachmentController extends Controller
             }
         }, basename($attachment->storage_path), $headers);
     }
+
+    public function download(Request $request, Kaizen $kaizen, KaizenAttachment $attachment)
+    {
+        if ($attachment->kaizen_id !== $kaizen->id) {
+            abort(404);
+        }
+
+        Gate::authorize('view', $kaizen);
+
+        $disk = Storage::disk($attachment->storage_disk);
+
+        if (! $disk->exists($attachment->storage_path)) {
+            abort(404);
+        }
+
+        $headers = [
+            'Content-Type' => $attachment->mime_type,
+            'X-Content-Type-Options' => 'nosniff',
+            'Cache-Control' => 'private, no-store',
+        ];
+
+        $filename = $attachment->original_name ?? basename($attachment->storage_path);
+        // Sanitize filename minimally to avoid header injection issues
+        $filename = str_replace(['"', "\r", "\n"], '', $filename);
+
+        return response()->streamDownload(function () use ($disk, $attachment) {
+            $stream = $disk->readStream($attachment->storage_path);
+            fpassthru($stream);
+            if (is_resource($stream)) {
+                fclose($stream);
+            }
+        }, $filename, $headers);
+    }
 }

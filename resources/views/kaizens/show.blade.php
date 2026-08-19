@@ -67,15 +67,19 @@
                         </div>
                         <div class="kf-gallery-grid">
                             @foreach($currentSituationAttachments as $index => $attachment)
-                                <a href="{{ route('kaizens.attachments.show', [$kaizen, $attachment]) }}"
-                                   target="_blank"
-                                   rel="noopener"
-                                   class="kf-gallery-item"
+                                <button type="button"
+                                   class="kf-gallery-item border-0 p-0 text-start w-100"
+                                   data-lightbox-trigger
+                                   data-context="current_situation"
+                                   data-index="{{ $index }}"
+                                   data-view-url="{{ route('kaizens.attachments.show', [$kaizen, $attachment]) }}"
+                                   data-download-url="{{ route('kaizens.attachments.download', [$kaizen, $attachment]) }}"
+                                   data-alt="Mevcut durum fotoğrafı {{ $index + 1 }}"
                                    aria-label="Mevcut durum fotoğrafı {{ $index + 1 }}">
                                     <img src="{{ route('kaizens.attachments.show', [$kaizen, $attachment]) }}"
                                          alt="Mevcut durum fotoğrafı {{ $index + 1 }}"
                                          loading="lazy">
-                                </a>
+                                </button>
                             @endforeach
                         </div>
                     </div>
@@ -97,15 +101,19 @@
                         </div>
                         <div class="kf-gallery-grid">
                             @foreach($proposedSituationAttachments as $index => $attachment)
-                                <a href="{{ route('kaizens.attachments.show', [$kaizen, $attachment]) }}"
-                                   target="_blank"
-                                   rel="noopener"
-                                   class="kf-gallery-item"
+                                <button type="button"
+                                   class="kf-gallery-item border-0 p-0 text-start w-100"
+                                   data-lightbox-trigger
+                                   data-context="proposed_situation"
+                                   data-index="{{ $index }}"
+                                   data-view-url="{{ route('kaizens.attachments.show', [$kaizen, $attachment]) }}"
+                                   data-download-url="{{ route('kaizens.attachments.download', [$kaizen, $attachment]) }}"
+                                   data-alt="Önerilen durum fotoğrafı {{ $index + 1 }}"
                                    aria-label="Önerilen durum fotoğrafı {{ $index + 1 }}">
                                     <img src="{{ route('kaizens.attachments.show', [$kaizen, $attachment]) }}"
                                          alt="Önerilen durum fotoğrafı {{ $index + 1 }}"
                                          loading="lazy">
-                                </a>
+                                </button>
                             @endforeach
                         </div>
                     </div>
