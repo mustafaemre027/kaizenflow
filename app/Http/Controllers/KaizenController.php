@@ -6,15 +6,75 @@ use App\Actions\Kaizens\CreateKaizenDraft;
 use App\Actions\Kaizens\SubmitKaizen;
 use App\Actions\Kaizens\UpdateKaizenDraft;
 use App\Enums\KaizenStatus;
+use App\Enums\UserRole;
+use App\Http\Requests\Kaizens\IndexKaizenRequest;
 use App\Http\Requests\Kaizens\StoreKaizenRequest;
 use App\Http\Requests\Kaizens\SubmitKaizenRequest;
 use App\Http\Requests\Kaizens\UpdateKaizenDraftRequest;
 use App\Models\Category;
+use App\Models\Department;
 use App\Models\Kaizen;
+use App\Services\Kaizens\VisibleKaizensQuery;
 use Illuminate\Support\Facades\Gate;
 
 class KaizenController extends Controller
 {
+    public function index(IndexKaizenRequest $request, VisibleKaizensQuery $visibleKaizens)
+    {
+        Gate::authorize('viewAny', Kaizen::class);
+
+        $validated = $request->validated();
+        $user = $request->user();
+
+        $baseQuery = $visibleKaizens->forUser($user);
+        $query = clone $baseQuery;
+
+        if (! empty($validated['q'])) {
+            $searchTerm = '%'.$validated['q'].'%';
+            $query->where(function ($q) use ($searchTerm) {
+                $q->where('code', 'LIKE', $searchTerm)
+                    ->orWhere('title', 'LIKE', $searchTerm)
+                    ->orWhere('current_situation', 'LIKE', $searchTerm)
+                    ->orWhere('proposed_situation', 'LIKE', $searchTerm);
+            });
+        }
+
+        if (! empty($validated['status'])) {
+            $query->where('status', $validated['status']);
+        }
+
+        if (! empty($validated['category_id'])) {
+            $query->where('category_id', $validated['category_id']);
+        }
+
+        if (! empty($validated['department_id'])) {
+            $query->where('department_id', $validated['department_id']);
+        }
+
+        $sort = $validated['sort'] ?? 'created_at';
+        $direction = $validated['direction'] ?? 'desc';
+
+        $query->orderBy($sort, $direction);
+
+        $kaizens = $query->with(['category', 'department', 'creator', 'assignedUser'])
+            ->paginate(15)
+            ->withQueryString();
+
+        $statuses = KaizenStatus::cases();
+        $categories = Category::active()->orderBy('name')->get();
+
+        if ($user->role === UserRole::MANAGER) {
+            $departments = Department::where('id', $user->department_id)->active()->get();
+        } elseif (in_array($user->role, [UserRole::OPEX_SPECIALIST, UserRole::ADMIN], true)) {
+            $departments = Department::active()->orderBy('name')->get();
+        } else {
+            $departmentIds = (clone $baseQuery)->select('department_id')->distinct()->pluck('department_id');
+            $departments = Department::whereIn('id', $departmentIds)->active()->orderBy('name')->get();
+        }
+
+        return view('kaizens.index', compact('kaizens', 'statuses', 'categories', 'departments'));
+    }
+
     public function create()
     {
         Gate::authorize('create', Kaizen::class);
