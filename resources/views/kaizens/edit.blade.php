@@ -82,11 +82,15 @@
                     <h2 class="kf-form-section-title">02 &nbsp; Problem ve İyileştirme</h2>
 
                     <div class="kf-form-group">
-                        <label for="current_situation" class="kf-form-label">Mevcut Durum</label>
-                        <textarea name="current_situation" id="current_situation" class="kf-form-control @error('current_situation') is-invalid @enderror" rows="3" required maxlength="5000" placeholder="Şu anki süreci ve yaşanan problemi detaylı olarak açıklayın...">{{ old('current_situation', $kaizen->current_situation) }}</textarea>
-                        @error('current_situation')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
+                        <label for="current_situation" class="kf-form-label">Mevcut Durum <span class="badge bg-light text-secondary border ms-2 fw-normal">Zorunlu</span></label>
+                        <textarea name="current_situation" id="current_situation" class="kf-form-control @error('current_situation') is-invalid @enderror" rows="3" required maxlength="5000" placeholder="Şu anki süreci ve yaşanan problemi detaylı olarak açıklayın..." aria-describedby="current_situation_error">{{ old('current_situation', $kaizen->current_situation) }}</textarea>
+                        <div id="current_situation_error" class="invalid-feedback kf-client-error">
+                            @error('current_situation')
+                                {{ $message }}
+                            @else
+                                Mevcut durum alanı zorunludur.
+                            @enderror
+                        </div>
 
                         @if($currentSituationAttachments->isNotEmpty())
                         <div class="mt-3 kf-edit-gallery" data-context="current_situation" data-existing-count="{{ $currentSituationAttachments->count() }}">
@@ -138,11 +142,15 @@
                     </div>
 
                     <div class="kf-form-group mb-0">
-                        <label for="proposed_situation" class="kf-form-label">Önerilen Durum</label>
-                        <textarea name="proposed_situation" id="proposed_situation" class="kf-form-control @error('proposed_situation') is-invalid @enderror" rows="3" required maxlength="5000" placeholder="İyileştirme sonrasında sürecin nasıl işleyeceğini açıklayın...">{{ old('proposed_situation', $kaizen->proposed_situation) }}</textarea>
-                        @error('proposed_situation')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
+                        <label for="proposed_situation" class="kf-form-label">Önerilen Durum <span class="badge bg-light text-secondary border ms-2 fw-normal">Zorunlu</span></label>
+                        <textarea name="proposed_situation" id="proposed_situation" class="kf-form-control @error('proposed_situation') is-invalid @enderror" rows="3" required maxlength="5000" placeholder="İyileştirme sonrasında sürecin nasıl işleyeceğini açıklayın..." aria-describedby="proposed_situation_error">{{ old('proposed_situation', $kaizen->proposed_situation) }}</textarea>
+                        <div id="proposed_situation_error" class="invalid-feedback kf-client-error">
+                            @error('proposed_situation')
+                                {{ $message }}
+                            @else
+                                Önerilen durum alanı zorunludur.
+                            @enderror
+                        </div>
 
                         @if($proposedSituationAttachments->isNotEmpty())
                         <div class="mt-3 kf-edit-gallery" data-context="proposed_situation" data-existing-count="{{ $proposedSituationAttachments->count() }}">
