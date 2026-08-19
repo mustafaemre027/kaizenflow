@@ -43,7 +43,7 @@
 
     <!-- Right Form Workspace -->
     <div class="kf-form-workspace">
-        <form method="POST" action="{{ route('kaizens.store') }}">
+        <form method="POST" action="{{ route('kaizens.store') }}" enctype="multipart/form-data">
             @csrf
 
             <div class="p-4 p-md-5">
@@ -85,6 +85,21 @@
                         @error('current_situation')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
+
+                        <div class="mt-3 p-3 border rounded bg-light">
+                            <label for="current_situation_images" class="kf-form-label mb-1">Mevcut Durum Fotoğrafları</label>
+                            <input type="file" name="current_situation_images[]" id="current_situation_images" multiple accept=".jpg,.jpeg,.png,.webp" class="form-control @error('current_situation_images') is-invalid @enderror @error('current_situation_images.*') is-invalid @enderror" aria-describedby="current_situation_help">
+                            <small id="current_situation_help" class="form-text text-muted d-block mt-1">
+                                Mevcut problemi veya sürecin mevcut halini gösteren fotoğrafları ekleyebilirsiniz. <br>
+                                En fazla {{ config('kaizen.attachments.max_images_per_context', 8) }} fotoğraf &bull; JPEG, PNG veya WEBP &bull; Dosya başına en fazla {{ round(config('kaizen.attachments.max_image_kb', 8192) / 1024) }} MB
+                            </small>
+                            @error('current_situation_images')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                            @error('current_situation_images.*')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
                     </div>
 
                     <div class="kf-form-group mb-0">
@@ -93,6 +108,21 @@
                         @error('proposed_situation')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
+
+                        <div class="mt-3 p-3 border rounded bg-light">
+                            <label for="proposed_situation_images" class="kf-form-label mb-1">Önerilen Durum Fotoğrafları</label>
+                            <input type="file" name="proposed_situation_images[]" id="proposed_situation_images" multiple accept=".jpg,.jpeg,.png,.webp" class="form-control @error('proposed_situation_images') is-invalid @enderror @error('proposed_situation_images.*') is-invalid @enderror" aria-describedby="proposed_situation_help">
+                            <small id="proposed_situation_help" class="form-text text-muted d-block mt-1">
+                                Öneriyi, taslağı veya hedeflenen iyileştirmeyi açıklayan görseller ekleyebilirsiniz. <br>
+                                En fazla {{ config('kaizen.attachments.max_images_per_context', 8) }} fotoğraf &bull; JPEG, PNG veya WEBP &bull; Dosya başına en fazla {{ round(config('kaizen.attachments.max_image_kb', 8192) / 1024) }} MB
+                            </small>
+                            @error('proposed_situation_images')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                            @error('proposed_situation_images.*')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
                     </div>
                 </div>
 

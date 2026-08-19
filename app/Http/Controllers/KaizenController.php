@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Actions\Kaizens\CreateKaizenDraft;
+use App\Actions\Kaizens\CreateKaizenDraftWithEvidence;
 use App\Actions\Kaizens\SubmitKaizen;
 use App\Actions\Kaizens\UpdateKaizenDraft;
 use App\Enums\KaizenStatus;
@@ -120,13 +120,22 @@ class KaizenController extends Controller
         return view('kaizens.show', compact('kaizen', 'workflowStatuses', 'specialWorkflowStatus'));
     }
 
-    public function store(StoreKaizenRequest $request, CreateKaizenDraft $createAction)
+    public function store(StoreKaizenRequest $request, CreateKaizenDraftWithEvidence $createAction)
     {
         $validated = $request->validated();
         $user = $request->user();
         $category = Category::find($validated['category_id']);
 
-        $kaizen = $createAction->execute($user, $category, $validated);
+        $currentSituationImages = $request->file('current_situation_images', []);
+        $proposedSituationImages = $request->file('proposed_situation_images', []);
+
+        $kaizen = $createAction->execute(
+            $user,
+            $category,
+            $validated,
+            $currentSituationImages,
+            $proposedSituationImages
+        );
 
         if ($request->expectsJson()) {
             return response()->json(

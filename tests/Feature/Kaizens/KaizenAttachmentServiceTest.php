@@ -105,7 +105,7 @@ class KaizenAttachmentServiceTest extends TestCase
     {
         $kaizen = Kaizen::factory()->create();
         $uploader = User::factory()->create();
-        
+
         $file = UploadedFile::fake()->create('../../evil.jpg', 100, 'image/jpeg');
 
         $attachments = $this->service->storeMany($kaizen, $uploader, KaizenAttachmentContext::CURRENT_SITUATION, [$file]);

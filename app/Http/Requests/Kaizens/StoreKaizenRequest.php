@@ -49,6 +49,28 @@ class StoreKaizenRequest extends FormRequest
             'rejected_at' => ['prohibited'],
             'created_at' => ['prohibited'],
             'updated_at' => ['prohibited'],
+
+            'current_situation_images' => [
+                'nullable',
+                'array',
+                'max:'.config('kaizen.attachments.max_images_per_context', 8),
+            ],
+            'current_situation_images.*' => [
+                'file',
+                'mimetypes:'.implode(',', config('kaizen.attachments.allowed_mimes', ['image/jpeg', 'image/png', 'image/webp'])),
+                'max:'.config('kaizen.attachments.max_image_kb', 8192),
+            ],
+
+            'proposed_situation_images' => [
+                'nullable',
+                'array',
+                'max:'.config('kaizen.attachments.max_images_per_context', 8),
+            ],
+            'proposed_situation_images.*' => [
+                'file',
+                'mimetypes:'.implode(',', config('kaizen.attachments.allowed_mimes', ['image/jpeg', 'image/png', 'image/webp'])),
+                'max:'.config('kaizen.attachments.max_image_kb', 8192),
+            ],
         ];
     }
 
@@ -62,6 +84,10 @@ class StoreKaizenRequest extends FormRequest
             'expected_benefit' => 'Beklenen Fayda',
             'priority' => 'Öncelik',
             'target_date' => 'Hedef Tarih',
+            'current_situation_images' => 'Mevcut Durum Fotoğrafları',
+            'current_situation_images.*' => 'Mevcut Durum Fotoğrafı',
+            'proposed_situation_images' => 'Önerilen Durum Fotoğrafları',
+            'proposed_situation_images.*' => 'Önerilen Durum Fotoğrafı',
         ];
     }
 }
