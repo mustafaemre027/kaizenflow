@@ -83,4 +83,9 @@ class Kaizen extends Model
     {
         return $this->hasMany(KaizenStatusHistory::class);
     }
+
+    public function attachments(): HasMany
+    {
+        return $this->hasMany(KaizenAttachment::class)->orderBy('sort_order');
+    }
 }

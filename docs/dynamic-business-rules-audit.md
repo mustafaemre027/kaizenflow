@@ -32,9 +32,13 @@ Bu yapılar teknik kararlılık için kod içerisinde (enum/sabit) kalmalı anca
 - Taslak düzenleme (Edit) yeteneği.
 - Mevcut yapıların bu doküman üzerinden dinamikleşme yol haritasının çizilmesi.
 
-## Gün 10'a Taşınanlar
+## Gün 10'a Taşınanlar (Attachment & Evidence Domain)
 - Mevcut Durum ve Önerilen Durum alanlarına güvenli çoklu fotoğraf / dosya ekleri eklenecek.
-- Fotoğraflar hangi bölüme ait olduğunu (CURRENT_SITUATION veya PROPOSED_SITUATION) `attachment context/type` yapısıyla taşıyacak. Metin alanları zorunlu kalmaya devam edecek.
+- Fotoğraflar hangi bölüme ait olduğunu (CURRENT_SITUATION veya PROPOSED_SITUATION) `attachment context/type` yapısıyla taşıyacak. Bu tipler sistemin temel domain kimlikleridir (SYSTEM DOMAIN IDENTITY).
+- **Storage Disk:** Attachment disk provizyonu configurable olacaktır (varsayılan: private `local`).
+- **Operational Limits:** Maksimum resim boyutu ve adet sınırları admin konfigurasyonu içindir (code config-driven).
+- **Security MIME Allowlist:** Güvenlik nedeniyle (SVG ve zararlı dosyaları engellemek için) MIME allowlist'i sıkı sıkıya koda bağlı kalacak ve business üzerinden esnetilmesine izin verilmeyecektir.
+- Gelecekte, izin verilen sınırlar dahilinde bir Admin UI'ı yapılabilecektir.
 
 ## Gün 11–13 Workflow Dönüşümü
 - **Gün 11:** Onay süreci sabit kod (TransitionMap) yerine dinamik `approval_workflows` / `approval_stages` altyapısına geçirilecek ve durum geçmişi mekanizması bağlanacak.
