@@ -9,6 +9,7 @@ use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -74,6 +75,26 @@ class KaizenAttachmentService
             }
 
             throw $e;
+        }
+    }
+
+    /**
+     * Safely delete physical files for the given attachments.
+     * This should typically be called AFTER a successful DB transaction
+     * that has removed their metadata to ensure safe failure mode.
+     *
+     * @param  Collection<int, KaizenAttachment>  $removedAttachments
+     */
+    public function deletePhysicalFiles(Collection $removedAttachments): void
+    {
+        foreach ($removedAttachments as $attachment) {
+            try {
+                Storage::disk($attachment->storage_disk)->delete($attachment->storage_path);
+            } catch (\Exception $e) {
+                // Log the failure but do not interrupt the process, as the DB transaction is already committed.
+                // An orphan file will remain, which can be cleaned up by a separate process.
+                Log::error("Failed to delete physical file for attachment {$attachment->id}: ".$e->getMessage());
+            }
         }
     }
 }

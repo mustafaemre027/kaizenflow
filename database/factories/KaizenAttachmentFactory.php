@@ -26,11 +26,11 @@ class KaizenAttachmentFactory extends Factory
             'context' => KaizenAttachmentContext::CURRENT_SITUATION,
             'original_name' => 'test-image.jpg',
             'storage_disk' => 'local',
-            'storage_path' => 'kaizens/1/evidence/current_situation/01J00000000000000000000000.jpg',
+            'storage_path' => 'kaizens/1/evidence/current_situation/'.$this->faker->uuid().'.jpg',
             'mime_type' => 'image/jpeg',
             'size_bytes' => 1024,
-            'sha256' => hash('sha256', 'testcontent'),
-            'sort_order' => 1,
+            'sha256' => hash('sha256', $this->faker->uuid()),
+            'sort_order' => $this->faker->unique()->numberBetween(1, 1000),
         ];
     }
 }

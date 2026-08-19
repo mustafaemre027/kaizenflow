@@ -59,10 +59,10 @@ export function initializeEvidencePicker(container) {
             validFiles.push(file);
         });
 
-        // Check total limit
-        if (selectedFiles.length + validFiles.length > maxFiles) {
-            errorMessages.push(`Bu alana en fazla ${maxFiles} fotoğraf ekleyebilirsiniz.`);
-            // Reject the new batch completely as per instructions
+        // Check total limit (including effective existing)
+        const effectiveCount = getEffectiveCount();
+        if (effectiveCount + validFiles.length > maxFiles) {
+            errorMessages.push(`Bu alana en fazla ${maxFiles} fotoğraf ekleyebilirsiniz. (Mevcut/Yeni toplamı sınırı aştı)`);
             validFiles = [];
         }
 
@@ -76,6 +76,30 @@ export function initializeEvidencePicker(container) {
 
         syncInputAndRender();
     });
+
+    // Listen for custom event from kaizen-evidence-editor.js
+    document.addEventListener('kaizen:evidence-removed-toggled', (e) => {
+        const context = container.getAttribute('data-context');
+        if (e.detail && e.detail.context === context) {
+            syncInputAndRender();
+        }
+    });
+
+    function getEffectiveCount() {
+        const context = container.getAttribute('data-context');
+        let existingCount = 0;
+        let removedCount = 0;
+
+        if (context) {
+            const gallery = document.querySelector(`.kf-edit-gallery[data-context="${context}"]`);
+            if (gallery) {
+                existingCount = parseInt(gallery.getAttribute('data-existing-count') || '0', 10);
+                removedCount = gallery.querySelectorAll('.kf-edit-gallery-item.is-removed').length;
+            }
+        }
+
+        return existingCount - removedCount + selectedFiles.length;
+    }
 
     function syncInputAndRender() {
         // Sync to actual input
@@ -123,7 +147,8 @@ export function initializeEvidencePicker(container) {
             previewArea.appendChild(item);
         });
 
-        counter.textContent = `${selectedFiles.length} / ${maxFiles} fotoğraf`;
+        const effectiveCount = getEffectiveCount();
+        counter.textContent = `${effectiveCount} / ${maxFiles} fotoğraf`;
     }
 }
 

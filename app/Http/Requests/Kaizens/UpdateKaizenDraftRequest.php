@@ -42,6 +42,15 @@ class UpdateKaizenDraftRequest extends FormRequest
             'priority' => ['sometimes', 'nullable', new Enum(KaizenPriority::class)],
             'target_date' => ['sometimes', 'nullable', 'date', 'after_or_equal:today'],
 
+            'current_situation_images' => ['nullable', 'array', 'max:8'],
+            'current_situation_images.*' => ['image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
+
+            'proposed_situation_images' => ['nullable', 'array', 'max:8'],
+            'proposed_situation_images.*' => ['image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
+
+            'remove_attachment_ids' => ['nullable', 'array'],
+            'remove_attachment_ids.*' => ['integer', 'distinct', 'exists:kaizen_attachments,id'],
+
             'code' => ['prohibited'],
             'creator_user_id' => ['prohibited'],
             'department_id' => ['prohibited'],
@@ -70,6 +79,9 @@ class UpdateKaizenDraftRequest extends FormRequest
                 'expected_benefit',
                 'priority',
                 'target_date',
+                'current_situation_images',
+                'proposed_situation_images',
+                'remove_attachment_ids',
             ])) {
                 $validator->errors()->add('payload', 'Güncellenecek en az bir geçerli alan bulunmalıdır.');
             }
@@ -86,6 +98,12 @@ class UpdateKaizenDraftRequest extends FormRequest
             'expected_benefit' => 'Beklenen Fayda',
             'priority' => 'Öncelik',
             'target_date' => 'Hedef Tarih',
+            'current_situation_images' => 'Mevcut Durum Fotoğrafları',
+            'current_situation_images.*' => 'Mevcut Durum Fotoğrafı',
+            'proposed_situation_images' => 'Önerilen Durum Fotoğrafları',
+            'proposed_situation_images.*' => 'Önerilen Durum Fotoğrafı',
+            'remove_attachment_ids' => 'Kaldırılacak Fotoğraflar',
+            'remove_attachment_ids.*' => 'Kaldırılacak Fotoğraf',
         ];
     }
 }

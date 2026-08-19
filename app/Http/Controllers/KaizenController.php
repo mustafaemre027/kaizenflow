@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Actions\Kaizens\CreateKaizenDraftWithEvidence;
 use App\Actions\Kaizens\SubmitKaizen;
-use App\Actions\Kaizens\UpdateKaizenDraft;
+use App\Actions\Kaizens\UpdateKaizenDraftWithEvidence;
 use App\Enums\KaizenAttachmentContext;
 use App\Enums\KaizenStatus;
 use App\Enums\UserRole;
@@ -98,7 +98,19 @@ class KaizenController extends Controller
             }
         }
 
-        return view('kaizens.edit', compact('kaizen', 'categories'));
+        $kaizen->load(['attachments' => function ($query) {
+            $query->orderBy('context')->orderBy('sort_order');
+        }]);
+
+        $currentSituationAttachments = $kaizen->attachments->where('context', KaizenAttachmentContext::CURRENT_SITUATION->value);
+        $proposedSituationAttachments = $kaizen->attachments->where('context', KaizenAttachmentContext::PROPOSED_SITUATION->value);
+
+        return view('kaizens.edit', compact(
+            'kaizen',
+            'categories',
+            'currentSituationAttachments',
+            'proposedSituationAttachments'
+        ));
     }
 
     public function show(Kaizen $kaizen)
@@ -174,7 +186,7 @@ class KaizenController extends Controller
         return redirect()->route('kaizens.show', $kaizen)->with('success', 'Kaizen taslağı başarıyla oluşturuldu.');
     }
 
-    public function update(UpdateKaizenDraftRequest $request, Kaizen $kaizen, UpdateKaizenDraft $updateAction)
+    public function update(UpdateKaizenDraftRequest $request, Kaizen $kaizen, UpdateKaizenDraftWithEvidence $updateAction)
     {
         $validated = $request->validated();
         $user = $request->user();
