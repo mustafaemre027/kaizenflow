@@ -8,6 +8,7 @@ use App\Actions\Kaizens\UpdateKaizenDraftWithEvidence;
 use App\Enums\KaizenAttachmentContext;
 use App\Enums\KaizenStatus;
 use App\Enums\UserRole;
+use App\Exceptions\Workflow\InvalidApprovalWorkflowConfiguration;
 use App\Http\Requests\Kaizens\IndexKaizenRequest;
 use App\Http\Requests\Kaizens\StoreKaizenRequest;
 use App\Http\Requests\Kaizens\SubmitKaizenRequest;
@@ -18,6 +19,7 @@ use App\Models\Kaizen;
 use App\Services\Kaizens\VisibleKaizensQuery;
 use App\Services\Workflow\KaizenWorkflowTimelinePresenter;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
 
 class KaizenController extends Controller
 {
@@ -211,20 +213,36 @@ class KaizenController extends Controller
 
         $reason = $validated['reason'] ?? null;
 
-        $submittedKaizen = $submitAction->execute($user, $kaizen, $reason);
+        try {
+            $submittedKaizen = $submitAction->execute($user, $kaizen, $reason);
 
-        if ($request->expectsJson()) {
-            return response()->json([
-                'message' => 'Kaizen başarıyla gönderildi.',
-                'kaizen' => $submittedKaizen->only([
-                    'id',
-                    'code',
-                    'status',
-                    'submitted_at',
-                ]),
-            ], 200);
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Kaizen başarıyla gönderildi.',
+                    'kaizen' => $submittedKaizen->only([
+                        'id',
+                        'code',
+                        'status',
+                        'submitted_at',
+                    ]),
+                ], 200);
+            }
+
+            return back()->with('success', 'Kaizen başarıyla gönderildi.');
+        } catch (InvalidApprovalWorkflowConfiguration $e) {
+            Log::error('Workflow configuration failure during Kaizen submit.', [
+                'kaizen_id' => $kaizen->id,
+                'exception' => get_class($e),
+                'message' => $e->getMessage(),
+            ]);
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Onay süreci yapılandırması tamamlanmamış. Lütfen sistem yöneticisine başvurun.',
+                ], 422);
+            }
+
+            return back()->with('error', 'Kaizen şu anda onaya gönderilemiyor. Onay süreci yapılandırması tamamlanmamış. Lütfen sistem yöneticisine başvurun.');
         }
-
-        return back()->with('success', 'Kaizen başarıyla gönderildi.');
     }
 }

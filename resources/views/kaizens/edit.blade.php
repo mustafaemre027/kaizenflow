@@ -214,8 +214,8 @@
                     <h2 class="kf-form-section-title">03 &nbsp; Beklenen Etki</h2>
 
                     <div class="kf-form-group mb-0">
-                        <label for="expected_benefit" class="kf-form-label">Beklenen Fayda</label>
-                        <textarea name="expected_benefit" id="expected_benefit" class="kf-form-control @error('expected_benefit') is-invalid @enderror" rows="3" required maxlength="5000" placeholder="Öneriniz uygulandığında elde edilecek zaman, maliyet veya kalite faydalarını belirtin...">{{ old('expected_benefit', $kaizen->expected_benefit) }}</textarea>
+                        <label for="expected_benefit" class="kf-form-label">Beklenen Fayda <span class="badge bg-light text-secondary border ms-2 fw-normal">Opsiyonel</span></label>
+                        <textarea name="expected_benefit" id="expected_benefit" class="kf-form-control @error('expected_benefit') is-invalid @enderror" rows="3" maxlength="5000" placeholder="Öneriniz uygulandığında elde edilecek zaman, maliyet veya kalite faydalarını belirtin...">{{ old('expected_benefit', $kaizen->expected_benefit) }}</textarea>
                         @error('expected_benefit')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror

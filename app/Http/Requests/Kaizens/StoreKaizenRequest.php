@@ -31,7 +31,7 @@ class StoreKaizenRequest extends FormRequest
             'title' => ['required', 'string', 'min:5', 'max:255'],
             'current_situation' => ['required', 'string', 'min:10', 'max:5000'],
             'proposed_situation' => ['required', 'string', 'min:10', 'max:5000'],
-            'expected_benefit' => ['required', 'string', 'min:10', 'max:5000'],
+            'expected_benefit' => ['nullable', 'string', 'max:5000'],
             'priority' => ['nullable', new Enum(KaizenPriority::class)],
             'target_date' => ['nullable', 'date', 'after_or_equal:today'],
 

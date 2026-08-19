@@ -17,10 +17,38 @@
         </div>
     </div>
     <div class="mt-3 mt-md-0 d-flex gap-2 flex-wrap">
-        @can('update', $kaizen)
-            <a href="{{ route('kaizens.edit', $kaizen) }}" class="kf-btn kf-btn-primary">
-                Düzenle
-            </a>
+        @can('submit', $kaizen)
+            @php
+                $isCompletable = trim($kaizen->expected_benefit ?? '') !== '';
+                $btnText = $kaizen->status === \App\Enums\KaizenStatus::REVISION_REQUESTED ? 'Yeniden Gönder' : 'Onaya Gönder';
+            @endphp
+            
+            @if($isCompletable)
+                <form action="{{ route('kaizens.submit', $kaizen) }}" method="POST" class="d-inline m-0 p-0">
+                    @csrf
+                    <button type="submit" class="kf-btn kf-btn-primary" onclick="return confirm('Bu Kaizen\'i onaya göndermek istediğinize emin misiniz?');">
+                        {{ $btnText }}
+                    </button>
+                </form>
+                @can('update', $kaizen)
+                    <a href="{{ route('kaizens.edit', $kaizen) }}" class="kf-btn kf-btn-secondary">
+                        Düzenle
+                    </a>
+                @endcan
+            @else
+                <div class="d-inline-flex align-items-center gap-2 bg-light px-3 py-1 rounded border">
+                    <span class="text-muted small fw-medium">Onay için Beklenen Fayda eksik.</span>
+                    <a href="{{ route('kaizens.edit', $kaizen) }}" class="kf-btn kf-btn-primary btn-sm">
+                        Eksikleri Tamamla
+                    </a>
+                </div>
+            @endif
+        @else
+            @can('update', $kaizen)
+                <a href="{{ route('kaizens.edit', $kaizen) }}" class="kf-btn kf-btn-primary">
+                    Düzenle
+                </a>
+            @endcan
         @endcan
         <a href="{{ route('kaizens.create') }}" class="kf-btn kf-btn-secondary">
             Yeni Kaizen

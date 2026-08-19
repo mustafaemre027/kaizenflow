@@ -41,6 +41,13 @@ class SubmitKaizen
                 throw new InvalidKaizenTransition($fromStatus, $toStatus);
             }
 
+            $benefit = trim($lockedKaizen->expected_benefit ?? '');
+            if ($benefit === '') {
+                throw ValidationException::withMessages([
+                    'expected_benefit' => 'Kaizen\'i onaya göndermeden önce beklenen fayda alanını doldurmalısınız.',
+                ]);
+            }
+
             $transitionCode = 'SUBMIT';
 
             $reason = is_string($reason) ? trim($reason) : null;

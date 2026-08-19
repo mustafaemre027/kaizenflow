@@ -60,6 +60,36 @@ class SubmitKaizenTest extends TestCase
         ]);
     }
 
+    public function test_it_rejects_submission_if_expected_benefit_is_empty(): void
+    {
+        $creator = User::factory()->create(['role' => UserRole::EMPLOYEE]);
+        $kaizen = Kaizen::factory()->create([
+            'creator_user_id' => $creator->id,
+            'status' => KaizenStatus::DRAFT,
+            'expected_benefit' => null,
+        ]);
+
+        $this->expectException(ValidationException::class);
+        $this->expectExceptionMessage('Kaizen\'i onaya göndermeden önce beklenen fayda alanını doldurmalısınız.');
+
+        $this->action->execute($creator, $kaizen);
+    }
+
+    public function test_it_rejects_submission_if_expected_benefit_is_only_whitespace(): void
+    {
+        $creator = User::factory()->create(['role' => UserRole::EMPLOYEE]);
+        $kaizen = Kaizen::factory()->create([
+            'creator_user_id' => $creator->id,
+            'status' => KaizenStatus::DRAFT,
+            'expected_benefit' => '   ',
+        ]);
+
+        $this->expectException(ValidationException::class);
+        $this->expectExceptionMessage('Kaizen\'i onaya göndermeden önce beklenen fayda alanını doldurmalısınız.');
+
+        $this->action->execute($creator, $kaizen);
+    }
+
     public function test_active_creator_employee_can_resubmit_revision_requested_kaizen(): void
     {
         $creator = User::factory()->create(['role' => UserRole::EMPLOYEE]);
