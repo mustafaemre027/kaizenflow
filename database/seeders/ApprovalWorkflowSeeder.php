@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\ApprovalGroup;
 use App\Models\ApprovalWorkflow;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -46,6 +47,47 @@ class ApprovalWorkflowSeeder extends Seeder
                         'is_final' => true,
                         'is_active' => true,
                     ],
+                ]);
+            }
+
+            // Create default approval groups
+            $opexGroup = ApprovalGroup::firstOrCreate(
+                ['code' => 'OPEX_REVIEW_GROUP'],
+                ['name' => 'OPEX Değerlendirme Grubu', 'is_active' => true]
+            );
+
+            $managerGroup = ApprovalGroup::firstOrCreate(
+                ['code' => 'MANAGER_APPROVAL_GROUP'],
+                ['name' => 'Yönetici Onay Grubu', 'is_active' => true]
+            );
+
+            $boardGroup = ApprovalGroup::firstOrCreate(
+                ['code' => 'BOARD_APPROVAL_GROUP'],
+                ['name' => 'Kurul Onay Grubu', 'is_active' => true]
+            );
+
+            // Assign groups to stages
+            $opexStage = $workflow->stages()->where('code', 'OPEX_REVIEW')->first();
+            if ($opexStage && $opexStage->stageAssignments()->count() === 0) {
+                $opexStage->stageAssignments()->create([
+                    'approval_group_id' => $opexGroup->id,
+                    'scope' => 'GLOBAL',
+                ]);
+            }
+
+            $managerStage = $workflow->stages()->where('code', 'MANAGER_APPROVAL')->first();
+            if ($managerStage && $managerStage->stageAssignments()->count() === 0) {
+                $managerStage->stageAssignments()->create([
+                    'approval_group_id' => $managerGroup->id,
+                    'scope' => 'DEPARTMENT',
+                ]);
+            }
+
+            $boardStage = $workflow->stages()->where('code', 'BOARD_APPROVAL')->first();
+            if ($boardStage && $boardStage->stageAssignments()->count() === 0) {
+                $boardStage->stageAssignments()->create([
+                    'approval_group_id' => $boardGroup->id,
+                    'scope' => 'GLOBAL',
                 ]);
             }
         });

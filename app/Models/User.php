@@ -54,4 +54,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(KaizenStatusHistory::class, 'actor_user_id');
     }
+
+    public function approvalGroupMemberships(): HasMany
+    {
+        return $this->hasMany(ApprovalGroupMember::class);
+    }
 }
