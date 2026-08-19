@@ -95,6 +95,8 @@ class StoreKaizenRequest extends FormRequest
 
     public function messages(): array
     {
+        $maxMb = round(config('kaizen.attachments.max_image_kb', 8192) / 1024);
+
         return [
             'current_situation_images.required' => 'Mevcut durum için en az bir fotoğraf yüklemelisiniz.',
             'current_situation_images.min' => 'Mevcut durum için en az bir fotoğraf yüklemelisiniz.',
@@ -102,11 +104,11 @@ class StoreKaizenRequest extends FormRequest
             'proposed_situation_images.min' => 'Önerilen durum için en az bir fotoğraf yüklemelisiniz.',
             'current_situation_images.*.mimetypes' => 'Yalnızca JPEG, PNG veya WEBP fotoğrafları yükleyebilirsiniz.',
             'current_situation_images.*.image' => 'Yalnızca JPEG, PNG veya WEBP fotoğrafları yükleyebilirsiniz.',
-            'current_situation_images.*.max' => 'Bir fotoğraf izin verilen boyut sınırını aşıyor.',
+            'current_situation_images.*.max' => "Mevcut durum fotoğraflarından biri izin verilen dosya boyutunu aşıyor. Her fotoğraf en fazla {$maxMb} MB olabilir.",
             'current_situation_images.*.file' => 'Seçilen fotoğraflardan biri yüklenemedi.',
             'proposed_situation_images.*.mimetypes' => 'Yalnızca JPEG, PNG veya WEBP fotoğrafları yükleyebilirsiniz.',
             'proposed_situation_images.*.image' => 'Yalnızca JPEG, PNG veya WEBP fotoğrafları yükleyebilirsiniz.',
-            'proposed_situation_images.*.max' => 'Bir fotoğraf izin verilen boyut sınırını aşıyor.',
+            'proposed_situation_images.*.max' => "Önerilen durum fotoğraflarından biri izin verilen dosya boyutunu aşıyor. Her fotoğraf en fazla {$maxMb} MB olabilir.",
             'proposed_situation_images.*.file' => 'Seçilen fotoğraflardan biri yüklenemedi.',
         ];
     }

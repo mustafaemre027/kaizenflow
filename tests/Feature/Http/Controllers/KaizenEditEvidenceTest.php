@@ -356,4 +356,97 @@ class KaizenEditEvidenceTest extends TestCase
 
         $this->assertEquals(2, $kaizen->attachments()->count());
     }
+
+    public function test_accept_image_size_between_5_and_8_mb()
+    {
+        Storage::fake('local');
+
+        $kaizen = Kaizen::factory()->create([
+            'creator_user_id' => $this->activeUser->id,
+            'status' => KaizenStatus::DRAFT,
+        ]);
+
+        // 6 MB image (6144 KB)
+        $file = UploadedFile::fake()->create('large.jpg', 6144, 'image/jpeg');
+
+        $response = $this->actingAs($this->activeUser)
+            ->patch(route('kaizens.update', $kaizen), [
+                'title' => 'New Title',
+                'current_situation_images' => [$file],
+            ]);
+
+        $response->assertRedirect(route('kaizens.show', $kaizen));
+        $this->assertEquals(1, $kaizen->attachments()->count());
+    }
+
+    public function test_reject_image_size_above_config_max()
+    {
+        Storage::fake('local');
+
+        $kaizen = Kaizen::factory()->create([
+            'creator_user_id' => $this->activeUser->id,
+            'status' => KaizenStatus::DRAFT,
+        ]);
+
+        // Max is 8192 KB, so let's send 8200 KB
+        $file = UploadedFile::fake()->create('oversize.jpg', 8200, 'image/jpeg');
+
+        $response = $this->actingAs($this->activeUser)
+            ->patch(route('kaizens.update', $kaizen), [
+                'title' => 'New Title',
+                'current_situation_images' => [$file],
+            ]);
+
+        $response->assertInvalid(['current_situation_images.0']);
+
+        $errors = session('errors')->getBag('default')->get('current_situation_images.0');
+        $this->assertStringContainsString('izin verilen dosya boyutunu aşıyor', $errors[0]);
+
+        $this->assertEquals(0, $kaizen->attachments()->count());
+    }
+
+    public function test_failed_validation_preserves_existing_attachments_and_metadata()
+    {
+        Storage::fake('local');
+
+        $kaizen = Kaizen::factory()->create([
+            'creator_user_id' => $this->activeUser->id,
+            'status' => KaizenStatus::DRAFT,
+            'title' => 'Old Title',
+        ]);
+
+        $file = UploadedFile::fake()->create('test.jpg', 10, 'image/jpeg');
+        $path = $file->store('kaizens/1/evidence/current', 'local');
+
+        $attachment = KaizenAttachment::factory()->create([
+            'kaizen_id' => $kaizen->id,
+            'context' => KaizenAttachmentContext::CURRENT_SITUATION,
+            'storage_path' => $path,
+            'storage_disk' => 'local',
+        ]);
+
+        // Request to remove existing and add oversize image
+        $oversizeFile = UploadedFile::fake()->create('oversize.jpg', 8200, 'image/jpeg');
+
+        $response = $this->actingAs($this->activeUser)
+            ->patch(route('kaizens.update', $kaizen), [
+                'title' => 'New Title',
+                'remove_attachment_ids' => [$attachment->id],
+                'current_situation_images' => [$oversizeFile],
+            ]);
+
+        $response->assertInvalid(['current_situation_images.0']);
+
+        // Check if DB and Storage are intact
+        $this->assertDatabaseHas('kaizens', [
+            'id' => $kaizen->id,
+            'title' => 'Old Title',
+        ]);
+
+        $this->assertDatabaseHas('kaizen_attachments', [
+            'id' => $attachment->id,
+        ]);
+
+        $this->assertTrue(Storage::disk('local')->exists($path));
+    }
 }
