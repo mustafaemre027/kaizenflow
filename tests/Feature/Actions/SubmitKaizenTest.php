@@ -8,6 +8,7 @@ use App\Enums\UserRole;
 use App\Exceptions\InvalidKaizenTransition;
 use App\Models\Kaizen;
 use App\Models\User;
+use Database\Seeders\ApprovalWorkflowSeeder;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
@@ -23,6 +24,7 @@ class SubmitKaizenTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->seed(ApprovalWorkflowSeeder::class);
         $this->action = app(SubmitKaizen::class);
     }
 
@@ -50,7 +52,7 @@ class SubmitKaizenTest extends TestCase
         $this->assertDatabaseHas('kaizen_status_histories', [
             'kaizen_id' => $kaizen->id,
             'actor_user_id' => $creator->id,
-            'transition_code' => 'TR-001',
+            'transition_code' => 'SUBMIT',
             'from_status' => KaizenStatus::DRAFT->value,
             'to_status' => KaizenStatus::SUBMITTED->value,
             'reason' => 'This is a reason', // trimmed
@@ -73,7 +75,7 @@ class SubmitKaizenTest extends TestCase
         $this->assertDatabaseHas('kaizen_status_histories', [
             'kaizen_id' => $kaizen->id,
             'actor_user_id' => $creator->id,
-            'transition_code' => 'TR-002',
+            'transition_code' => 'SUBMIT',
             'from_status' => KaizenStatus::REVISION_REQUESTED->value,
             'to_status' => KaizenStatus::SUBMITTED->value,
             'reason' => null, // empty string is nullified
@@ -220,7 +222,7 @@ class SubmitKaizenTest extends TestCase
         $this->assertEquals(KaizenStatus::SUBMITTED, $result->status);
         $this->assertDatabaseHas('kaizen_status_histories', [
             'kaizen_id' => $kaizen->id,
-            'transition_code' => 'TR-001',
+            'transition_code' => 'SUBMIT',
         ]);
     }
 

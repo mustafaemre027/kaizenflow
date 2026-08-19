@@ -7,6 +7,7 @@ use App\Enums\KaizenStatus;
 use App\Enums\UserRole;
 use App\Models\Kaizen;
 use App\Models\User;
+use Database\Seeders\ApprovalWorkflowSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
@@ -15,6 +16,12 @@ use Tests\TestCase;
 class KaizenSubmissionControllerTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->seed(ApprovalWorkflowSeeder::class);
+    }
 
     public function test_unauthenticated_json_user_receives_401(): void
     {
@@ -58,7 +65,7 @@ class KaizenSubmissionControllerTest extends TestCase
         $this->assertDatabaseHas('kaizen_status_histories', [
             'kaizen_id' => $kaizen->id,
             'actor_user_id' => $user->id,
-            'transition_code' => 'TR-001',
+            'transition_code' => 'SUBMIT',
             'reason' => 'Some reason',
         ]);
 
@@ -85,7 +92,7 @@ class KaizenSubmissionControllerTest extends TestCase
         $this->assertDatabaseHas('kaizen_status_histories', [
             'kaizen_id' => $kaizen->id,
             'actor_user_id' => $user->id,
-            'transition_code' => 'TR-002',
+            'transition_code' => 'SUBMIT',
             'reason' => null,
         ]);
     }

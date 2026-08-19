@@ -2,18 +2,20 @@
 
 namespace App\Actions\Kaizens;
 
+use App\Actions\Workflow\StartKaizenWorkflow;
 use App\Enums\KaizenStatus;
+use App\Enums\UserRole;
+use App\Enums\WorkflowAction;
 use App\Exceptions\InvalidKaizenTransition;
 use App\Models\Kaizen;
 use App\Models\User;
-use App\Services\Kaizens\KaizenTransitionMap;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class SubmitKaizen
 {
-    public function __construct(private readonly KaizenTransitionMap $transitionMap) {}
+    public function __construct(private readonly StartKaizenWorkflow $startWorkflowAction) {}
 
     public function execute(User $actor, Kaizen $kaizen, ?string $reason = null): Kaizen
     {
@@ -28,6 +30,10 @@ class SubmitKaizen
                 throw new AuthorizationException('Only the creator can submit this Kaizen.');
             }
 
+            if ($actor->role !== UserRole::EMPLOYEE) {
+                throw new AuthorizationException('Your role is not authorized to submit this Kaizen.');
+            }
+
             $fromStatus = $lockedKaizen->status;
             $toStatus = KaizenStatus::SUBMITTED;
 
@@ -35,11 +41,7 @@ class SubmitKaizen
                 throw new InvalidKaizenTransition($fromStatus, $toStatus);
             }
 
-            if (! $this->transitionMap->canRolePerformTransition($fromStatus, $toStatus, $actor->role)) {
-                throw new AuthorizationException('Your role is not authorized to submit this Kaizen.');
-            }
-
-            $transitionCode = $this->transitionMap->getTransitionCode($fromStatus, $toStatus);
+            $transitionCode = 'SUBMIT';
 
             $reason = is_string($reason) ? trim($reason) : null;
             $reason = $reason === '' ? null : $reason;
@@ -51,7 +53,7 @@ class SubmitKaizen
             }
 
             $lockedKaizen->status = $toStatus;
-            $lockedKaizen->submitted_at = now();
+            $lockedKaizen->submitted_at = $lockedKaizen->submitted_at ?? now();
             $lockedKaizen->save();
 
             $lockedKaizen->statusHistories()->create([
@@ -62,6 +64,26 @@ class SubmitKaizen
                 'reason' => $reason,
                 'metadata' => null,
             ]);
+
+            // Workflow Orchestration
+            if ($fromStatus === KaizenStatus::DRAFT) {
+                $this->startWorkflowAction->execute($lockedKaizen, $actor);
+            } elseif ($fromStatus === KaizenStatus::REVISION_REQUESTED) {
+                if ($lockedKaizen->workflowInstance()->exists()) {
+                    $instance = $lockedKaizen->workflowInstance;
+                    $instance->transitions()->create([
+                        'kaizen_id' => $lockedKaizen->id,
+                        'from_stage_id' => $instance->current_stage_id,
+                        'to_stage_id' => $instance->current_stage_id,
+                        'actor_user_id' => $actor->id,
+                        'action' => WorkflowAction::RESUBMIT,
+                        'comment' => 'Revizyon sonrası yeniden gönderildi.',
+                    ]);
+                } else {
+                    // Legacy Bootstrap
+                    $this->startWorkflowAction->execute($lockedKaizen, $actor);
+                }
+            }
 
             return $lockedKaizen->refresh();
         });
