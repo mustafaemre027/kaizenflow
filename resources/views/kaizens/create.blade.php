@@ -86,18 +86,32 @@
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
 
-                        <div class="mt-3 p-3 border rounded bg-light">
-                            <label for="current_situation_images" class="kf-form-label mb-1">Mevcut Durum Fotoğrafları</label>
-                            <input type="file" name="current_situation_images[]" id="current_situation_images" multiple accept="image/jpeg,image/png,image/webp" class="form-control @error('current_situation_images') is-invalid @enderror @error('current_situation_images.*') is-invalid @enderror" aria-describedby="current_situation_help">
-                            <small id="current_situation_help" class="form-text text-muted d-block mt-1">
-                                Mevcut problemi veya sürecin mevcut halini gösteren fotoğrafları ekleyebilirsiniz. <br>
-                                En fazla {{ config('kaizen.attachments.max_images_per_context', 8) }} fotoğraf &bull; JPEG, PNG veya WEBP &bull; Dosya başına en fazla {{ round(config('kaizen.attachments.max_image_kb', 8192) / 1024) }} MB
-                            </small>
+                        <div class="mt-3 p-3 border rounded bg-light" data-evidence-picker data-max-files="{{ config('kaizen.attachments.max_images_per_context', 8) }}" data-max-kb="{{ config('kaizen.attachments.max_image_kb', 8192) }}">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <label for="current_situation_images" class="kf-form-label mb-0">Mevcut Durum Fotoğrafları</label>
+                                <span class="text-muted small picker-counter">0 / {{ config('kaizen.attachments.max_images_per_context', 8) }} fotoğraf</span>
+                            </div>
+
+                            <div class="picker-header mb-3">
+                                <div class="position-relative d-inline-block">
+                                    <input type="file" name="current_situation_images[]" id="current_situation_images" multiple accept="image/jpeg,image/png,image/webp" class="visually-hidden picker-input @error('current_situation_images') is-invalid @enderror @error('current_situation_images.*') is-invalid @enderror" aria-describedby="current_situation_help">
+                                    <label for="current_situation_images" class="btn btn-outline-secondary btn-sm mb-0">
+                                        Fotoğrafları Seç
+                                    </label>
+                                </div>
+                                <small id="current_situation_help" class="form-text text-muted d-block mt-2">
+                                    JPEG, PNG veya WEBP &bull; Dosya başına en fazla {{ round(config('kaizen.attachments.max_image_kb', 8192) / 1024) }} MB
+                                </small>
+                            </div>
+
+                            <div class="picker-preview-area d-flex flex-wrap gap-2"></div>
+                            <div class="picker-error-region text-danger small mt-2 fw-medium" aria-live="polite"></div>
+
                             @error('current_situation_images')
-                                <div class="invalid-feedback">{{ $message }}</div>
+                                <div class="text-danger small mt-2">{{ $message }}</div>
                             @enderror
                             @error('current_situation_images.*')
-                                <div class="invalid-feedback">{{ $message }}</div>
+                                <div class="text-danger small mt-2">{{ $message }}</div>
                             @enderror
                         </div>
                     </div>
@@ -109,18 +123,32 @@
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
 
-                        <div class="mt-3 p-3 border rounded bg-light">
-                            <label for="proposed_situation_images" class="kf-form-label mb-1">Önerilen Durum Fotoğrafları</label>
-                            <input type="file" name="proposed_situation_images[]" id="proposed_situation_images" multiple accept="image/jpeg,image/png,image/webp" class="form-control @error('proposed_situation_images') is-invalid @enderror @error('proposed_situation_images.*') is-invalid @enderror" aria-describedby="proposed_situation_help">
-                            <small id="proposed_situation_help" class="form-text text-muted d-block mt-1">
-                                Öneriyi, taslağı veya hedeflenen iyileştirmeyi açıklayan görseller ekleyebilirsiniz. <br>
-                                En fazla {{ config('kaizen.attachments.max_images_per_context', 8) }} fotoğraf &bull; JPEG, PNG veya WEBP &bull; Dosya başına en fazla {{ round(config('kaizen.attachments.max_image_kb', 8192) / 1024) }} MB
-                            </small>
+                        <div class="mt-3 p-3 border rounded bg-light" data-evidence-picker data-max-files="{{ config('kaizen.attachments.max_images_per_context', 8) }}" data-max-kb="{{ config('kaizen.attachments.max_image_kb', 8192) }}">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <label for="proposed_situation_images" class="kf-form-label mb-0">Önerilen Durum Fotoğrafları</label>
+                                <span class="text-muted small picker-counter">0 / {{ config('kaizen.attachments.max_images_per_context', 8) }} fotoğraf</span>
+                            </div>
+
+                            <div class="picker-header mb-3">
+                                <div class="position-relative d-inline-block">
+                                    <input type="file" name="proposed_situation_images[]" id="proposed_situation_images" multiple accept="image/jpeg,image/png,image/webp" class="visually-hidden picker-input @error('proposed_situation_images') is-invalid @enderror @error('proposed_situation_images.*') is-invalid @enderror" aria-describedby="proposed_situation_help">
+                                    <label for="proposed_situation_images" class="btn btn-outline-secondary btn-sm mb-0">
+                                        Fotoğrafları Seç
+                                    </label>
+                                </div>
+                                <small id="proposed_situation_help" class="form-text text-muted d-block mt-2">
+                                    JPEG, PNG veya WEBP &bull; Dosya başına en fazla {{ round(config('kaizen.attachments.max_image_kb', 8192) / 1024) }} MB
+                                </small>
+                            </div>
+
+                            <div class="picker-preview-area d-flex flex-wrap gap-2"></div>
+                            <div class="picker-error-region text-danger small mt-2 fw-medium" aria-live="polite"></div>
+
                             @error('proposed_situation_images')
-                                <div class="invalid-feedback">{{ $message }}</div>
+                                <div class="text-danger small mt-2">{{ $message }}</div>
                             @enderror
                             @error('proposed_situation_images.*')
-                                <div class="invalid-feedback">{{ $message }}</div>
+                                <div class="text-danger small mt-2">{{ $message }}</div>
                             @enderror
                         </div>
                     </div>
