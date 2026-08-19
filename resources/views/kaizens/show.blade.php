@@ -58,6 +58,28 @@
                     <h3 class="kf-content-title">Mevcut Durum</h3>
                 </div>
                 <p class="kf-detail-text">{{ $kaizen->current_situation }}</p>
+
+                @if($currentSituationAttachments->isNotEmpty())
+                    <div class="kf-gallery-container mt-3">
+                        <div class="d-flex align-items-center mb-2">
+                            <h4 class="kf-gallery-title mb-0 fs-6 fw-medium text-dark">Fotoğraflar</h4>
+                            <span class="ms-2 badge bg-light text-secondary border fw-normal">{{ $currentSituationAttachments->count() }} fotoğraf</span>
+                        </div>
+                        <div class="kf-gallery-grid">
+                            @foreach($currentSituationAttachments as $index => $attachment)
+                                <a href="{{ route('kaizens.attachments.show', [$kaizen, $attachment]) }}"
+                                   target="_blank"
+                                   rel="noopener"
+                                   class="kf-gallery-item"
+                                   aria-label="Mevcut durum fotoğrafı {{ $index + 1 }}">
+                                    <img src="{{ route('kaizens.attachments.show', [$kaizen, $attachment]) }}"
+                                         alt="Mevcut durum fotoğrafı {{ $index + 1 }}"
+                                         loading="lazy">
+                                </a>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
             </div>
 
             <div class="kf-content-block">
@@ -66,6 +88,28 @@
                     <h3 class="kf-content-title">Önerilen Durum</h3>
                 </div>
                 <p class="kf-detail-text">{{ $kaizen->proposed_situation }}</p>
+
+                @if($proposedSituationAttachments->isNotEmpty())
+                    <div class="kf-gallery-container mt-3">
+                        <div class="d-flex align-items-center mb-2">
+                            <h4 class="kf-gallery-title mb-0 fs-6 fw-medium text-dark">Fotoğraflar</h4>
+                            <span class="ms-2 badge bg-light text-secondary border fw-normal">{{ $proposedSituationAttachments->count() }} fotoğraf</span>
+                        </div>
+                        <div class="kf-gallery-grid">
+                            @foreach($proposedSituationAttachments as $index => $attachment)
+                                <a href="{{ route('kaizens.attachments.show', [$kaizen, $attachment]) }}"
+                                   target="_blank"
+                                   rel="noopener"
+                                   class="kf-gallery-item"
+                                   aria-label="Önerilen durum fotoğrafı {{ $index + 1 }}">
+                                    <img src="{{ route('kaizens.attachments.show', [$kaizen, $attachment]) }}"
+                                         alt="Önerilen durum fotoğrafı {{ $index + 1 }}"
+                                         loading="lazy">
+                                </a>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
             </div>
 
             <div class="kf-content-block">
