@@ -11,6 +11,7 @@ use App\Models\Department;
 use App\Models\Kaizen;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Tests\TestCase;
 
 class KaizenControllerTest extends TestCase
@@ -109,6 +110,8 @@ class KaizenControllerTest extends TestCase
             'current_situation' => 'Current sit',
             'proposed_situation' => 'Proposed sit',
             'expected_benefit' => 'Expected ben',
+            'current_situation_images' => [UploadedFile::fake()->create('current.jpg', 10, 'image/jpeg')],
+            'proposed_situation_images' => [UploadedFile::fake()->create('proposed.jpg', 10, 'image/jpeg')],
         ];
 
         $response = $this->actingAs($this->user)->postJson(route('kaizens.store'), $payload);
@@ -205,6 +208,8 @@ class KaizenControllerTest extends TestCase
             'current_situation' => 'Current sit',
             'proposed_situation' => 'Proposed sit',
             'expected_benefit' => 'Expected ben',
+            'current_situation_images' => [UploadedFile::fake()->create('current.jpg', 10, 'image/jpeg')],
+            'proposed_situation_images' => [UploadedFile::fake()->create('proposed.jpg', 10, 'image/jpeg')],
         ];
 
         $response = $this->actingAs($this->user)->post(route('kaizens.store'), $payload);
@@ -229,6 +234,8 @@ class KaizenControllerTest extends TestCase
             'current_situation' => 'Mock situation long enough',
             'proposed_situation' => 'Mock situation long enough',
             'expected_benefit' => 'Mock benefit long enough',
+            'current_situation_images' => [UploadedFile::fake()->create('current.jpg', 10, 'image/jpeg')],
+            'proposed_situation_images' => [UploadedFile::fake()->create('proposed.jpg', 10, 'image/jpeg')],
         ];
 
         $this->actingAs($this->user)->postJson(route('kaizens.store'), $payload);

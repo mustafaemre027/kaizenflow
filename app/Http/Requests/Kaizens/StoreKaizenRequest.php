@@ -51,23 +51,27 @@ class StoreKaizenRequest extends FormRequest
             'updated_at' => ['prohibited'],
 
             'current_situation_images' => [
-                'nullable',
+                'required',
                 'array',
+                'min:1',
                 'max:'.config('kaizen.attachments.max_images_per_context', 8),
             ],
             'current_situation_images.*' => [
                 'file',
+                'image',
                 'mimetypes:'.implode(',', config('kaizen.attachments.allowed_mimes', ['image/jpeg', 'image/png', 'image/webp'])),
                 'max:'.config('kaizen.attachments.max_image_kb', 8192),
             ],
 
             'proposed_situation_images' => [
-                'nullable',
+                'required',
                 'array',
+                'min:1',
                 'max:'.config('kaizen.attachments.max_images_per_context', 8),
             ],
             'proposed_situation_images.*' => [
                 'file',
+                'image',
                 'mimetypes:'.implode(',', config('kaizen.attachments.allowed_mimes', ['image/jpeg', 'image/png', 'image/webp'])),
                 'max:'.config('kaizen.attachments.max_image_kb', 8192),
             ],
@@ -88,6 +92,24 @@ class StoreKaizenRequest extends FormRequest
             'current_situation_images.*' => 'Mevcut Durum Fotoğrafı',
             'proposed_situation_images' => 'Önerilen Durum Fotoğrafları',
             'proposed_situation_images.*' => 'Önerilen Durum Fotoğrafı',
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'current_situation_images.required' => 'Mevcut durum için en az bir fotoğraf yüklemelisiniz.',
+            'current_situation_images.min' => 'Mevcut durum için en az bir fotoğraf yüklemelisiniz.',
+            'proposed_situation_images.required' => 'Önerilen durum için en az bir fotoğraf yüklemelisiniz.',
+            'proposed_situation_images.min' => 'Önerilen durum için en az bir fotoğraf yüklemelisiniz.',
+            'current_situation_images.*.mimetypes' => 'Yalnızca JPEG, PNG veya WEBP fotoğrafları yükleyebilirsiniz.',
+            'current_situation_images.*.image' => 'Yalnızca JPEG, PNG veya WEBP fotoğrafları yükleyebilirsiniz.',
+            'current_situation_images.*.max' => 'Bir fotoğraf izin verilen boyut sınırını aşıyor.',
+            'current_situation_images.*.file' => 'Seçilen fotoğraflardan biri yüklenemedi.',
+            'proposed_situation_images.*.mimetypes' => 'Yalnızca JPEG, PNG veya WEBP fotoğrafları yükleyebilirsiniz.',
+            'proposed_situation_images.*.image' => 'Yalnızca JPEG, PNG veya WEBP fotoğrafları yükleyebilirsiniz.',
+            'proposed_situation_images.*.max' => 'Bir fotoğraf izin verilen boyut sınırını aşıyor.',
+            'proposed_situation_images.*.file' => 'Seçilen fotoğraflardan biri yüklenemedi.',
         ];
     }
 }
