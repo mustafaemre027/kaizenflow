@@ -2,9 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Actions\Kaizens\CreateKaizenDraft;
+use App\Actions\Kaizens\CreateKaizenDraftWithEvidence;
 use App\Actions\Kaizens\SubmitKaizen;
-use App\Actions\Kaizens\UpdateKaizenDraft;
+use App\Actions\Kaizens\UpdateKaizenDraftWithEvidence;
+use App\Enums\KaizenAttachmentContext;
 use App\Enums\KaizenStatus;
 use App\Enums\UserRole;
 use App\Http\Requests\Kaizens\IndexKaizenRequest;
@@ -97,14 +98,37 @@ class KaizenController extends Controller
             }
         }
 
-        return view('kaizens.edit', compact('kaizen', 'categories'));
+        $kaizen->load(['attachments' => function ($query) {
+            $query->orderBy('context')->orderBy('sort_order');
+        }]);
+
+        $currentSituationAttachments = $kaizen->attachments->where('context', KaizenAttachmentContext::CURRENT_SITUATION->value);
+        $proposedSituationAttachments = $kaizen->attachments->where('context', KaizenAttachmentContext::PROPOSED_SITUATION->value);
+
+        return view('kaizens.edit', compact(
+            'kaizen',
+            'categories',
+            'currentSituationAttachments',
+            'proposedSituationAttachments'
+        ));
     }
 
     public function show(Kaizen $kaizen)
     {
         Gate::authorize('view', $kaizen);
 
-        $kaizen->load(['creator', 'assignedUser', 'department', 'category']);
+        $kaizen->load([
+            'creator',
+            'assignedUser',
+            'department',
+            'category',
+            'attachments' => function ($query) {
+                $query->orderBy('context')->orderBy('sort_order');
+            },
+        ]);
+
+        $currentSituationAttachments = $kaizen->attachments->where('context', KaizenAttachmentContext::CURRENT_SITUATION->value);
+        $proposedSituationAttachments = $kaizen->attachments->where('context', KaizenAttachmentContext::PROPOSED_SITUATION->value);
 
         $workflowStatuses = [
             KaizenStatus::DRAFT,
@@ -117,16 +141,31 @@ class KaizenController extends Controller
 
         $specialWorkflowStatus = in_array($kaizen->status, $workflowStatuses, true) ? null : $kaizen->status;
 
-        return view('kaizens.show', compact('kaizen', 'workflowStatuses', 'specialWorkflowStatus'));
+        return view('kaizens.show', compact(
+            'kaizen',
+            'workflowStatuses',
+            'specialWorkflowStatus',
+            'currentSituationAttachments',
+            'proposedSituationAttachments'
+        ));
     }
 
-    public function store(StoreKaizenRequest $request, CreateKaizenDraft $createAction)
+    public function store(StoreKaizenRequest $request, CreateKaizenDraftWithEvidence $createAction)
     {
         $validated = $request->validated();
         $user = $request->user();
         $category = Category::find($validated['category_id']);
 
-        $kaizen = $createAction->execute($user, $category, $validated);
+        $currentSituationImages = $request->file('current_situation_images', []);
+        $proposedSituationImages = $request->file('proposed_situation_images', []);
+
+        $kaizen = $createAction->execute(
+            $user,
+            $category,
+            $validated,
+            $currentSituationImages,
+            $proposedSituationImages
+        );
 
         if ($request->expectsJson()) {
             return response()->json(
@@ -147,7 +186,7 @@ class KaizenController extends Controller
         return redirect()->route('kaizens.show', $kaizen)->with('success', 'Kaizen taslağı başarıyla oluşturuldu.');
     }
 
-    public function update(UpdateKaizenDraftRequest $request, Kaizen $kaizen, UpdateKaizenDraft $updateAction)
+    public function update(UpdateKaizenDraftRequest $request, Kaizen $kaizen, UpdateKaizenDraftWithEvidence $updateAction)
     {
         $validated = $request->validated();
         $user = $request->user();

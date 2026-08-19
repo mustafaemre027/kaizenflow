@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\KaizenAttachmentController;
 use App\Http\Controllers\KaizenController;
 use App\Http\Controllers\Settings\CategoryController;
 use App\Http\Controllers\Settings\DepartmentController;
@@ -25,6 +26,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/kaizens', [KaizenController::class, 'store'])->name('kaizens.store');
     Route::patch('/kaizens/{kaizen}', [KaizenController::class, 'update'])->name('kaizens.update');
     Route::post('/kaizens/{kaizen}/submit', [KaizenController::class, 'submit'])->name('kaizens.submit');
+
+    Route::get('/kaizens/{kaizen}/attachments/{attachment}', [KaizenAttachmentController::class, 'show'])->name('kaizens.attachments.show');
+    Route::get('/kaizens/{kaizen}/attachments/{attachment}/download', [KaizenAttachmentController::class, 'download'])->name('kaizens.attachments.download');
 
     Route::prefix('settings')->name('settings.')->group(function () {
         Route::get('/reference-data', [ReferenceDataController::class, 'index'])->name('reference-data.index');

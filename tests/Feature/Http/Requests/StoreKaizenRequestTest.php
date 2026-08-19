@@ -8,6 +8,7 @@ use App\Models\Category;
 use App\Models\Department;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Validator;
 use Tests\TestCase;
@@ -41,6 +42,8 @@ class StoreKaizenRequestTest extends TestCase
             'expected_benefit' => 'Expected benefit is high.',
             'priority' => KaizenPriority::MEDIUM->value,
             'target_date' => Carbon::tomorrow()->format('Y-m-d'),
+            'current_situation_images' => [UploadedFile::fake()->create('current.jpg', 10, 'image/jpeg')],
+            'proposed_situation_images' => [UploadedFile::fake()->create('proposed.jpg', 10, 'image/jpeg')],
         ]);
 
         $this->assertTrue($validator->passes());
@@ -68,6 +71,8 @@ class StoreKaizenRequestTest extends TestCase
             'current_situation' => 'Current situation is bad.',
             'proposed_situation' => 'Proposed situation is good.',
             'expected_benefit' => 'Expected benefit is high.',
+            'current_situation_images' => [UploadedFile::fake()->create('current.jpg', 10, 'image/jpeg')],
+            'proposed_situation_images' => [UploadedFile::fake()->create('proposed.jpg', 10, 'image/jpeg')],
         ]);
 
         $this->assertTrue($validator->fails());
@@ -82,6 +87,8 @@ class StoreKaizenRequestTest extends TestCase
             'current_situation' => 'Current situation is bad.',
             'proposed_situation' => 'Proposed situation is good.',
             'expected_benefit' => 'Expected benefit is high.',
+            'current_situation_images' => [UploadedFile::fake()->create('current.jpg', 10, 'image/jpeg')],
+            'proposed_situation_images' => [UploadedFile::fake()->create('proposed.jpg', 10, 'image/jpeg')],
         ]);
 
         $this->assertTrue($validator->fails());
@@ -98,6 +105,8 @@ class StoreKaizenRequestTest extends TestCase
             'current_situation' => 'Current situation is bad.',
             'proposed_situation' => 'Proposed situation is good.',
             'expected_benefit' => 'Expected benefit is high.',
+            'current_situation_images' => [UploadedFile::fake()->create('current.jpg', 10, 'image/jpeg')],
+            'proposed_situation_images' => [UploadedFile::fake()->create('proposed.jpg', 10, 'image/jpeg')],
         ]);
 
         $this->assertTrue($validator->fails());
@@ -114,6 +123,8 @@ class StoreKaizenRequestTest extends TestCase
             'current_situation' => 'Current situation is bad.',
             'proposed_situation' => 'Proposed situation is good.',
             'expected_benefit' => 'Expected benefit is high.',
+            'current_situation_images' => [UploadedFile::fake()->create('current.jpg', 10, 'image/jpeg')],
+            'proposed_situation_images' => [UploadedFile::fake()->create('proposed.jpg', 10, 'image/jpeg')],
         ]);
 
         $this->assertTrue($validator->fails());
@@ -130,6 +141,8 @@ class StoreKaizenRequestTest extends TestCase
             'current_situation' => 'Short', // less than 10
             'proposed_situation' => 'Short', // less than 10
             'expected_benefit' => 'Short', // less than 10
+            'current_situation_images' => [UploadedFile::fake()->create('current.jpg', 10, 'image/jpeg')],
+            'proposed_situation_images' => [UploadedFile::fake()->create('proposed.jpg', 10, 'image/jpeg')],
         ]);
 
         $this->assertTrue($validator->fails());
@@ -148,6 +161,8 @@ class StoreKaizenRequestTest extends TestCase
             'current_situation' => 'Current situation is bad.',
             'proposed_situation' => 'Proposed situation is good.',
             'expected_benefit' => 'Expected benefit is high.',
+            'current_situation_images' => [UploadedFile::fake()->create('current.jpg', 10, 'image/jpeg')],
+            'proposed_situation_images' => [UploadedFile::fake()->create('proposed.jpg', 10, 'image/jpeg')],
         ];
 
         // Valid
@@ -173,6 +188,8 @@ class StoreKaizenRequestTest extends TestCase
             'current_situation' => 'Current situation is bad.',
             'proposed_situation' => 'Proposed situation is good.',
             'expected_benefit' => 'Expected benefit is high.',
+            'current_situation_images' => [UploadedFile::fake()->create('current.jpg', 10, 'image/jpeg')],
+            'proposed_situation_images' => [UploadedFile::fake()->create('proposed.jpg', 10, 'image/jpeg')],
         ];
 
         // Today is valid
@@ -199,6 +216,8 @@ class StoreKaizenRequestTest extends TestCase
             'current_situation' => 'Current situation is bad.',
             'proposed_situation' => 'Proposed situation is good.',
             'expected_benefit' => 'Expected benefit is high.',
+            'current_situation_images' => [UploadedFile::fake()->create('current.jpg', 10, 'image/jpeg')],
+            'proposed_situation_images' => [UploadedFile::fake()->create('proposed.jpg', 10, 'image/jpeg')],
         ];
 
         $sensitiveFields = [
