@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ApprovalController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\KaizenApprovalActionController;
 use App\Http\Controllers\KaizenAttachmentController;
 use App\Http\Controllers\KaizenController;
 use App\Http\Controllers\Settings\CategoryController;
@@ -28,6 +29,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/kaizens', [KaizenController::class, 'store'])->name('kaizens.store');
     Route::patch('/kaizens/{kaizen}', [KaizenController::class, 'update'])->name('kaizens.update');
     Route::post('/kaizens/{kaizen}/submit', [KaizenController::class, 'submit'])->name('kaizens.submit');
+    Route::post('/kaizens/{kaizen}/workflow/approve', [KaizenApprovalActionController::class, 'approve'])->name('kaizens.workflow.approve');
+    Route::post('/kaizens/{kaizen}/workflow/request-revision', [KaizenApprovalActionController::class, 'requestRevision'])->name('kaizens.workflow.request-revision');
+    Route::post('/kaizens/{kaizen}/workflow/reject', [KaizenApprovalActionController::class, 'reject'])->name('kaizens.workflow.reject');
 
     Route::get('/kaizens/{kaizen}/attachments/{attachment}', [KaizenAttachmentController::class, 'show'])->name('kaizens.attachments.show');
     Route::get('/kaizens/{kaizen}/attachments/{attachment}/download', [KaizenAttachmentController::class, 'download'])->name('kaizens.attachments.download');

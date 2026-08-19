@@ -57,6 +57,15 @@ Sürecin "hangi sırayla" (sequence) ilerlediği kodlandıktan sonra, "kim onayl
 - **Approval Inbox**: Yetkili kişilerin onaylaması beklenen işler, DB tabanlı bir `PendingApprovalsQuery` ile süzülür ve güvenli "Onay Bekleyenler" (`/approvals`) inbox ekranına yansır.
 - **Narrow Visibility**: Onaycı yetkisi yalnızca o anki stage'deki ilgili Kaizen için "İncele" (view) hakkı verir. Şirketteki tüm Kaizenleri görüntüleme (global visibility) ayrı bir konudur.
 
+## Approval Actions & Flow (Day 11 - Block 6)
+Onay ekranında veya Kaizen detay ekranında ilgili onaycının `APPROVE`, `REQUEST_REVISION` ve `REJECT` olmak üzere üç temel işlemi (action) bulunur. Bu işlemler `ProgressKaizenWorkflow` domain motoru tarafından işlenir:
+
+- **Approve (Onayla)**: Mevcut onay aşaması final değilse `current_stage_id` bir sonraki DB stage'e ilerler (Stage Handoff) ve Kaizen lifecycle durumu `SUBMITTED` olarak kalır. Yetki otomatik olarak bir sonraki grup üyelerine geçer. Eğer aşama final ise, süreç tamamlanır (`completed_at` atanır) ve Kaizen statüsü `APPROVED` olur.
+- **Request Revision (Revizyon İste)**: Gerekçesi zorunludur. Süreç aşaması değişmez, ancak Kaizen statüsü `REVISION_REQUESTED` olur. Sahibi düzelttiğinde yeniden onaya gönderir, mevcut stage'deki (veya gruptaki) onaycılar işi tekrar inbox'larında görür.
+- **Reject (Reddet)**: Gerekçesi zorunludur. Süreç kalıcı olarak kapatılır (`cancelled_at` atanır) ve Kaizen statüsü `REJECTED` olur.
+
+**Concurrency & Stale Protection**: İşlemler (actions), veritabanında `lockForUpdate` üzerinden transaction korumasına alınmıştır. Kullanıcı ekranı açık bıraktığında başka biri onaylamış ve stage ilerlemişse, geç (stale) gelen request `DomainException` fırlatarak (409-like davranışla) güvenli şekilde engellenir.
+
 ## Timeline & Read Model (Zaman Çizelgesi ve Okuma Modeli)
 Kaizen detay ekranında gösterilen dinamik zaman çizelgesi (timeline) sadece bir **sunum (presentation)** katmanıdır. `KaizenWorkflowTimelinePresenter` aracılığıyla, DB sorguları UI'dan (Blade) izole edilmiştir.
 - **Approval Workflow vs Execution Lifecycle**: Onay aşamaları, projenin "Uygulamada" (In Progress) ve "Tamamlandı" (Completed) gibi teknik statülerinden ayrı tutulur. Timeline sadece *Onay Süreci'ni* çizer, kurul onayı bitince kapanır.

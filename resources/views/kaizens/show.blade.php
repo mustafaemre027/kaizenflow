@@ -286,6 +286,124 @@
     </div>
 </div>
 
+@can('reviewOnWorkflow', $kaizen)
+<div class="kf-panel mt-4 mb-4 border-primary border-opacity-25" style="background-color: var(--kf-primary-subtle);">
+    <div class="kf-panel-header bg-transparent border-bottom-0 pb-0 pt-4">
+        <h2 class="kf-panel-title text-primary d-flex align-items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-shield-check" viewBox="0 0 16 16">
+              <path d="M5.338 1.59a61 61 0 0 0-2.837.856.48.48 0 0 0-.328.39c-.554 4.157.726 7.19 2.253 9.188a10.7 10.7 0 0 0 2.287 2.233c.346.244.652.42.893.533q.18.085.323.136.14-.051.323-.136a7.2 7.2 0 0 0 .893-.533 10.7 10.7 0 0 0 2.287-2.233c1.527-1.997 2.807-5.031 2.253-9.188a.48.48 0 0 0-.328-.39c-.651-.213-1.75-.56-2.837-.855C9.552 1.29 8.531 1.067 8 1.067c-.53 0-1.552.223-2.662.524zM5.072.56C6.157.265 7.31 0 8 0s1.843.265 2.928.56c1.11.3 2.229.655 2.887.87a1.54 1.54 0 0 1 1.044 1.262c.596 4.477-.787 7.795-2.465 9.99a11.8 11.8 0 0 1-2.517 2.453 7.2 7.2 0 0 1-1.084.665c-.426.228-.846.333-1.113.333s-.687-.105-1.113-.333a7.2 7.2 0 0 1-1.084-.665 11.8 11.8 0 0 1-2.517-2.453C1.928 10.487.545 7.169 1.141 2.692A1.54 1.54 0 0 1 2.185 1.43 63 63 0 0 1 5.072.56"/>
+              <path d="M10.854 5.146a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708 0l-1.5-1.5a.5.5 0 1 1 .708-.708L7.5 7.793l2.646-2.647a.5.5 0 0 1 .708 0"/>
+            </svg>
+            Değerlendirme
+        </h2>
+    </div>
+    <div class="kf-panel-body p-4 pt-3">
+        <p class="mb-4 text-dark fw-medium">
+            Mevcut aşama: <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 ms-1">{{ $kaizen->workflowInstance->currentStage->name }}</span>
+        </p>
+        <div class="d-flex flex-wrap gap-3">
+            <button type="button" class="kf-btn kf-btn-primary px-4" data-bs-toggle="modal" data-bs-target="#approveModal">
+                Onayla
+            </button>
+            <button type="button" class="kf-btn kf-btn-warning px-4" data-bs-toggle="modal" data-bs-target="#revisionModal">
+                Revizyon İste
+            </button>
+            <button type="button" class="kf-btn kf-btn-danger px-4 ms-md-auto" data-bs-toggle="modal" data-bs-target="#rejectModal">
+                Reddet
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Approve Modal -->
+<div class="modal fade" id="approveModal" tabindex="-1" aria-labelledby="approveModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: var(--kf-radius-md);">
+            <div class="modal-header border-bottom-0 pb-0 pt-4 px-4">
+                <h5 class="modal-title fw-bold" id="approveModalLabel" style="color: var(--kf-text);">Kaizen'i Onayla</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+            </div>
+            <form action="{{ route('kaizens.workflow.approve', $kaizen) }}" method="POST">
+                @csrf
+                <div class="modal-body px-4 py-3">
+                    <p class="text-muted mb-4" style="font-size: 0.95rem;">
+                        @if($kaizen->workflowInstance->currentStage->is_final)
+                            Bu son onay aşamasıdır. Onayladığınızda süreç tamamlanacaktır.
+                        @else
+                            Bu değerlendirmeyi onayladığınızda Kaizen bir sonraki onay aşamasına ilerleyecektir.
+                        @endif
+                    </p>
+                    <div class="kf-form-group mb-0">
+                        <label for="approveComment" class="kf-form-label">Açıklama (Opsiyonel)</label>
+                        <textarea class="kf-form-control" id="approveComment" name="comment" rows="3" maxlength="2000"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0 pt-0 px-4 pb-4">
+                    <button type="button" class="kf-btn kf-btn-secondary" data-bs-dismiss="modal">Vazgeç</button>
+                    <button type="submit" class="kf-btn kf-btn-primary" onclick="this.disabled=true;this.form.submit();">Onayla</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Revision Modal -->
+<div class="modal fade" id="revisionModal" tabindex="-1" aria-labelledby="revisionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: var(--kf-radius-md);">
+            <div class="modal-header border-bottom-0 pb-0 pt-4 px-4">
+                <h5 class="modal-title fw-bold" id="revisionModalLabel" style="color: var(--kf-text);">Revizyon İste</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+            </div>
+            <form action="{{ route('kaizens.workflow.request-revision', $kaizen) }}" method="POST">
+                @csrf
+                <div class="modal-body px-4 py-3">
+                    <p class="text-muted mb-4" style="font-size: 0.95rem;">
+                        Kaizen sahibinin düzenleme yapabilmesi için gerekli değişiklikleri açıklayın.
+                    </p>
+                    <div class="kf-form-group mb-0">
+                        <label for="revisionComment" class="kf-form-label">Açıklama <span class="text-danger">*</span></label>
+                        <textarea class="kf-form-control" id="revisionComment" name="comment" rows="4" maxlength="2000" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0 pt-0 px-4 pb-4">
+                    <button type="button" class="kf-btn kf-btn-secondary" data-bs-dismiss="modal">Vazgeç</button>
+                    <button type="submit" class="kf-btn kf-btn-warning" onclick="if(this.form.checkValidity()){this.disabled=true;this.form.submit();}">Revizyon İste</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Reject Modal -->
+<div class="modal fade" id="rejectModal" tabindex="-1" aria-labelledby="rejectModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: var(--kf-radius-md);">
+            <div class="modal-header border-bottom-0 pb-0 pt-4 px-4">
+                <h5 class="modal-title fw-bold" id="rejectModalLabel" style="color: var(--kf-text);">Kaizen'i Reddet</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+            </div>
+            <form action="{{ route('kaizens.workflow.reject', $kaizen) }}" method="POST">
+                @csrf
+                <div class="modal-body px-4 py-3">
+                    <p class="text-muted mb-4" style="font-size: 0.95rem;">
+                        Reddetme nedenini belirtin. Bu işlem mevcut onay sürecini sonlandıracaktır.
+                    </p>
+                    <div class="kf-form-group mb-0">
+                        <label for="rejectComment" class="kf-form-label">Reddetme Nedeni <span class="text-danger">*</span></label>
+                        <textarea class="kf-form-control" id="rejectComment" name="comment" rows="4" maxlength="2000" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0 pt-0 px-4 pb-4">
+                    <button type="button" class="kf-btn kf-btn-secondary" data-bs-dismiss="modal">Vazgeç</button>
+                    <button type="submit" class="kf-btn kf-btn-danger" onclick="if(this.form.checkValidity()){this.disabled=true;this.form.submit();}">Reddet</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+@endcan
+
 @if($workflowTimeline->history->isNotEmpty())
 <div class="kf-panel mt-4 mb-4">
     <div class="kf-panel-header">
