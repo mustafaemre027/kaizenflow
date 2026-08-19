@@ -61,16 +61,16 @@ export function initializeEvidenceLightbox() {
 
     function updateLightboxContent() {
         const item = currentContextItems[currentIndex];
-        
+
         imgEl.src = item.viewUrl;
         imgEl.alt = item.altText;
         downloadBtn.href = item.downloadUrl;
-        
+
         counterEl.textContent = `${currentIndex + 1} / ${currentContextItems.length}`;
 
         prevBtn.style.visibility = currentContextItems.length > 1 ? 'visible' : 'hidden';
         nextBtn.style.visibility = currentContextItems.length > 1 ? 'visible' : 'hidden';
-        
+
         prevBtn.disabled = currentIndex === 0;
         nextBtn.disabled = currentIndex === currentContextItems.length - 1;
     }
@@ -112,11 +112,11 @@ export function initializeEvidenceLightbox() {
     document.querySelectorAll('[data-lightbox-trigger]').forEach((trigger) => {
         trigger.addEventListener('click', (e) => {
             e.preventDefault();
-            
+
             const context = trigger.getAttribute('data-context');
             // Find all triggers in the same context to build the gallery array
             const contextTriggers = Array.from(document.querySelectorAll(`[data-lightbox-trigger][data-context="${context}"]`));
-            
+
             const items = contextTriggers.map(t => ({
                 viewUrl: t.getAttribute('data-view-url'),
                 downloadUrl: t.getAttribute('data-download-url'),
@@ -124,7 +124,7 @@ export function initializeEvidenceLightbox() {
             }));
 
             const index = contextTriggers.indexOf(trigger);
-            
+
             if (index !== -1) {
                 openLightbox(items, index, trigger);
             }

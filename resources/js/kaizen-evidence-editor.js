@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Undo removal
                 wrapper.classList.remove('is-removed');
                 e.target.textContent = 'Kaldır';
-                
+
                 // Remove the hidden input
                 const hiddenInput = document.getElementById(`remove_attachment_${attachmentId}`);
                 if (hiddenInput) {
