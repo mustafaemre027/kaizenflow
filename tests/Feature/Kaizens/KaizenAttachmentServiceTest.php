@@ -143,4 +143,56 @@ class KaizenAttachmentServiceTest extends TestCase
         $filesInStorage = Storage::disk('local')->allFiles("kaizens/{$kaizen->id}");
         $this->assertEmpty($filesInStorage, 'Physical files should be cleaned up on DB failure');
     }
+
+    public function test_delete_physical_files_skips_outside_paths_and_unallowed_disks(): void
+    {
+        Storage::fake('local');
+        Storage::fake('s3');
+        config(['kaizen.attachments.managed_prefix' => 'kaizens']);
+        config(['kaizen.attachments.allowed_disks' => ['local']]);
+
+        // 1. Outside path
+        $outsidePath = 'other_module/secret.jpg';
+        Storage::disk('local')->put($outsidePath, 'secret data');
+        $outsideAttachment = KaizenAttachment::factory()->make([
+            'id' => 998,
+            'storage_path' => $outsidePath,
+            'storage_disk' => 'local',
+        ]);
+
+        // 2. Unallowed disk
+        $unallowedPath = 'kaizens/1/evidence/test.jpg';
+        Storage::disk('s3')->put($unallowedPath, 's3 data');
+        $unallowedAttachment = KaizenAttachment::factory()->make([
+            'id' => 999,
+            'storage_path' => $unallowedPath,
+            'storage_disk' => 's3',
+        ]);
+
+        $this->service->deletePhysicalFiles(collect([$outsideAttachment, $unallowedAttachment]));
+
+        // Both files should still exist
+        Storage::disk('local')->assertExists($outsidePath);
+        Storage::disk('s3')->assertExists($unallowedPath);
+    }
+
+    public function test_delete_physical_files_deletes_valid_attachments(): void
+    {
+        Storage::fake('local');
+        config(['kaizen.attachments.managed_prefix' => 'kaizens']);
+        config(['kaizen.attachments.allowed_disks' => ['local']]);
+
+        $validPath = 'kaizens/1/evidence/current/valid.jpg';
+        Storage::disk('local')->put($validPath, 'valid data');
+
+        $attachment = KaizenAttachment::factory()->make([
+            'id' => 1000,
+            'storage_path' => $validPath,
+            'storage_disk' => 'local',
+        ]);
+
+        $this->service->deletePhysicalFiles(collect([$attachment]));
+
+        Storage::disk('local')->assertMissing($validPath);
+    }
 }

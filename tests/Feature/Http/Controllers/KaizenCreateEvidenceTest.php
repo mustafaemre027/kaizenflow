@@ -315,4 +315,56 @@ class KaizenCreateEvidenceTest extends TestCase
         $this->assertEquals(0, Kaizen::count());
         $this->assertEquals(0, KaizenAttachment::count());
     }
+
+    public function test_create_outer_transaction_rollback_cleans_new_physical(): void
+    {
+        $this->withoutExceptionHandling();
+        Storage::fake('local');
+
+        $currentImage = UploadedFile::fake()->create('current.jpg', 10, 'image/jpeg');
+        $proposedImage = UploadedFile::fake()->create('proposed.jpg', 10, 'image/jpeg');
+
+        $payload = [
+            'category_id' => $this->category->id,
+            'title' => 'Outer rollback test',
+            'current_situation' => 'Current situation details',
+            'proposed_situation' => 'Proposed situation details',
+            'expected_benefit' => 'Expected benefit details',
+            'current_situation_images' => [$currentImage],
+            'proposed_situation_images' => [$proposedImage],
+        ];
+
+        // Mock KaizenAttachmentService to throw exception on the SECOND call (PROPOSED_SITUATION)
+        $mockService = \Mockery::mock(KaizenAttachmentService::class)->makePartial();
+
+        // Allow the first call (CURRENT) to pass through to the real implementation
+        $mockService->shouldReceive('storeMany')
+            ->withArgs(function ($kaizen, $creator, $context, $files) {
+                return $context === KaizenAttachmentContext::CURRENT_SITUATION;
+            })
+            ->passthru();
+
+        // Throw exception on the second call (PROPOSED)
+        $mockService->shouldReceive('storeMany')
+            ->withArgs(function ($kaizen, $creator, $context, $files) {
+                return $context === KaizenAttachmentContext::PROPOSED_SITUATION;
+            })
+            ->andThrow(new \Exception('Simulated proposed upload failure.'));
+
+        $this->app->instance(KaizenAttachmentService::class, $mockService);
+
+        try {
+            $this->actingAs($this->user)->post(route('kaizens.store'), $payload);
+            $this->fail('Expected exception was not thrown.');
+        } catch (\Exception $e) {
+            $this->assertEquals('Simulated proposed upload failure.', $e->getMessage());
+        }
+
+        // DB State
+        $this->assertEquals(0, Kaizen::count());
+        $this->assertEquals(0, KaizenAttachment::count());
+
+        // Physical state: The outer transaction catch block should have cleaned up the successful first upload
+        $this->assertCount(0, Storage::disk('local')->allFiles());
+    }
 }

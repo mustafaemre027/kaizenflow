@@ -45,7 +45,8 @@ class AuditKaizenAttachments extends Command
         try {
             $result = $this->integrity->audit($verifyHashes);
         } catch (\Exception $e) {
-            $this->error('Audit failed with an unexpected error: '.$e->getMessage());
+            $this->error('Audit failed: '.$e->getMessage());
+            $this->line('Storage listing may be unavailable. No cleanup was performed.');
 
             return self::FAILURE;
         }

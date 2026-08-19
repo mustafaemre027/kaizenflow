@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Http\Controllers;
 
+use App\Actions\Kaizens\UpdateKaizenDraft;
 use App\Enums\KaizenAttachmentContext;
 use App\Enums\KaizenStatus;
 use App\Enums\UserRole;
@@ -448,5 +449,131 @@ class KaizenEditEvidenceTest extends TestCase
         ]);
 
         $this->assertTrue(Storage::disk('local')->exists($path));
+    }
+
+    public function test_effective_limit_uses_config_and_rejects_oversize()
+    {
+        Storage::fake('local');
+        config(['kaizen.attachments.max_images_per_context' => 3]);
+
+        $kaizen = Kaizen::factory()->create([
+            'creator_user_id' => $this->activeUser->id,
+            'status' => KaizenStatus::DRAFT,
+        ]);
+
+        KaizenAttachment::factory()->count(3)->create([
+            'kaizen_id' => $kaizen->id,
+            'context' => KaizenAttachmentContext::CURRENT_SITUATION,
+        ]);
+
+        $newImage = UploadedFile::fake()->create('new.jpg', 10, 'image/jpeg');
+
+        $response = $this->actingAs($this->activeUser)
+            ->patch(route('kaizens.update', $kaizen), [
+                'title' => 'New Title',
+                'current_situation' => 'Current situation details',
+                'proposed_situation' => 'Proposed situation details',
+                'current_situation_images' => [$newImage], // 3 existing + 1 new = 4 > 3
+            ]);
+
+        $response->assertInvalid(['current_situation_images']);
+    }
+
+    public function test_effective_limit_uses_config_and_accepts_when_removed()
+    {
+        Storage::fake('local');
+        config(['kaizen.attachments.max_images_per_context' => 3]);
+
+        $kaizen = Kaizen::factory()->create([
+            'creator_user_id' => $this->activeUser->id,
+            'status' => KaizenStatus::DRAFT,
+            'category_id' => $this->category->id,
+            'title' => 'Title',
+            'current_situation' => 'Current situation details',
+            'proposed_situation' => 'Proposed situation details',
+        ]);
+
+        $attachments = KaizenAttachment::factory()->count(3)->create([
+            'kaizen_id' => $kaizen->id,
+            'context' => KaizenAttachmentContext::CURRENT_SITUATION,
+        ]);
+
+        $newImage = UploadedFile::fake()->create('new.jpg', 10, 'image/jpeg');
+
+        $response = $this->actingAs($this->activeUser)
+            ->patch(route('kaizens.update', $kaizen), [
+                'title' => 'New Title',
+                'current_situation' => 'Current situation details',
+                'proposed_situation' => 'Proposed situation details',
+                'category_id' => $this->category->id,
+                'remove_attachment_ids' => [$attachments->first()->id],
+                'current_situation_images' => [$newImage], // 3 existing - 1 remove + 1 new = 3 <= 3
+            ]);
+
+        $response->assertSessionHasNoErrors();
+        $this->assertEquals(3, $kaizen->attachments()->count());
+    }
+
+    public function test_update_outer_transaction_rollback_cleans_new_physical_and_preserves_existing()
+    {
+        Storage::fake('local');
+
+        $kaizen = Kaizen::factory()->create([
+            'creator_user_id' => $this->activeUser->id,
+            'status' => KaizenStatus::DRAFT,
+            'category_id' => $this->category->id,
+            'title' => 'Old Title',
+            'current_situation' => 'Old Current',
+            'proposed_situation' => 'Old Proposed',
+        ]);
+
+        $existingFile = UploadedFile::fake()->create('existing.jpg', 10, 'image/jpeg');
+        $existingPath = $existingFile->store('kaizens/1/evidence/current', 'local');
+
+        $attachment = KaizenAttachment::factory()->create([
+            'kaizen_id' => $kaizen->id,
+            'context' => KaizenAttachmentContext::CURRENT_SITUATION,
+            'storage_path' => $existingPath,
+            'storage_disk' => 'local',
+        ]);
+
+        $newImage = UploadedFile::fake()->create('new.jpg', 10, 'image/jpeg');
+
+        // Force a DB error to trigger an outer transaction rollback after attachment storage
+        $mockAction = \Mockery::mock(UpdateKaizenDraft::class);
+        $mockAction->shouldReceive('execute')->andThrow(new \Exception('Simulated core update failure.'));
+        $this->app->instance(UpdateKaizenDraft::class, $mockAction);
+
+        try {
+            $this->actingAs($this->activeUser)
+                ->withoutExceptionHandling()
+                ->patch(route('kaizens.update', $kaizen), [
+                    'title' => 'New Title',
+                    'current_situation' => 'New Current',
+                    'proposed_situation' => 'New Proposed',
+                    'category_id' => $this->category->id,
+                    'remove_attachment_ids' => [$attachment->id], // Mark existing for removal
+                    'current_situation_images' => [$newImage], // Add new image
+                ]);
+        } catch (\Exception $e) {
+            $this->assertEquals('Simulated core update failure.', $e->getMessage());
+        }
+
+        // DB state should be rolled back
+        $this->assertDatabaseMissing('kaizen_attachments', [
+            'original_name' => 'new.jpg',
+        ]);
+
+        $this->assertDatabaseHas('kaizen_attachments', [
+            'id' => $attachment->id, // Removed attachment should still be there
+        ]);
+
+        // Storage state
+        $this->assertTrue(Storage::disk('local')->exists($existingPath)); // Existing preserved
+
+        $files = Storage::disk('local')->allFiles();
+        // 1 file should exist: the existing file. The new file should have been cleaned up.
+        $this->assertCount(1, $files);
+        $this->assertEquals($existingPath, $files[0]);
     }
 }

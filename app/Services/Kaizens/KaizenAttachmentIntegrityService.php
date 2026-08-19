@@ -45,9 +45,15 @@ class KaizenAttachmentIntegrityService
         $dbResults = $this->auditDbAttachments($verifyHashes);
         $orphanResults = $this->auditOrphanFiles();
 
+        // files_scanned = all physical files within managed prefix (DB-backed + orphans)
+        $dbBackedFileCount = $dbResults->where('status', '!=', self::STATUS_MISSING_FILE)
+            ->where('status', '!=', self::STATUS_INVALID_DISK)
+            ->where('status', '!=', self::STATUS_UNSAFE_PATH)
+            ->count();
+
         $summary = [
             'db_scanned' => $dbResults->count(),
-            'files_scanned' => $orphanResults->count(),
+            'files_scanned' => $dbBackedFileCount + $orphanResults->count(),
             self::STATUS_OK => $dbResults->where('status', self::STATUS_OK)->count(),
             self::STATUS_MISSING_FILE => $dbResults->where('status', self::STATUS_MISSING_FILE)->count(),
             self::STATUS_HASH_MISMATCH => $dbResults->where('status', self::STATUS_HASH_MISMATCH)->count(),
@@ -186,11 +192,13 @@ class KaizenAttachmentIntegrityService
         try {
             $physicalFiles = $storage->allFiles($managedPrefix);
         } catch (\Exception $e) {
-            Log::warning('KaizenAttachmentIntegrityService: Could not list managed storage files.', [
+            Log::error('KaizenAttachmentIntegrityService: Storage listing failed — audit cannot continue.', [
                 'error' => $e->getMessage(),
             ]);
 
-            return $results;
+            // Propagate so the command can report FAILURE rather than silently
+            // appearing healthy with 0 orphans.
+            throw $e;
         }
 
         foreach ($physicalFiles as $filePath) {
@@ -251,6 +259,15 @@ class KaizenAttachmentIntegrityService
             if (! $this->isPathWithinManagedBoundary($path, $managedPrefix)) {
                 $skipped++;
                 Log::warning('KaizenAttachmentIntegrityService: Skipped deletion of unsafe path.', compact('path'));
+
+                continue;
+            }
+
+            // TOCTOU guard: re-confirm the file has no DB record immediately before deletion.
+            // A DB row may have been created after the initial audit snapshot.
+            if (KaizenAttachment::where('storage_path', $path)->exists()) {
+                $skipped++;
+                Log::info('KaizenAttachmentIntegrityService: Skipped orphan deletion — DB record appeared since audit.', compact('path'));
 
                 continue;
             }

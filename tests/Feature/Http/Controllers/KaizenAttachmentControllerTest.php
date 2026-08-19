@@ -223,4 +223,34 @@ class KaizenAttachmentControllerTest extends TestCase
 
         $response->assertNotFound();
     }
+
+    public function test_show_route_returns_inline_disposition_and_download_returns_attachment()
+    {
+        Storage::fake('local');
+        $path = UploadedFile::fake()->create('test.jpg', 10, 'image/jpeg')->store('kaizens/1/evidence', 'local');
+
+        $kaizen = Kaizen::factory()->create([
+            'creator_user_id' => $this->activeUser->id,
+            'department_id' => $this->activeUser->department_id,
+        ]);
+
+        $attachment = KaizenAttachment::factory()->create([
+            'kaizen_id' => $kaizen->id,
+            'original_name' => 'Original Photo.jpg',
+            'storage_path' => $path,
+            'storage_disk' => 'local',
+        ]);
+
+        $showResponse = $this->actingAs($this->activeUser)
+            ->get(route('kaizens.attachments.show', [$kaizen, $attachment]));
+
+        $showResponse->assertOk()
+            ->assertHeader('Content-Disposition', 'inline; filename="'.basename($path).'"');
+
+        $downloadResponse = $this->actingAs($this->activeUser)
+            ->get(route('kaizens.attachments.download', [$kaizen, $attachment]));
+
+        $downloadResponse->assertOk()
+            ->assertHeader('Content-Disposition', 'attachment; filename="Original Photo.jpg"');
+    }
 }

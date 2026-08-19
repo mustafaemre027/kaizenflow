@@ -6,6 +6,7 @@ use App\Console\Commands\AuditKaizenAttachments;
 use App\Models\Kaizen;
 use App\Models\KaizenAttachment;
 use App\Services\Kaizens\KaizenAttachmentIntegrityService;
+use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
@@ -405,6 +406,33 @@ class AttachmentIntegrityAuditTest extends TestCase
         Storage::disk('local')->assertMissing($path);
     }
 
+    public function test_delete_orphan_files_protects_toctou_race_condition(): void
+    {
+        config(['kaizen.attachments.orphan_grace_minutes' => 0]);
+
+        $path = 'kaizens/99/evidence/current/toctou.jpg';
+        Storage::disk('local')->put($path, 'toctou-data');
+
+        // 1. Audit detects it as an orphan
+        $orphanResults = $this->service->auditOrphanFiles();
+        $this->assertCount(1, $orphanResults);
+
+        // 2. Race condition: Before cleanup runs, a DB record is created for this exact path
+        KaizenAttachment::factory()->create([
+            'storage_path' => $path,
+            'storage_disk' => 'local',
+        ]);
+
+        // 3. Cleanup runs, it should skip this file
+        $cleanup = $this->service->deleteOrphanFiles($orphanResults);
+
+        $this->assertEquals(0, $cleanup['deleted']);
+        $this->assertEquals(1, $cleanup['skipped']);
+
+        // The file MUST be preserved
+        Storage::disk('local')->assertExists($path);
+    }
+
     // ─── Artisan command ──────────────────────────────────────────────────────
 
     public function test_command_exits_zero_when_healthy(): void
@@ -484,6 +512,20 @@ class AttachmentIntegrityAuditTest extends TestCase
         ]);
 
         $this->artisan('kaizen:attachments:audit --verify-hashes')
+            ->assertExitCode(AuditKaizenAttachments::FAILURE);
+    }
+
+    public function test_command_fails_if_storage_listing_throws(): void
+    {
+        // Mock Storage to throw an exception when listing files
+        $mockStorage = \Mockery::mock(Filesystem::class);
+        $mockStorage->shouldReceive('allFiles')->andThrow(new \Exception('Simulated storage listing failure.'));
+        Storage::set('local', $mockStorage);
+
+        // The command should exit with failure (non-zero) instead of silently succeeding
+        // even if delete-orphans is passed, it should not do any destructive cleanup
+        $this->artisan('kaizen:attachments:audit --delete-orphans')
+            ->expectsOutput('Storage listing may be unavailable. No cleanup was performed.')
             ->assertExitCode(AuditKaizenAttachments::FAILURE);
     }
 }

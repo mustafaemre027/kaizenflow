@@ -83,17 +83,54 @@ class KaizenAttachmentService
      * This should typically be called AFTER a successful DB transaction
      * that has removed their metadata to ensure safe failure mode.
      *
+     * Each file is only deleted if:
+     *  1. Its storage_disk is in the allowed disks list.
+     *  2. Its storage_path is within the managed path boundary.
+     *
      * @param  Collection<int, KaizenAttachment>  $removedAttachments
      */
     public function deletePhysicalFiles(Collection $removedAttachments): void
     {
+        $allowedDisks = config('kaizen.attachments.allowed_disks', [config('kaizen.attachments.disk', 'local')]);
+        $managedPrefix = (string) config('kaizen.attachments.managed_prefix', 'kaizens');
+
         foreach ($removedAttachments as $attachment) {
+            // Guard: disk allowlist
+            if (! in_array($attachment->storage_disk, $allowedDisks, true)) {
+                Log::warning('KaizenAttachmentService: Skipped physical delete — disk not in allowlist.', [
+                    'attachment_id' => $attachment->id,
+                    'kaizen_id' => $attachment->kaizen_id,
+                    'disk' => $attachment->storage_disk,
+                ]);
+
+                continue;
+            }
+
+            // Guard: managed path boundary
+            $normalizedPath = str_replace('\\', '/', $attachment->storage_path);
+            $normalizedPrefix = rtrim(str_replace('\\', '/', $managedPrefix), '/');
+            $withinBoundary = str_starts_with($normalizedPath, $normalizedPrefix.'/')
+                || $normalizedPath === $normalizedPrefix;
+
+            if (! $withinBoundary) {
+                Log::warning('KaizenAttachmentService: Skipped physical delete — path outside managed boundary.', [
+                    'attachment_id' => $attachment->id,
+                    'kaizen_id' => $attachment->kaizen_id,
+                ]);
+
+                continue;
+            }
+
             try {
                 Storage::disk($attachment->storage_disk)->delete($attachment->storage_path);
             } catch (\Exception $e) {
                 // Log the failure but do not interrupt the process, as the DB transaction is already committed.
-                // An orphan file will remain, which can be cleaned up by a separate process.
-                Log::error("Failed to delete physical file for attachment {$attachment->id}: ".$e->getMessage());
+                // An orphan file will remain, which can be cleaned up by the integrity audit command.
+                Log::error('KaizenAttachmentService: Failed to delete physical file.', [
+                    'attachment_id' => $attachment->id,
+                    'kaizen_id' => $attachment->kaizen_id,
+                    'error' => $e->getMessage(),
+                ]);
             }
         }
     }
