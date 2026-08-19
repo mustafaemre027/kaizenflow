@@ -51,9 +51,8 @@ class StoreKaizenRequest extends FormRequest
             'updated_at' => ['prohibited'],
 
             'current_situation_images' => [
-                'required',
+                'nullable',
                 'array',
-                'min:1',
                 'max:'.config('kaizen.attachments.max_images_per_context', 8),
             ],
             'current_situation_images.*' => [
@@ -64,9 +63,8 @@ class StoreKaizenRequest extends FormRequest
             ],
 
             'proposed_situation_images' => [
-                'required',
+                'nullable',
                 'array',
-                'min:1',
                 'max:'.config('kaizen.attachments.max_images_per_context', 8),
             ],
             'proposed_situation_images.*' => [

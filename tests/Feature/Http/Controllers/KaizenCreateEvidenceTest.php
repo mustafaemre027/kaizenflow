@@ -35,38 +35,66 @@ class KaizenCreateEvidenceTest extends TestCase
         $this->category = Category::factory()->create(['is_active' => true]);
     }
 
-    public function test_missing_current_situation_images_fails_validation(): void
+    public function test_store_with_no_images_is_successful(): void
     {
         $payload = [
             'category_id' => $this->category->id,
-            'title' => 'Missing current images test',
+            'title' => 'No images test',
             'current_situation' => 'Current situation details',
             'proposed_situation' => 'Proposed situation details',
             'expected_benefit' => 'Expected benefit details',
-            'proposed_situation_images' => [UploadedFile::fake()->create('proposed.jpg', 100, 'image/jpeg')],
         ];
 
         $response = $this->actingAs($this->user)->post(route('kaizens.store'), $payload);
 
-        $response->assertSessionHasErrors('current_situation_images');
-        $this->assertEquals(0, Kaizen::count());
+        $kaizen = Kaizen::where('title', 'No images test')->first();
+        $this->assertNotNull($kaizen);
+
+        $response->assertRedirect(route('kaizens.show', $kaizen));
+
+        $this->assertEquals(0, KaizenAttachment::count());
     }
 
-    public function test_missing_proposed_situation_images_fails_validation(): void
+    public function test_store_with_only_current_situation_images(): void
     {
         $payload = [
             'category_id' => $this->category->id,
-            'title' => 'Missing proposed images test',
+            'title' => 'Only current images test',
             'current_situation' => 'Current situation details',
             'proposed_situation' => 'Proposed situation details',
             'expected_benefit' => 'Expected benefit details',
-            'current_situation_images' => [UploadedFile::fake()->create('current.jpg', 100, 'image/jpeg')],
+            'current_situation_images' => [
+                UploadedFile::fake()->create('current1.jpg', 100, 'image/jpeg'),
+                UploadedFile::fake()->create('current2.jpg', 100, 'image/jpeg'),
+            ],
         ];
 
         $response = $this->actingAs($this->user)->post(route('kaizens.store'), $payload);
 
-        $response->assertSessionHasErrors('proposed_situation_images');
-        $this->assertEquals(0, Kaizen::count());
+        $kaizen = Kaizen::where('title', 'Only current images test')->first();
+        $response->assertRedirect(route('kaizens.show', $kaizen));
+        $this->assertCount(2, $kaizen->attachments);
+    }
+
+    public function test_store_with_only_proposed_situation_images(): void
+    {
+        $payload = [
+            'category_id' => $this->category->id,
+            'title' => 'Only proposed images test',
+            'current_situation' => 'Current situation details',
+            'proposed_situation' => 'Proposed situation details',
+            'expected_benefit' => 'Expected benefit details',
+            'proposed_situation_images' => [
+                UploadedFile::fake()->create('proposed1.jpg', 100, 'image/jpeg'),
+                UploadedFile::fake()->create('proposed2.jpg', 100, 'image/jpeg'),
+            ],
+        ];
+
+        $response = $this->actingAs($this->user)->post(route('kaizens.store'), $payload);
+
+        $kaizen = Kaizen::where('title', 'Only proposed images test')->first();
+        $response->assertRedirect(route('kaizens.show', $kaizen));
+        $this->assertCount(2, $kaizen->attachments);
     }
 
     public function test_store_with_single_images_for_both_contexts(): void
