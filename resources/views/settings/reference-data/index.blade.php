@@ -4,178 +4,335 @@
 
 @section('content')
 <div class="kf-page-header">
-    <span class="kf-page-eyebrow">Yapılandırma</span>
-    <h1 class="kf-page-title">Referans Verileri</h1>
-    <p class="kf-page-desc">KaizenFlow'un kategori ve departman yapılandırmasını yönetin.</p>
+    <span class="kf-page-eyebrow">YAPILANDIRMA</span>
+    <h1 class="kf-page-title">Yönetim Merkezi</h1>
+    <p class="kf-page-desc text-muted">
+        KaizenFlow'un kurumunuza göre değişebilen referans verilerini yönetin.<br>
+        <span class="small opacity-75">Burada yapılan değişiklikler yeni Kaizen formlarına ve ilgili uygulama alanlarına otomatik olarak yansır.</span>
+    </p>
 </div>
 
 @if (session('error'))
-    <div class="kf-alert kf-alert-danger" role="alert" style="background-color: #fef2f2; border: 1px solid #f87171; color: #991b1b; padding: 1rem; border-radius: 6px; margin-bottom: 1.5rem;">
+    <div class="kf-alert kf-alert-danger mb-4" role="alert">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" class="me-2">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clip-rule="evenodd" />
+        </svg>
         {{ session('error') }}
     </div>
 @endif
 
-<div class="row g-4">
-    <div class="col-xl-6">
-        <div class="kf-panel h-100">
-            <div class="kf-panel-header d-flex justify-content-between align-items-center">
-                <h2 class="kf-panel-title">Kategoriler</h2>
-                <span class="badge bg-secondary rounded-pill">{{ $categories->count() }}</span>
+<!-- KATEGORİLER BÖLÜMÜ -->
+<div class="kf-panel mb-5">
+    <div class="kf-panel-header d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+        <div>
+            <h2 class="kf-panel-title fs-4 mb-1">Kategoriler</h2>
+            <p class="text-muted small mb-0">Kaizen fikirlerini sınıflandırmak için kullanılan kategorileri yönetin.</p>
+        </div>
+        <div class="d-flex gap-3 text-sm">
+            <div class="text-center px-3 border-end">
+                <div class="text-muted small fw-medium">Toplam</div>
+                <div class="fs-5 fw-bold">{{ $categories->total() }}</div>
             </div>
-            <div class="kf-panel-body p-4">
-                <form action="{{ route('settings.categories.store') }}" method="POST" class="mb-4 bg-light p-3 rounded border">
-                    @csrf
-                    <h5 class="mb-3 fs-6 text-muted">Yeni Kategori Ekle</h5>
-                    <div class="row g-2 align-items-end">
-                        <div class="col-md-4">
-                            <label class="form-label small">Kategori Adı</label>
-                            <input type="text" name="name" class="form-control form-control-sm @error('name') is-invalid @enderror" value="{{ old('name') }}" required>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label small">Kod (Örn: KALITE)</label>
-                            <input type="text" name="code" class="form-control form-control-sm @error('code') is-invalid @enderror" value="{{ old('code') }}" required>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label small">Açıklama</label>
-                            <input type="text" name="description" class="form-control form-control-sm" value="{{ old('description') }}">
-                        </div>
-                        <div class="col-md-2">
-                            <button type="submit" class="btn btn-primary btn-sm w-100">Ekle</button>
-                        </div>
-                    </div>
-                    @error('name')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
-                    @error('code')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
-                </form>
-
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Ad</th>
-                                <th>Kod</th>
-                                <th>Durum</th>
-                                <th>Kaizen</th>
-                                <th class="text-end">İşlem</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($categories as $category)
-                            <tr>
-                                <td class="fw-medium">{{ $category->name }}</td>
-                                <td><span class="badge bg-light text-dark border">{{ $category->code }}</span></td>
-                                <td>
-                                    @if($category->is_active)
-                                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">Aktif</span>
-                                    @else
-                                        <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25">Pasif</span>
-                                    @endif
-                                </td>
-                                <td><span class="badge bg-light text-secondary">{{ $category->kaizens_count }}</span></td>
-                                <td class="text-end">
-                                    <form action="{{ route('settings.categories.status', $category) }}" method="POST" class="d-inline">
-                                        @csrf
-                                        @method('PATCH')
-                                        @if($category->is_active)
-                                            <button type="submit" class="btn btn-sm btn-outline-warning" title="Pasif Yap">Pasif</button>
-                                        @else
-                                            <button type="submit" class="btn btn-sm btn-outline-success" title="Aktif Yap">Aktif</button>
-                                        @endif
-                                    </form>
-                                </td>
-                            </tr>
-                            @endforeach
-                            @if($categories->isEmpty())
-                            <tr>
-                                <td colspan="5" class="text-center text-muted py-4">Henüz kategori eklenmemiş.</td>
-                            </tr>
-                            @endif
-                        </tbody>
-                    </table>
-                </div>
+            <div class="text-center px-3 border-end">
+                <div class="text-muted small fw-medium">Aktif</div>
+                <div class="fs-5 fw-bold text-success">{{ App\Models\Category::where('is_active', true)->count() }}</div>
+            </div>
+            <div class="text-center px-3">
+                <div class="text-muted small fw-medium">Pasif</div>
+                <div class="fs-5 fw-bold text-secondary">{{ App\Models\Category::where('is_active', false)->count() }}</div>
             </div>
         </div>
     </div>
-
-    <div class="col-xl-6">
-        <div class="kf-panel h-100">
-            <div class="kf-panel-header d-flex justify-content-between align-items-center">
-                <h2 class="kf-panel-title">Departmanlar</h2>
-                <span class="badge bg-secondary rounded-pill">{{ $departments->count() }}</span>
-            </div>
-            <div class="kf-panel-body p-4">
-                <form action="{{ route('settings.departments.store') }}" method="POST" class="mb-4 bg-light p-3 rounded border">
-                    @csrf
-                    <h5 class="mb-3 fs-6 text-muted">Yeni Departman Ekle</h5>
-                    <div class="row g-2 align-items-end">
-                        <div class="col-md-4">
-                            <label class="form-label small">Departman Adı</label>
-                            <input type="text" name="name" class="form-control form-control-sm @error('name') is-invalid @enderror" value="{{ old('name') }}" required>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label small">Kod (Örn: IT)</label>
-                            <input type="text" name="code" class="form-control form-control-sm @error('code') is-invalid @enderror" value="{{ old('code') }}" required>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label small">Açıklama</label>
-                            <input type="text" name="description" class="form-control form-control-sm" value="{{ old('description') }}">
-                        </div>
-                        <div class="col-md-2">
-                            <button type="submit" class="btn btn-primary btn-sm w-100">Ekle</button>
-                        </div>
+    
+    <div class="kf-panel-body p-0">
+        <!-- CREATE KATEGORİ -->
+        <div class="bg-light border-bottom p-4">
+            <form action="{{ route('settings.categories.store') }}" method="POST">
+                @csrf
+                <div class="row g-3">
+                    <div class="col-md-5">
+                        <label class="form-label small fw-medium text-dark">Kategori Adı</label>
+                        <input type="text" name="name" class="form-control @error('name') is-invalid @enderror" value="{{ old('name') }}" required>
+                        @error('name')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
-                    @error('name')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
-                    @error('code')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
-                </form>
-
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Ad</th>
-                                <th>Kod</th>
-                                <th>Durum</th>
-                                <th>Kullanıcı (Aktif/Top.)</th>
-                                <th class="text-end">İşlem</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($departments as $department)
-                            <tr>
-                                <td class="fw-medium">{{ $department->name }}</td>
-                                <td><span class="badge bg-light text-dark border">{{ $department->code }}</span></td>
-                                <td>
-                                    @if($department->is_active)
-                                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">Aktif</span>
-                                    @else
-                                        <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25">Pasif</span>
-                                    @endif
-                                </td>
-                                <td>
-                                    <span class="badge {{ $department->active_users_count > 0 ? 'bg-primary' : 'bg-light text-secondary' }}">{{ $department->active_users_count }} / {{ $department->users_count }}</span>
-                                </td>
-                                <td class="text-end">
-                                    <form action="{{ route('settings.departments.status', $department) }}" method="POST" class="d-inline">
-                                        @csrf
-                                        @method('PATCH')
-                                        @if($department->is_active)
-                                            <button type="submit" class="btn btn-sm btn-outline-warning" title="Pasif Yap" {{ $department->active_users_count > 0 ? 'disabled' : '' }}>Pasif</button>
-                                        @else
-                                            <button type="submit" class="btn btn-sm btn-outline-success" title="Aktif Yap">Aktif</button>
-                                        @endif
-                                    </form>
-                                </td>
-                            </tr>
-                            @endforeach
-                            @if($departments->isEmpty())
-                            <tr>
-                                <td colspan="5" class="text-center text-muted py-4">Henüz departman eklenmemiş.</td>
-                            </tr>
-                            @endif
-                        </tbody>
-                    </table>
+                    <div class="col-md-3">
+                        <label class="form-label small fw-medium text-dark">Kod</label>
+                        <input type="text" name="code" class="form-control text-uppercase @error('code') is-invalid @enderror" value="{{ old('code') }}" required>
+                        <div class="form-text mt-1" style="font-size: 0.75rem;">Sistemde benzersiz teknik tanımlayıcı olarak kullanılır.</div>
+                        @error('code')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small fw-medium text-dark">Açıklama <span class="text-muted fw-normal">(Opsiyonel)</span></label>
+                        <input type="text" name="description" class="form-control" value="{{ old('description') }}">
+                    </div>
+                    <div class="col-12 text-end mt-3">
+                        <button type="submit" class="btn btn-primary px-4">Kategori Ekle</button>
+                    </div>
                 </div>
+            </form>
+        </div>
+
+        <!-- SEARCH & FİLTRE KATEGORİ -->
+        <div class="p-4 border-bottom">
+            <form action="{{ route('settings.reference-data.index') }}" method="GET" class="row g-2 align-items-center">
+                <!-- Keep department query state if present -->
+                @if(request()->filled('department_q')) <input type="hidden" name="department_q" value="{{ request('department_q') }}"> @endif
+                @if(request()->filled('department_status')) <input type="hidden" name="department_status" value="{{ request('department_status') }}"> @endif
+                @if(request()->filled('department_page')) <input type="hidden" name="department_page" value="{{ request('department_page') }}"> @endif
+
+                <div class="col-md-5">
+                    <input type="text" name="category_q" class="form-control" placeholder="Kategori ara (ad, kod)..." value="{{ request('category_q') }}">
+                </div>
+                <div class="col-md-3">
+                    <select name="category_status" class="form-select">
+                        <option value="">Tümü</option>
+                        <option value="active" {{ request('category_status') === 'active' ? 'selected' : '' }}>Aktif</option>
+                        <option value="inactive" {{ request('category_status') === 'inactive' ? 'selected' : '' }}>Pasif</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-secondary w-100">Filtrele</button>
+                </div>
+                <div class="col-md-2">
+                    <a href="{{ route('settings.reference-data.index', request()->except(['category_q', 'category_status', 'category_page'])) }}" class="btn btn-light w-100 border">Temizle</a>
+                </div>
+            </form>
+        </div>
+
+        <!-- LİSTE KATEGORİ -->
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" style="min-width: 850px;">
+                <thead class="table-light">
+                    <tr>
+                        <th class="px-4 py-3">Ad</th>
+                        <th class="py-3">Kod</th>
+                        <th class="py-3">Durum</th>
+                        <th class="py-3 text-center">Kaizen Kullanımı</th>
+                        <th class="py-3">Son Güncelleme</th>
+                        <th class="px-4 py-3 text-end">İşlemler</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($categories as $category)
+                    <tr>
+                        <td class="px-4 py-3 fw-medium text-dark">
+                            {{ $category->name }}
+                            @if($category->description)
+                                <div class="text-muted small fw-normal text-truncate" style="max-width: 200px;" title="{{ $category->description }}">{{ $category->description }}</div>
+                            @endif
+                        </td>
+                        <td class="py-3"><span class="badge bg-light text-dark border font-monospace">{{ $category->code }}</span></td>
+                        <td class="py-3">
+                            @if($category->is_active)
+                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25" aria-label="Kategori durumu: Aktif">Aktif</span>
+                            @else
+                                <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25" aria-label="Kategori durumu: Pasif">Pasif</span>
+                            @endif
+                        </td>
+                        <td class="py-3 text-center">
+                            <span class="badge bg-light text-secondary border px-2 py-1">{{ $category->kaizens_count }}</span>
+                        </td>
+                        <td class="py-3 text-muted small">{{ $category->updated_at->format('d.m.Y H:i') }}</td>
+                        <td class="px-4 py-3 text-end">
+                            <div class="d-flex justify-content-end gap-2">
+                                <a href="{{ route('settings.categories.edit', $category) }}" class="btn btn-sm btn-outline-secondary">Düzenle</a>
+                                <form action="{{ route('settings.categories.status', $category) }}" method="POST" class="d-inline">
+                                    @csrf
+                                    @method('PATCH')
+                                    @if($category->is_active)
+                                        <button type="submit" class="btn btn-sm btn-outline-warning" onclick="return confirm('Bu kategoriyi pasife almak istediğinize emin misiniz? Mevcut Kaizen kayıtlarında görünmeye devam eder.')">Pasife Al</button>
+                                    @else
+                                        <button type="submit" class="btn btn-sm btn-outline-success">Aktifleştir</button>
+                                    @endif
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    @empty
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-5">
+                            @if(request('category_q') || request('category_status'))
+                                Aramanıza uygun kategori bulunamadı.
+                            @else
+                                Henüz kategori tanımlanmadı.
+                            @endif
+                        </td>
+                    </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+        
+        @if($categories->hasPages())
+        <div class="p-4 border-top">
+            {{ $categories->links() }}
+        </div>
+        @endif
+    </div>
+</div>
+
+
+<!-- DEPARTMANLAR BÖLÜMÜ -->
+<div class="kf-panel mb-5">
+    <div class="kf-panel-header d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+        <div>
+            <h2 class="kf-panel-title fs-4 mb-1">Departmanlar</h2>
+            <p class="text-muted small mb-0">Kullanıcıların ve Kaizen kayıtlarının bağlı olduğu organizasyon birimlerini yönetin.</p>
+        </div>
+        <div class="d-flex gap-3 text-sm">
+            <div class="text-center px-3 border-end">
+                <div class="text-muted small fw-medium">Toplam</div>
+                <div class="fs-5 fw-bold">{{ $departments->total() }}</div>
+            </div>
+            <div class="text-center px-3 border-end">
+                <div class="text-muted small fw-medium">Aktif</div>
+                <div class="fs-5 fw-bold text-success">{{ App\Models\Department::where('is_active', true)->count() }}</div>
+            </div>
+            <div class="text-center px-3">
+                <div class="text-muted small fw-medium">Pasif</div>
+                <div class="fs-5 fw-bold text-secondary">{{ App\Models\Department::where('is_active', false)->count() }}</div>
             </div>
         </div>
+    </div>
+    
+    <div class="kf-panel-body p-0">
+        <!-- CREATE DEPARTMAN -->
+        <div class="bg-light border-bottom p-4">
+            <form action="{{ route('settings.departments.store') }}" method="POST">
+                @csrf
+                <div class="row g-3">
+                    <div class="col-md-5">
+                        <label class="form-label small fw-medium text-dark">Departman Adı</label>
+                        <input type="text" name="name" class="form-control @error('name') is-invalid @enderror" value="{{ old('name') }}" required>
+                        @error('name')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small fw-medium text-dark">Kod</label>
+                        <input type="text" name="code" class="form-control text-uppercase @error('code') is-invalid @enderror" value="{{ old('code') }}" required>
+                        <div class="form-text mt-1" style="font-size: 0.75rem;">Sistemde benzersiz teknik tanımlayıcı olarak kullanılır.</div>
+                        @error('code')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small fw-medium text-dark">Açıklama <span class="text-muted fw-normal">(Opsiyonel)</span></label>
+                        <input type="text" name="description" class="form-control" value="{{ old('description') }}">
+                    </div>
+                    <div class="col-12 text-end mt-3">
+                        <button type="submit" class="btn btn-primary px-4">Departman Ekle</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- SEARCH & FİLTRE DEPARTMAN -->
+        <div class="p-4 border-bottom">
+            <form action="{{ route('settings.reference-data.index') }}" method="GET" class="row g-2 align-items-center">
+                <!-- Keep category query state if present -->
+                @if(request()->filled('category_q')) <input type="hidden" name="category_q" value="{{ request('category_q') }}"> @endif
+                @if(request()->filled('category_status')) <input type="hidden" name="category_status" value="{{ request('category_status') }}"> @endif
+                @if(request()->filled('category_page')) <input type="hidden" name="category_page" value="{{ request('category_page') }}"> @endif
+
+                <div class="col-md-5">
+                    <input type="text" name="department_q" class="form-control" placeholder="Departman ara (ad, kod)..." value="{{ request('department_q') }}">
+                </div>
+                <div class="col-md-3">
+                    <select name="department_status" class="form-select">
+                        <option value="">Tümü</option>
+                        <option value="active" {{ request('department_status') === 'active' ? 'selected' : '' }}>Aktif</option>
+                        <option value="inactive" {{ request('department_status') === 'inactive' ? 'selected' : '' }}>Pasif</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-secondary w-100">Filtrele</button>
+                </div>
+                <div class="col-md-2">
+                    <a href="{{ route('settings.reference-data.index', request()->except(['department_q', 'department_status', 'department_page'])) }}" class="btn btn-light w-100 border">Temizle</a>
+                </div>
+            </form>
+        </div>
+
+        <!-- LİSTE DEPARTMAN -->
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" style="min-width: 1000px;">
+                <thead class="table-light">
+                    <tr>
+                        <th class="px-4 py-3">Ad</th>
+                        <th class="py-3">Kod</th>
+                        <th class="py-3">Durum</th>
+                        <th class="py-3 text-center">Kullanıcı (Aktif / Toplam)</th>
+                        <th class="py-3 text-center">Kaizen Kullanımı</th>
+                        <th class="py-3">Son Güncelleme</th>
+                        <th class="px-4 py-3 text-end">İşlemler</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($departments as $department)
+                    <tr>
+                        <td class="px-4 py-3 fw-medium text-dark">
+                            {{ $department->name }}
+                            @if($department->description)
+                                <div class="text-muted small fw-normal text-truncate" style="max-width: 200px;" title="{{ $department->description }}">{{ $department->description }}</div>
+                            @endif
+                        </td>
+                        <td class="py-3"><span class="badge bg-light text-dark border font-monospace">{{ $department->code }}</span></td>
+                        <td class="py-3">
+                            @if($department->is_active)
+                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25" aria-label="Departman durumu: Aktif">Aktif</span>
+                            @else
+                                <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25" aria-label="Departman durumu: Pasif">Pasif</span>
+                            @endif
+                        </td>
+                        <td class="py-3 text-center">
+                            @if($department->active_users_count > 0)
+                                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-2 py-1">
+                                    {{ $department->active_users_count }} aktif / {{ $department->users_count }}
+                                </span>
+                            @else
+                                <span class="badge bg-light text-secondary border px-2 py-1">{{ $department->active_users_count }} / {{ $department->users_count }}</span>
+                            @endif
+                        </td>
+                        <td class="py-3 text-center">
+                            <span class="badge bg-light text-secondary border px-2 py-1">{{ $department->kaizens_count }}</span>
+                        </td>
+                        <td class="py-3 text-muted small">{{ $department->updated_at->format('d.m.Y H:i') }}</td>
+                        <td class="px-4 py-3 text-end">
+                            <div class="d-flex justify-content-end gap-2">
+                                <a href="{{ route('settings.departments.edit', $department) }}" class="btn btn-sm btn-outline-secondary">Düzenle</a>
+                                <form action="{{ route('settings.departments.status', $department) }}" method="POST" class="d-inline">
+                                    @csrf
+                                    @method('PATCH')
+                                    @if($department->is_active)
+                                        @if($department->active_users_count > 0)
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" disabled aria-disabled="true" title="Aktif kullanıcısı bulunan departman pasife alınamaz. ({{ $department->active_users_count }} aktif kullanıcı var)">Pasife Al</button>
+                                        @else
+                                            <button type="submit" class="btn btn-sm btn-outline-warning" onclick="return confirm('Bu departmanı pasife almak istediğinize emin misiniz?')">Pasife Al</button>
+                                        @endif
+                                    @else
+                                        <button type="submit" class="btn btn-sm btn-outline-success">Aktifleştir</button>
+                                    @endif
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    @empty
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-5">
+                            @if(request('department_q') || request('department_status'))
+                                Aramanıza uygun departman bulunamadı.
+                            @else
+                                Henüz departman tanımlanmadı.
+                            @endif
+                        </td>
+                    </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+        
+        @if($departments->hasPages())
+        <div class="p-4 border-top">
+            {{ $departments->links() }}
+        </div>
+        @endif
     </div>
 </div>
 @endsection

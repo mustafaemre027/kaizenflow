@@ -11,6 +11,13 @@ use Illuminate\Support\Facades\Gate;
 
 class DepartmentController extends Controller
 {
+    public function edit(Department $department)
+    {
+        Gate::authorize('update', $department);
+
+        return view('settings.reference-data.edit-department', compact('department'));
+    }
+
     public function store(StoreDepartmentRequest $request)
     {
         $validated = $request->validated();

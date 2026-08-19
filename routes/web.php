@@ -29,10 +29,12 @@ Route::middleware('auth')->group(function () {
     Route::prefix('settings')->name('settings.')->group(function () {
         Route::get('/reference-data', [ReferenceDataController::class, 'index'])->name('reference-data.index');
 
+        Route::get('/categories/{category}/edit', [CategoryController::class, 'edit'])->name('categories.edit');
         Route::post('/categories', [CategoryController::class, 'store'])->name('categories.store');
         Route::patch('/categories/{category}', [CategoryController::class, 'update'])->name('categories.update');
         Route::patch('/categories/{category}/status', [CategoryController::class, 'toggleStatus'])->name('categories.status');
 
+        Route::get('/departments/{department}/edit', [DepartmentController::class, 'edit'])->name('departments.edit');
         Route::post('/departments', [DepartmentController::class, 'store'])->name('departments.store');
         Route::patch('/departments/{department}', [DepartmentController::class, 'update'])->name('departments.update');
         Route::patch('/departments/{department}/status', [DepartmentController::class, 'toggleStatus'])->name('departments.status');

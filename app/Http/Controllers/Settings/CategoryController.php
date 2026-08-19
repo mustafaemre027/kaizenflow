@@ -11,6 +11,13 @@ use Illuminate\Support\Facades\Gate;
 
 class CategoryController extends Controller
 {
+    public function edit(Category $category)
+    {
+        Gate::authorize('update', $category);
+
+        return view('settings.reference-data.edit-category', compact('category'));
+    }
+
     public function store(StoreCategoryRequest $request)
     {
         $validated = $request->validated();
