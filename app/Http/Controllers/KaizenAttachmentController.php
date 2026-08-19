@@ -4,12 +4,15 @@ namespace App\Http\Controllers;
 
 use App\Models\Kaizen;
 use App\Models\KaizenAttachment;
+use App\Services\Kaizens\KaizenAttachmentIntegrityService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 
 class KaizenAttachmentController extends Controller
 {
+    public function __construct(private readonly KaizenAttachmentIntegrityService $integrity) {}
+
     public function show(Request $request, Kaizen $kaizen, KaizenAttachment $attachment)
     {
         // Parent integrity check (IDOR guard)
@@ -19,6 +22,8 @@ class KaizenAttachmentController extends Controller
 
         // Authorization delegate to parent kaizen
         Gate::authorize('view', $kaizen);
+
+        $this->failClosedGuards($attachment);
 
         $disk = Storage::disk($attachment->storage_disk);
 
@@ -56,6 +61,8 @@ class KaizenAttachmentController extends Controller
 
         Gate::authorize('view', $kaizen);
 
+        $this->failClosedGuards($attachment);
+
         $disk = Storage::disk($attachment->storage_disk);
 
         if (! $disk->exists($attachment->storage_path)) {
@@ -79,5 +86,22 @@ class KaizenAttachmentController extends Controller
                 fclose($stream);
             }
         }, $filename, $headers);
+    }
+
+    /**
+     * Fail-closed guards: disk allowlist + managed path boundary.
+     * Aborts with 404 for any anomalous metadata to prevent arbitrary reads.
+     */
+    private function failClosedGuards(KaizenAttachment $attachment): void
+    {
+        $allowedDisks = config('kaizen.attachments.allowed_disks', [config('kaizen.attachments.disk', 'local')]);
+        if (! in_array($attachment->storage_disk, $allowedDisks, true)) {
+            abort(404);
+        }
+
+        $managedPrefix = (string) config('kaizen.attachments.managed_prefix', 'kaizens');
+        if (! $this->integrity->isPathWithinManagedBoundary($attachment->storage_path, $managedPrefix)) {
+            abort(404);
+        }
     }
 }
