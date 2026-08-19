@@ -48,3 +48,14 @@ Bu yapılar teknik kararlılık için kod içerisinde (enum/sabit) kalmalı anca
 ## Final Gün 19 Audit Checklist
 - Tüm hard-coded onay adımları, durum ve rol atamalarının, dinamik referans verilerine taşınıp taşınmadığı kontrol edilecek.
 - Müşteri/İşletme bazlı sabit bir ayarın kalmadığı son kez denetlenecek.
+
+## Gelecek Yönetim Merkezi (Configuration Center) Yol Haritası
+Yönetim ekranlarında (Reference Data Hub) ileride aşağıdaki modüllerin dinamik konfigürasyonu yönetilebilecektir:
+- Approval workflow stages (Onay iş akışı aşamaları)
+- Approval groups (Onay grupları)
+- Committee members (Kurul üyeleri)
+- Evaluation criteria (Değerlendirme kriterleri)
+- Benefit types (Fayda türleri)
+- Notification settings (Bildirim ayarları)
+- User/role/group management (Kullanıcı, rol ve grup yönetimi)
+- Configurable organization settings (Yapılandırılabilir organizasyon ayarları)
