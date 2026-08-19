@@ -235,6 +235,71 @@ class KaizenControllerTest extends TestCase
     }
 
     // ==========================================
+    // EDIT METHOD TESTS
+    // ==========================================
+
+    public function test_edit_unauthenticated_returns_302_redirect(): void
+    {
+        $kaizen = Kaizen::factory()->create();
+        $response = $this->get(route('kaizens.edit', $kaizen));
+        $response->assertStatus(302);
+        $response->assertRedirect(route('login'));
+    }
+
+    public function test_edit_creator_can_view_draft(): void
+    {
+        $kaizen = Kaizen::factory()->withStatus(KaizenStatus::DRAFT)->create([
+            'creator_user_id' => $this->user->id,
+        ]);
+
+        $response = $this->actingAs($this->user)->get(route('kaizens.edit', $kaizen));
+
+        $response->assertStatus(200);
+        $response->assertViewIs('kaizens.edit');
+        $response->assertSee($kaizen->title);
+        $response->assertSee($kaizen->current_situation);
+    }
+
+    public function test_edit_creator_can_view_revision_requested(): void
+    {
+        $kaizen = Kaizen::factory()->withStatus(KaizenStatus::REVISION_REQUESTED)->create([
+            'creator_user_id' => $this->user->id,
+        ]);
+
+        $response = $this->actingAs($this->user)->get(route('kaizens.edit', $kaizen));
+        $response->assertStatus(200);
+    }
+
+    public function test_edit_other_user_returns_403(): void
+    {
+        $kaizen = Kaizen::factory()->withStatus(KaizenStatus::DRAFT)->create();
+
+        $response = $this->actingAs($this->user)->get(route('kaizens.edit', $kaizen));
+        $response->assertStatus(403);
+    }
+
+    public function test_edit_non_editable_status_returns_403(): void
+    {
+        $statuses = [
+            KaizenStatus::SUBMITTED,
+            KaizenStatus::APPROVED,
+            KaizenStatus::IN_PROGRESS,
+            KaizenStatus::COMPLETED,
+            KaizenStatus::REJECTED,
+            KaizenStatus::MANAGER_REVIEW,
+        ];
+
+        foreach ($statuses as $status) {
+            $kaizen = Kaizen::factory()->withStatus($status)->create([
+                'creator_user_id' => $this->user->id,
+            ]);
+
+            $response = $this->actingAs($this->user)->get(route('kaizens.edit', $kaizen));
+            $response->assertStatus(403);
+        }
+    }
+
+    // ==========================================
     // UPDATE METHOD TESTS
     // ==========================================
 
@@ -378,7 +443,7 @@ class KaizenControllerTest extends TestCase
         $response->assertStatus(422);
     }
 
-    public function test_update_html_request_redirects_back_with_flash_message(): void
+    public function test_update_html_request_redirects_to_show_with_flash_message(): void
     {
         $kaizen = Kaizen::factory()->withStatus(KaizenStatus::DRAFT)->create([
             'creator_user_id' => $this->user->id,
@@ -387,7 +452,7 @@ class KaizenControllerTest extends TestCase
         $payload = ['title' => 'HTML Title'];
 
         $response = $this->from('/edit-kaizen')->actingAs($this->user)->patch(route('kaizens.update', $kaizen), $payload);
-        $response->assertRedirect('/edit-kaizen');
+        $response->assertRedirect(route('kaizens.show', $kaizen));
         $response->assertSessionHas('success', 'Kaizen taslağı başarıyla güncellendi.');
     }
 

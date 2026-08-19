@@ -84,6 +84,22 @@ class KaizenController extends Controller
         return view('kaizens.create', compact('categories'));
     }
 
+    public function edit(Kaizen $kaizen)
+    {
+        Gate::authorize('update', $kaizen);
+
+        $categories = Category::active()->orderBy('name')->get();
+
+        if ($kaizen->category_id && ! $categories->contains('id', $kaizen->category_id)) {
+            $kaizen->load('category');
+            if ($kaizen->category) {
+                $categories->push($kaizen->category);
+            }
+        }
+
+        return view('kaizens.edit', compact('kaizen', 'categories'));
+    }
+
     public function show(Kaizen $kaizen)
     {
         Gate::authorize('view', $kaizen);
@@ -154,7 +170,7 @@ class KaizenController extends Controller
             );
         }
 
-        return back()->with('success', 'Kaizen taslağı başarıyla güncellendi.');
+        return redirect()->route('kaizens.show', $updatedKaizen)->with('success', 'Kaizen taslağı başarıyla güncellendi.');
     }
 
     public function submit(SubmitKaizenRequest $request, Kaizen $kaizen, SubmitKaizen $submitAction)
