@@ -29,6 +29,17 @@ Kaizen süreci boyunca her bir onay, red veya düzeltme aksiyonu `KaizenWorkflow
 ## Dynamic-by-Default (Varsayılan Olarak Dinamik)
 Sistemin temeli, herhangi bir aşama diziliminde (1'li, 3'lü, 5'li vb.) production kodunun hiçbir değişiklik gerektirmeden çalışması prensibine (Dynamic-by-default) dayanır. `ApprovalWorkflowResolver` servisi ile bir sonraki veya önceki adımlar `sequence` sıralamasına göre DB'den okunarak çözümlemesi (resolve) gerçekleştirilir.
 
+## Progression Engine (Süreç İlerletme Motoru)
+Gün 11 itibarıyla eklenen `ProgressKaizenWorkflow` action'ı süreçteki tüm ilerleme/geri dönme adımlarını merkezileştirir:
+- **Intermediate Approve**: Bir sonraki aşama varsa Kaizen durumu (lifecycle) `SUBMITTED` olarak kalır, yalnızca `current_stage_id` ilerler ve `APPROVE` tarihçesi yazılır (yeni bir KaizenStatusHistory kaydı atılmaz).
+- **Final Approve**: Aşamalar bittiğinde (Navigator nextStage = null verdiğinde), Kaizen durumu `APPROVED` olur, instance `completed_at` atanarak kapanır (Terminal Semantic).
+- **Request Revision**: Kaizen durumu `REVISION_REQUESTED` olur. Instance ve current stage değişmez. Mutlaka bir yorum (comment) zorunludur.
+- **Reject**: Kaizen durumu `REJECTED` olur, instance `cancelled_at` ile terminal/kapalı duruma getirilir. Mevcut stage korunur ve açıklama (comment) zorunludur.
+- **Transaction Boundary**: Motorun her bir adımı tek ve dıştan bir `DB::transaction` ile çevrilidir. İç içe geçiş (transition), instance, statü (lifecycle) kayıtlarının tamamı ya beraber başarılı olur ya da tümüyle iptal (rollback) edilir. İşlemler esnasında çifte yarış (race-condition) önlemek için `lockForUpdate` kilit mekanizmaları uygulanır.
+
+## Approver Authorization Boundary (Onaycı Yetkilendirme Sınırı)
+Süreç ilerletme motoru, şu aşamada (Gün 11), onay yapacak kişinin kimliğine veya rolüne göre hard-code (Örn: `if ($user->role === UserRole::OPEX_SPECIALIST)`) limit koymaz. Güvenlik ve yetki duvarı; dış katmana bırakılmıştır (Approver Resolution). Böylece production kodu farklı organizasyon tiplerinde bile değişmeden çalışmaya devam edecektir.
+
 ## Historical Safety (Tarihsel Güvenlik)
 Sistemde geçmiş onay kayıtlarının veri tutarlılığını bozmamak için:
 - Foreign Key'ler (Örn: Kaizen -> Instance -> Workflow) sıkı tasarlanmış olup, geçmiş transition ve stage kayıtlarının hard delete edilmesi engellenmiştir (Archive/Inactive modeli).
