@@ -45,8 +45,17 @@ Sistemde geçmiş onay kayıtlarının veri tutarlılığını bozmamak için:
 - Foreign Key'ler (Örn: Kaizen -> Instance -> Workflow) sıkı tasarlanmış olup, geçmiş transition ve stage kayıtlarının hard delete edilmesi engellenmiştir (Archive/Inactive modeli).
 - Mass assignment korumaları veya IDOR kontrolleri ile client'tan id'ler override edilemez; sunucu tabanlı resolution yapılır.
 
-## Future Approver Resolution (Gelecekteki Onaycı Çözümlemesi)
-Bu dokümanın kaleme alındığı fazda (Gün 11), onayların "hangi sırayla" (sequence) ilerlediği kodlanmıştır. Ancak "kim" onaylayacak (role, department manager, specific group) soruları kontrollü şekilde sonraki bloklara devredilmiştir. Mimari, bu yetki kararını çözümleyici (resolver) yardımıyla sağlayabilecek kadar geniş düşünülmüş ve enum bazlı sınırlamalardan arındırılmıştır.
+## Approver Resolution & Approval Inbox (Day 11 - Block 5)
+Sürecin "hangi sırayla" (sequence) ilerlediği kodlandıktan sonra, "kim onaylayacak?" sorusu dinamik, role-bağımsız bir çözümleyiciye (Approver Resolution) devredilmiştir.
+
+- **Approval Groups & Membership**: Onay yetkileri `UserRole` enum'u yerine veri tabanındaki `ApprovalGroup` ve `ApprovalGroupMember` tabloları ile yönetilir. Sistem, bir çalışanı doğrudan bir role atamak yerine gruplara üye yapar.
+- **Stage Assignments**: `ApprovalStageAssignment` tablosu, her bir aşamanın (`ApprovalStage`) hangi grubun (`ApprovalGroup`) sorumluluğunda olduğunu eşler.
+- **Department & Global Scope**: Eşlemeler (assignments) bir "scope" (kapsam) içerir.
+  - `GLOBAL`: Grubun üyeleri departmandan bağımsız tüm Kaizenlerde yetkilidir (Örn: Kurul).
+  - `DEPARTMENT`: Yalnızca Kaizen'in departmanıyla aynı departmana atanan eşleşmeler yetkilidir (Örn: Yönetici onayında her yönetici kendi departmanını onaylar).
+- **Fail-Closed Resolution**: `ApprovalStageApproverResolver` servisi kesin "fail-closed" güvenlik felsefesiyle çalışır. Kullanıcı aktif değilse, üyelik aktif değilse, grup aktif değilse veya Kaizen mevcut aşamasında (current stage) değilse erişim reddedilir (false). Gelecek (future) veya geçmiş (previous) stage onaycıları da yetkilendirilmez.
+- **Approval Inbox**: Yetkili kişilerin onaylaması beklenen işler, DB tabanlı bir `PendingApprovalsQuery` ile süzülür ve güvenli "Onay Bekleyenler" (`/approvals`) inbox ekranına yansır.
+- **Narrow Visibility**: Onaycı yetkisi yalnızca o anki stage'deki ilgili Kaizen için "İncele" (view) hakkı verir. Şirketteki tüm Kaizenleri görüntüleme (global visibility) ayrı bir konudur.
 
 ## Timeline & Read Model (Zaman Çizelgesi ve Okuma Modeli)
 Kaizen detay ekranında gösterilen dinamik zaman çizelgesi (timeline) sadece bir **sunum (presentation)** katmanıdır. `KaizenWorkflowTimelinePresenter` aracılığıyla, DB sorguları UI'dan (Blade) izole edilmiştir.

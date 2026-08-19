@@ -6,6 +6,7 @@ use App\Enums\KaizenStatus;
 use App\Enums\UserRole;
 use App\Models\Kaizen;
 use App\Models\User;
+use App\Services\Workflow\ApprovalStageApproverResolver;
 
 class KaizenPolicy
 {
@@ -54,7 +55,17 @@ class KaizenPolicy
             return true;
         }
 
+        // Eligible current stage approvers can view the Kaizen
+        if (app(ApprovalStageApproverResolver::class)->canAct($user, $kaizen)) {
+            return true;
+        }
+
         return false;
+    }
+
+    public function reviewOnWorkflow(User $user, Kaizen $kaizen): bool
+    {
+        return app(ApprovalStageApproverResolver::class)->canAct($user, $kaizen);
     }
 
     public function create(User $user): bool
