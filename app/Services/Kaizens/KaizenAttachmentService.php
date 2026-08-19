@@ -21,10 +21,16 @@ class KaizenAttachmentService
      * @param  UploadedFile[]  $files
      * @return Collection<int, KaizenAttachment>
      *
-     * @throws \Exception
+     * @throws \Throwable
      */
     public function storeMany(Kaizen $kaizen, User $uploader, KaizenAttachmentContext $context, array $files): Collection
     {
+        $integrityService = app(KaizenAttachmentIntegrityService::class);
+        if (! $integrityService->isManagedPrefixSafe()) {
+            throw new \LogicException('Configured attachment managed prefix is unsafe.');
+        }
+
+        $prefix = config('kaizen.attachments.managed_prefix');
         $disk = config('kaizen.attachments.disk', 'local');
         $storedPaths = [];
         $attachments = collect();
@@ -37,10 +43,10 @@ class KaizenAttachmentService
             foreach ($files as $index => $file) {
                 // Generate secure ULID-like or UUID name
                 $filename = (string) Str::ulid().'.'.$file->extension();
-                $path = "kaizens/{$kaizen->id}/evidence/{$context->value}/{$filename}";
+                $directory = trim($prefix, '/')."/{$kaizen->id}/evidence/{$context->value}";
 
                 // Store file physically
-                $storedPath = $file->storeAs("kaizens/{$kaizen->id}/evidence/{$context->value}", $filename, $disk);
+                $storedPath = $file->storeAs($directory, $filename, $disk);
                 if (! $storedPath) {
                     throw new \Exception('Failed to store file physically.');
                 }
@@ -127,7 +133,13 @@ class KaizenAttachmentService
             }
 
             try {
-                Storage::disk($attachment->storage_disk)->delete($attachment->storage_path);
+                $success = Storage::disk($attachment->storage_disk)->delete($attachment->storage_path);
+                if (! $success) {
+                    Log::error('KaizenAttachmentService: Failed to delete physical file (delete returned false).', [
+                        'attachment_id' => $attachment->id,
+                        'kaizen_id' => $attachment->kaizen_id,
+                    ]);
+                }
             } catch (\Throwable $e) {
                 // Log the failure but do not interrupt the process, as the DB transaction is already committed.
                 // An orphan file will remain, which can be cleaned up by the integrity audit command.

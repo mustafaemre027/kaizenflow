@@ -35,6 +35,8 @@ class KaizenAttachmentIntegrityService
 
     public const STATUS_ORPHAN_TOO_NEW = 'ORPHAN_TOO_NEW';
 
+    public const STATUS_ORPHAN_AGE_UNKNOWN = 'ORPHAN_AGE_UNKNOWN';
+
     /**
      * Run a full audit. Returns a structured summary array.
      *
@@ -61,7 +63,9 @@ class KaizenAttachmentIntegrityService
             self::STATUS_INVALID_MIME => $dbResults->where('status', self::STATUS_INVALID_MIME)->count(),
             self::STATUS_INVALID_DISK => $dbResults->where('status', self::STATUS_INVALID_DISK)->count(),
             self::STATUS_UNSAFE_PATH => $dbResults->where('status', self::STATUS_UNSAFE_PATH)->count(),
-            self::STATUS_ORPHAN_FILE => $orphanResults->whereIn('status', [self::STATUS_ORPHAN_FILE, self::STATUS_ORPHAN_TOO_NEW])->count(),
+            self::STATUS_ORPHAN_FILE => $orphanResults->where('status', self::STATUS_ORPHAN_FILE)->count(),
+            self::STATUS_ORPHAN_TOO_NEW => $orphanResults->where('status', self::STATUS_ORPHAN_TOO_NEW)->count(),
+            self::STATUS_ORPHAN_AGE_UNKNOWN => $orphanResults->where('status', self::STATUS_ORPHAN_AGE_UNKNOWN)->count(),
         ];
 
         return compact('dbResults', 'orphanResults', 'summary');
@@ -211,18 +215,22 @@ class KaizenAttachmentIntegrityService
             try {
                 $lastModified = $storage->lastModified($filePath);
                 $ageMinutes = (now()->timestamp - $lastModified) / 60;
-            } catch (\Exception $e) {
-                $ageMinutes = null;
-            }
+                $isTooNew = $ageMinutes < $gracePeriodMinutes;
 
-            $isTooNew = $ageMinutes !== null && $ageMinutes < $gracePeriodMinutes;
+                $status = $isTooNew ? self::STATUS_ORPHAN_TOO_NEW : self::STATUS_ORPHAN_FILE;
+                $detail = $isTooNew
+                    ? "File is within the {$gracePeriodMinutes}-minute grace period (age ~{$ageMinutes} min)."
+                    : 'Physical file exists but has no corresponding DB record.';
+            } catch (\Throwable $e) {
+                $ageMinutes = null;
+                $status = self::STATUS_ORPHAN_AGE_UNKNOWN;
+                $detail = 'Could not determine file age. Fail-closed to prevent accidental deletion.';
+            }
 
             $results->push([
                 'path' => $filePath,
-                'status' => $isTooNew ? self::STATUS_ORPHAN_TOO_NEW : self::STATUS_ORPHAN_FILE,
-                'detail' => $isTooNew
-                    ? "File is within the {$gracePeriodMinutes}-minute grace period (age ~{$ageMinutes} min)."
-                    : 'Physical file exists but has no corresponding DB record.',
+                'status' => $status,
+                'detail' => $detail,
                 'age_minutes' => $ageMinutes,
             ]);
         }
@@ -273,10 +281,15 @@ class KaizenAttachmentIntegrityService
             }
 
             try {
-                $storage->delete($path);
-                $deleted++;
-                Log::info('KaizenAttachmentIntegrityService: Deleted orphan file.', compact('path'));
-            } catch (\Exception $e) {
+                $success = $storage->delete($path);
+                if ($success) {
+                    $deleted++;
+                    Log::info('KaizenAttachmentIntegrityService: Deleted orphan file.', compact('path'));
+                } else {
+                    $errors++;
+                    Log::error('KaizenAttachmentIntegrityService: Failed to delete orphan (delete returned false).', compact('path'));
+                }
+            } catch (\Throwable $e) {
                 $errors++;
                 Log::error('KaizenAttachmentIntegrityService: Failed to delete orphan.', [
                     'path' => $path,

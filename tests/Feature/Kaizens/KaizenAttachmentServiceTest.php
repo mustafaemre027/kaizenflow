@@ -6,6 +6,7 @@ use App\Enums\KaizenAttachmentContext;
 use App\Models\Kaizen;
 use App\Models\KaizenAttachment;
 use App\Models\User;
+use App\Services\Kaizens\KaizenAttachmentIntegrityService;
 use App\Services\Kaizens\KaizenAttachmentService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -218,5 +219,37 @@ class KaizenAttachmentServiceTest extends TestCase
 
         // The critical file must STILL EXIST
         Storage::disk('local')->assertExists('other-module/critical.jpg');
+    }
+
+    public function test_dynamic_managed_prefix_integration(): void
+    {
+        Storage::fake('local');
+
+        // 1. Change the prefix
+        config(['kaizen.attachments.managed_prefix' => 'company-kaizen-data']);
+
+        $kaizen = Kaizen::factory()->create();
+        $uploader = User::factory()->create();
+        $file = UploadedFile::fake()->createWithContent('custom.jpg', str_repeat('a', 1024));
+
+        // 2. Store attachment
+        $attachments = $this->service->storeMany($kaizen, $uploader, KaizenAttachmentContext::CURRENT_SITUATION, [$file]);
+        $attachment = $attachments->first();
+
+        // 3. Verify DB path
+        $this->assertStringStartsWith('company-kaizen-data/', $attachment->storage_path);
+
+        // 4. Verify Physical Path
+        Storage::disk('local')->assertExists($attachment->storage_path);
+
+        // Ensure the hard-coded path is NOT used
+        $filesInHardcoded = Storage::disk('local')->allFiles('kaizens');
+        $this->assertEmpty($filesInHardcoded, 'Files should not be stored in hardcoded kaizens/ directory');
+
+        // 5. Verify Audit
+        $auditService = app(KaizenAttachmentIntegrityService::class);
+        $result = $auditService->audit();
+
+        $this->assertEquals(1, $result['summary'][KaizenAttachmentIntegrityService::STATUS_OK]);
     }
 }

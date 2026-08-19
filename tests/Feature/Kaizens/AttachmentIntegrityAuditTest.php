@@ -430,6 +430,54 @@ class AttachmentIntegrityAuditTest extends TestCase
         Storage::disk('local')->assertMissing($path);
     }
 
+    public function test_orphan_age_failure_marks_as_unknown_and_skips_deletion(): void
+    {
+        config(['kaizen.attachments.orphan_grace_minutes' => 0]);
+        $path = 'kaizens/99/evidence/current/unknown_age.jpg';
+
+        $mockStorage = \Mockery::mock(Filesystem::class);
+        $mockStorage->shouldReceive('allFiles')->andReturn([$path]);
+        $mockStorage->shouldReceive('lastModified')->with($path)->andThrow(new \Exception('Cannot read age'));
+        $mockStorage->shouldReceive('delete')->never();
+
+        Storage::set('local', $mockStorage);
+
+        $orphanResults = $this->service->auditOrphanFiles();
+
+        $this->assertCount(1, $orphanResults);
+        $this->assertEquals(KaizenAttachmentIntegrityService::STATUS_ORPHAN_AGE_UNKNOWN, $orphanResults->first()['status']);
+        $this->assertNull($orphanResults->first()['age_minutes']);
+
+        $cleanup = $this->service->deleteOrphanFiles($orphanResults);
+
+        $this->assertEquals(0, $cleanup['deleted']);
+        $this->assertEquals(1, $cleanup['skipped']); // Skipped because it's not strictly STATUS_ORPHAN_FILE
+    }
+
+    public function test_delete_orphan_boolean_failure_skips_deletion(): void
+    {
+        config(['kaizen.attachments.orphan_grace_minutes' => 0]);
+        $path = 'kaizens/99/evidence/current/delete_false.jpg';
+
+        $mockStorage = \Mockery::mock(Filesystem::class);
+        $mockStorage->shouldReceive('allFiles')->andReturn([$path]);
+        $mockStorage->shouldReceive('lastModified')->with($path)->andReturn(now()->subDay()->timestamp);
+        // Simulate delete returning false
+        $mockStorage->shouldReceive('delete')->with($path)->andReturn(false);
+
+        Storage::set('local', $mockStorage);
+
+        $orphanResults = $this->service->auditOrphanFiles();
+
+        $this->assertCount(1, $orphanResults);
+        $this->assertEquals(KaizenAttachmentIntegrityService::STATUS_ORPHAN_FILE, $orphanResults->first()['status']);
+
+        $cleanup = $this->service->deleteOrphanFiles($orphanResults);
+
+        $this->assertEquals(0, $cleanup['deleted']);
+        $this->assertEquals(1, $cleanup['errors']);
+    }
+
     public function test_delete_orphan_files_protects_toctou_race_condition(): void
     {
         config(['kaizen.attachments.orphan_grace_minutes' => 0]);
