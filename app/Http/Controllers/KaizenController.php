@@ -16,6 +16,7 @@ use App\Models\Category;
 use App\Models\Department;
 use App\Models\Kaizen;
 use App\Services\Kaizens\VisibleKaizensQuery;
+use App\Services\Workflow\KaizenWorkflowTimelinePresenter;
 use Illuminate\Support\Facades\Gate;
 
 class KaizenController extends Controller
@@ -113,7 +114,7 @@ class KaizenController extends Controller
         ));
     }
 
-    public function show(Kaizen $kaizen)
+    public function show(Kaizen $kaizen, KaizenWorkflowTimelinePresenter $presenter)
     {
         Gate::authorize('view', $kaizen);
 
@@ -125,26 +126,17 @@ class KaizenController extends Controller
             'attachments' => function ($query) {
                 $query->orderBy('context')->orderBy('sort_order');
             },
+            'workflowInstance.workflow.stages',
         ]);
 
         $currentSituationAttachments = $kaizen->attachments->where('context', KaizenAttachmentContext::CURRENT_SITUATION->value);
         $proposedSituationAttachments = $kaizen->attachments->where('context', KaizenAttachmentContext::PROPOSED_SITUATION->value);
 
-        $workflowStatuses = [
-            KaizenStatus::DRAFT,
-            KaizenStatus::SUBMITTED,
-            KaizenStatus::MANAGER_REVIEW,
-            KaizenStatus::APPROVED,
-            KaizenStatus::IN_PROGRESS,
-            KaizenStatus::COMPLETED,
-        ];
-
-        $specialWorkflowStatus = in_array($kaizen->status, $workflowStatuses, true) ? null : $kaizen->status;
+        $workflowTimeline = $presenter->present($kaizen);
 
         return view('kaizens.show', compact(
             'kaizen',
-            'workflowStatuses',
-            'specialWorkflowStatus',
+            'workflowTimeline',
             'currentSituationAttachments',
             'proposedSituationAttachments'
         ));

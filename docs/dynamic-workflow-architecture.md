@@ -48,6 +48,12 @@ Sistemde geçmiş onay kayıtlarının veri tutarlılığını bozmamak için:
 ## Future Approver Resolution (Gelecekteki Onaycı Çözümlemesi)
 Bu dokümanın kaleme alındığı fazda (Gün 11), onayların "hangi sırayla" (sequence) ilerlediği kodlanmıştır. Ancak "kim" onaylayacak (role, department manager, specific group) soruları kontrollü şekilde sonraki bloklara devredilmiştir. Mimari, bu yetki kararını çözümleyici (resolver) yardımıyla sağlayabilecek kadar geniş düşünülmüş ve enum bazlı sınırlamalardan arındırılmıştır.
 
+## Timeline & Read Model (Zaman Çizelgesi ve Okuma Modeli)
+Kaizen detay ekranında gösterilen dinamik zaman çizelgesi (timeline) sadece bir **sunum (presentation)** katmanıdır. `KaizenWorkflowTimelinePresenter` aracılığıyla, DB sorguları UI'dan (Blade) izole edilmiştir.
+- **Approval Workflow vs Execution Lifecycle**: Onay aşamaları, projenin "Uygulamada" (In Progress) ve "Tamamlandı" (Completed) gibi teknik statülerinden ayrı tutulur. Timeline sadece *Onay Süreci'ni* çizer, kurul onayı bitince kapanır.
+- **Legacy & No-Instance Handling**: Henüz gönderilmemiş DRAFT kayıtları veya instance'ı olmayan eski legacy kayıtlar için timeline sahte aşamalar üretmez (No write-on-read).
+- **History Presentation**: DB'deki transition logları (action, context, actor, comment), son kullanıcıya uygun çevirilerle "İşlem Geçmişi" altında dikey bir zaman çizelgesinde (append-only) görselleştirilir. Bu kısım, onay yorumlarını ve zamanlarını gösterir ancak XSS açıklarına karşı blade escape işlemine tabidir.
+
 ## Day 12/13 Integration Boundary
 Gün 11 itibarıyla mimari olarak Kaizen'in dinamik iş akışı (domain layer) yerleşir. 
 Gün 12 ve Gün 13 bloklarında:
