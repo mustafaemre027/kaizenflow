@@ -328,7 +328,7 @@
                 <div class="modal-body px-4 py-3">
                     <p class="text-muted mb-4" style="font-size: 0.95rem;">
                         @if($kaizen->workflowInstance->currentStage->is_final)
-                            Bu son onay aşamasıdır. Onayladığınızda süreç tamamlanacaktır.
+                            Bu son onay aşamasıdır. Onayladığınızda Kaizen onay süreci tamamlanacaktır.
                         @else
                             Bu değerlendirmeyi onayladığınızda Kaizen bir sonraki onay aşamasına ilerleyecektir.
                         @endif
