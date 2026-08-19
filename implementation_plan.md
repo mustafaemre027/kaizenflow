@@ -149,9 +149,10 @@ Günlük yaklaşım: 2 ana ürün capability + entegrasyon + security + tests + 
 - Create/edit/detail entegrasyonu ve yetkilendirme
 
 ### Gün 11 — Dynamic approval workflow + stage config + history
-- Onay sürecinin sabit kod yerine dinamik `approval_workflows` / `approval_stages` altyapısına geçirilmesi
-- Merkezi durum geçiş motoru, yetki/durum kontrolü
-- İşlem/durum geçmişi kaydı ve transaction kullanımı
+- Onay sürecinin sabit kod yerine dinamik `approval_workflows` / `approval_stages` altyapısına geçirilmesi.
+- `KaizenWorkflowInstance` ve immutable (append-only) `KaizenWorkflowTransition` tablolarıyla versiyonlanmış iş akışı oluşturulması.
+- `MANAGER_REVIEW` gibi iş aşamalarının hard-coded olmaktan çıkarılıp dinamik `ApprovalStage` domain'ine devredilmesi.
+- Lifecycle statü geçmişi (`KaizenStatusHistory`) ile Onay İş Akışı geçmişinin (`KaizenWorkflowTransition`) birbirinden ayrılması.
 
 ### Gün 12 — OPEX workspace + queue + revision/reject/handoff
 - Gönderilen Kaizenleri OPEX incelemesi ve çalışma alanı
@@ -205,27 +206,34 @@ Günlük yaklaşım: 2 ana ürün capability + entegrasyon + security + tests + 
 | kaizens | Ana Kaizen öneri kayıtları. |
 | kaizen_attachments | Önerilere eklenen dosyalar. |
 | kaizen_comments | Değerlendirme ve uygulama süreçlerindeki yorumlar. |
-| kaizen_status_histories | Değiştirilemez durum geçiş logları. |
+| kaizen_status_histories | (Platform Lifecycle) Değiştirilemez kaba durum (DRAFT, SUBMITTED) geçiş logları. |
+| approval_workflows | Dinamik onay iş akışı sürümleri (versiyonları). |
+| approval_stages | Bir iş akışındaki dinamik onay aşamaları (Örn: OPEX, Yönetici, Kurul). |
+| kaizen_workflow_instances | Bir Kaizen'in bağlı bulunduğu spesifik iş akışı versiyon örneği. |
+| kaizen_workflow_transitions | İş akışı aşamalarındaki tarihsel değişmez onay/geçiş logları. |
 | implementation_records | Uygulama detayları ve gerçekleşen faydalar. |
 | audit_logs | Kritik işlemlerin izlenmesi. |
 
 Nihai alan ve ilişkilerin Gün 3 ER diyagramıyla kesinleşeceği belirtilmektedir.
 
-## 8. DURUM GEÇİŞLERİ
+## 8. DURUM GEÇİŞLERİ (GÜN 11 İTİBARIYLA LEGACY / PLATFORM LIFECYCLE)
+
+> **DİKKAT:** Gün 11 ile birlikte `MANAGER_REVIEW` gibi kuruma özgü onay aşamaları (organizational states) **LEGACY** kabul edilmektedir. Artık yeni dinamik onay iş akışı (DATABASE-DRIVEN) sistemine geçilmiştir.
+> `KaizenStatus` enum'u, onay silsilesi yerine sadece platform seviyesi ana yaşam döngüsünü (DRAFT, SUBMITTED, REVISION_REQUESTED, APPROVED, REJECTED, vb.) taşıyacaktır.
 
 | Mevcut Durum | İşlem | Yeni Durum | Yetkili Rol |
 |---|---|---|---|
 | DRAFT | Çalışan tarafından gönderildi | SUBMITTED | EMPLOYEE |
 | REVISION_REQUESTED | Çalışan tarafından güncellendi | SUBMITTED | EMPLOYEE |
 | SUBMITTED | Düzeltme istendi | REVISION_REQUESTED | OPEX_SPECIALIST |
-| SUBMITTED | Onay için yöneticiye iletildi | MANAGER_REVIEW | OPEX_SPECIALIST |
+| SUBMITTED | Onay için yöneticiye iletildi | MANAGER_REVIEW (Legacy) | OPEX_SPECIALIST |
 | SUBMITTED | Reddedildi | REJECTED | OPEX_SPECIALIST |
 | MANAGER_REVIEW | Onaylandı | APPROVED | MANAGER |
 | MANAGER_REVIEW | Reddedildi | REJECTED | MANAGER |
 | APPROVED | Uygulamayı başlat | IN_PROGRESS | OPEX_SPECIALIST / yetkili MANAGER |
 | IN_PROGRESS | Sonuçları kaydet ve tamamla | COMPLETED | OPEX_SPECIALIST / yetkili MANAGER |
 
-Durum geçişlerinin tek bir merkezi servis üzerinden uygulanacağı, controller veya Blade içinde kopyalanmayacağı belirtilmektedir.
+Durum geçişlerinin tek bir merkezi servis üzerinden uygulanacağı, controller veya Blade içinde kopyalanmayacağı belirtilmektedir. (Gün 11 sonrası onay akışı `ApprovalWorkflowResolver` ve `StartKaizenWorkflow` ile devralınmıştır).
 
 ## 9. YETKİ İLKELERİ
 - Çalışan yalnızca kendi kayıtlarına erişir.
