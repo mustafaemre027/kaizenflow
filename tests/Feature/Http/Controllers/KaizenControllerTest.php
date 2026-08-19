@@ -5,6 +5,7 @@ namespace Tests\Feature\Http\Controllers;
 use App\Actions\Kaizens\CreateKaizenDraft;
 use App\Actions\Kaizens\UpdateKaizenDraft;
 use App\Enums\KaizenStatus;
+use App\Enums\UserRole;
 use App\Models\Category;
 use App\Models\Department;
 use App\Models\Kaizen;
@@ -234,6 +235,71 @@ class KaizenControllerTest extends TestCase
     }
 
     // ==========================================
+    // EDIT METHOD TESTS
+    // ==========================================
+
+    public function test_edit_unauthenticated_returns_302_redirect(): void
+    {
+        $kaizen = Kaizen::factory()->create();
+        $response = $this->get(route('kaizens.edit', $kaizen));
+        $response->assertStatus(302);
+        $response->assertRedirect(route('login'));
+    }
+
+    public function test_edit_creator_can_view_draft(): void
+    {
+        $kaizen = Kaizen::factory()->withStatus(KaizenStatus::DRAFT)->create([
+            'creator_user_id' => $this->user->id,
+        ]);
+
+        $response = $this->actingAs($this->user)->get(route('kaizens.edit', $kaizen));
+
+        $response->assertStatus(200);
+        $response->assertViewIs('kaizens.edit');
+        $response->assertSee($kaizen->title);
+        $response->assertSee($kaizen->current_situation);
+    }
+
+    public function test_edit_creator_can_view_revision_requested(): void
+    {
+        $kaizen = Kaizen::factory()->withStatus(KaizenStatus::REVISION_REQUESTED)->create([
+            'creator_user_id' => $this->user->id,
+        ]);
+
+        $response = $this->actingAs($this->user)->get(route('kaizens.edit', $kaizen));
+        $response->assertStatus(200);
+    }
+
+    public function test_edit_other_user_returns_403(): void
+    {
+        $kaizen = Kaizen::factory()->withStatus(KaizenStatus::DRAFT)->create();
+
+        $response = $this->actingAs($this->user)->get(route('kaizens.edit', $kaizen));
+        $response->assertStatus(403);
+    }
+
+    public function test_edit_non_editable_status_returns_403(): void
+    {
+        $statuses = [
+            KaizenStatus::SUBMITTED,
+            KaizenStatus::APPROVED,
+            KaizenStatus::IN_PROGRESS,
+            KaizenStatus::COMPLETED,
+            KaizenStatus::REJECTED,
+            KaizenStatus::MANAGER_REVIEW,
+        ];
+
+        foreach ($statuses as $status) {
+            $kaizen = Kaizen::factory()->withStatus($status)->create([
+                'creator_user_id' => $this->user->id,
+            ]);
+
+            $response = $this->actingAs($this->user)->get(route('kaizens.edit', $kaizen));
+            $response->assertStatus(403);
+        }
+    }
+
+    // ==========================================
     // UPDATE METHOD TESTS
     // ==========================================
 
@@ -377,7 +443,7 @@ class KaizenControllerTest extends TestCase
         $response->assertStatus(422);
     }
 
-    public function test_update_html_request_redirects_back_with_flash_message(): void
+    public function test_update_html_request_redirects_to_show_with_flash_message(): void
     {
         $kaizen = Kaizen::factory()->withStatus(KaizenStatus::DRAFT)->create([
             'creator_user_id' => $this->user->id,
@@ -386,7 +452,7 @@ class KaizenControllerTest extends TestCase
         $payload = ['title' => 'HTML Title'];
 
         $response = $this->from('/edit-kaizen')->actingAs($this->user)->patch(route('kaizens.update', $kaizen), $payload);
-        $response->assertRedirect('/edit-kaizen');
+        $response->assertRedirect(route('kaizens.show', $kaizen));
         $response->assertSessionHas('success', 'Kaizen taslağı başarıyla güncellendi.');
     }
 
@@ -515,5 +581,141 @@ class KaizenControllerTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertSee('Reddedildi');
+    }
+
+    // ==========================================
+    // INDEX METHOD TESTS
+    // ==========================================
+
+    public function test_index_unauthenticated_returns_302_redirect(): void
+    {
+        $response = $this->get(route('kaizens.index'));
+        $response->assertStatus(302);
+        $response->assertRedirect(route('login'));
+    }
+
+    public function test_index_employee_can_only_see_own_or_assigned_kaizens(): void
+    {
+        $this->user->role = UserRole::EMPLOYEE;
+        $this->user->save();
+
+        $otherUser = User::factory()->create();
+
+        $ownKaizen = Kaizen::factory()->create(['creator_user_id' => $this->user->id]);
+        $assignedKaizen = Kaizen::factory()->create(['assigned_user_id' => $this->user->id]);
+        $unrelatedKaizen = Kaizen::factory()->create(['creator_user_id' => $otherUser->id]);
+
+        $response = $this->actingAs($this->user)->get(route('kaizens.index'));
+        $response->assertStatus(200);
+        $response->assertViewHas('kaizens');
+
+        $kaizens = $response->viewData('kaizens');
+        $this->assertTrue($kaizens->contains($ownKaizen));
+        $this->assertTrue($kaizens->contains($assignedKaizen));
+        $this->assertFalse($kaizens->contains($unrelatedKaizen));
+    }
+
+    public function test_index_manager_can_see_own_assigned_and_department_kaizens(): void
+    {
+        $this->user->role = UserRole::MANAGER;
+        $this->user->save();
+
+        $otherDepartment = Department::factory()->create();
+        $otherUser = User::factory()->create(['department_id' => $otherDepartment->id]);
+
+        $departmentKaizen = Kaizen::factory()->create(['department_id' => $this->department->id, 'creator_user_id' => $otherUser->id]);
+        $unrelatedKaizen = Kaizen::factory()->create(['department_id' => $otherDepartment->id, 'creator_user_id' => $otherUser->id]);
+        $crossDepartmentOwnKaizen = Kaizen::factory()->create(['department_id' => $otherDepartment->id, 'creator_user_id' => $this->user->id]);
+
+        $response = $this->actingAs($this->user)->get(route('kaizens.index'));
+
+        $kaizens = $response->viewData('kaizens');
+        $this->assertTrue($kaizens->contains($departmentKaizen));
+        $this->assertTrue($kaizens->contains($crossDepartmentOwnKaizen));
+        $this->assertFalse($kaizens->contains($unrelatedKaizen));
+    }
+
+    public function test_index_opex_specialist_can_see_all_kaizens(): void
+    {
+        $this->user->role = UserRole::OPEX_SPECIALIST;
+        $this->user->save();
+
+        $unrelatedKaizen = Kaizen::factory()->create();
+
+        $response = $this->actingAs($this->user)->get(route('kaizens.index'));
+        $kaizens = $response->viewData('kaizens');
+        $this->assertTrue($kaizens->contains($unrelatedKaizen));
+    }
+
+    public function test_index_admin_can_see_all_kaizens(): void
+    {
+        $this->user->role = UserRole::ADMIN;
+        $this->user->save();
+
+        $unrelatedKaizen = Kaizen::factory()->create();
+
+        $response = $this->actingAs($this->user)->get(route('kaizens.index'));
+        $kaizens = $response->viewData('kaizens');
+        $this->assertTrue($kaizens->contains($unrelatedKaizen));
+    }
+
+    public function test_index_search_filters_correctly_and_does_not_bypass_authorization(): void
+    {
+        $this->user->role = UserRole::EMPLOYEE;
+        $this->user->save();
+
+        $matchingOwn = Kaizen::factory()->create(['creator_user_id' => $this->user->id, 'title' => 'Match Title']);
+        $nonMatchingOwn = Kaizen::factory()->create(['creator_user_id' => $this->user->id, 'title' => 'Other Title']);
+        $matchingUnrelated = Kaizen::factory()->create(['title' => 'Match Title']);
+
+        $response = $this->actingAs($this->user)->get(route('kaizens.index', ['q' => 'Match']));
+
+        $kaizens = $response->viewData('kaizens');
+        $this->assertTrue($kaizens->contains($matchingOwn));
+        $this->assertFalse($kaizens->contains($nonMatchingOwn));
+        $this->assertFalse($kaizens->contains($matchingUnrelated));
+    }
+
+    public function test_index_filters_work_and_do_not_bypass_authorization(): void
+    {
+        $this->user->role = UserRole::EMPLOYEE;
+        $this->user->save();
+
+        $otherDept = Department::factory()->create();
+
+        $matchingOwn = Kaizen::factory()->create(['creator_user_id' => $this->user->id, 'department_id' => $this->department->id, 'status' => KaizenStatus::DRAFT]);
+        $unrelatedMatchFilter = Kaizen::factory()->create(['department_id' => $otherDept->id, 'status' => KaizenStatus::DRAFT]);
+
+        $response = $this->actingAs($this->user)->get(route('kaizens.index', [
+            'status' => KaizenStatus::DRAFT->value,
+            'department_id' => $otherDept->id,
+        ]));
+
+        $kaizens = $response->viewData('kaizens');
+        $this->assertFalse($kaizens->contains($unrelatedMatchFilter));
+        $this->assertFalse($kaizens->contains($matchingOwn));
+    }
+
+    public function test_index_sort_validation(): void
+    {
+        $response = $this->actingAs($this->user)->get(route('kaizens.index', ['sort' => 'created_at', 'direction' => 'desc']));
+        $response->assertStatus(200);
+
+        $invalidResponse = $this->actingAs($this->user)->get(route('kaizens.index', ['sort' => 'invalid_column']), ['Accept' => 'application/json']);
+        $invalidResponse->assertStatus(422);
+    }
+
+    public function test_index_pagination_returns_correct_number_of_items(): void
+    {
+        $this->user->role = UserRole::ADMIN;
+        $this->user->save();
+
+        Kaizen::factory()->count(20)->create();
+
+        $response = $this->actingAs($this->user)->get(route('kaizens.index'));
+        $kaizens = $response->viewData('kaizens');
+
+        $this->assertCount(15, $kaizens->items());
+        $this->assertTrue($kaizens->hasPages());
     }
 }

@@ -17,7 +17,11 @@
                     @auth
                         <nav class="d-none d-md-flex gap-2 ms-4">
                             <a href="{{ url('/') }}" class="kf-app-nav-link {{ request()->is('/') ? 'active' : '' }}">Ana Sayfa</a>
+                            <a href="{{ route('kaizens.index') }}" class="kf-app-nav-link {{ request()->routeIs('kaizens.index', 'kaizens.show') ? 'active' : '' }}">Kaizenler</a>
                             <a href="{{ route('kaizens.create') }}" class="kf-app-nav-link {{ request()->routeIs('kaizens.create') ? 'active' : '' }}">Yeni Kaizen</a>
+                            @if(auth()->user()->role === \App\Enums\UserRole::ADMIN)
+                                <a href="{{ route('settings.reference-data.index') }}" class="kf-app-nav-link {{ request()->routeIs('settings.*') ? 'active' : '' }}">Yönetim</a>
+                            @endif
                         </nav>
                     @endauth
                 </div>

@@ -16,9 +16,14 @@
             @endif
         </div>
     </div>
-    <div class="mt-3 mt-md-0">
+    <div class="mt-3 mt-md-0 d-flex gap-2 flex-wrap">
+        @can('update', $kaizen)
+            <a href="{{ route('kaizens.edit', $kaizen) }}" class="kf-btn kf-btn-primary">
+                Düzenle
+            </a>
+        @endcan
         <a href="{{ route('kaizens.create') }}" class="kf-btn kf-btn-secondary">
-            Yeni Kaizen Oluştur
+            Yeni Kaizen
         </a>
     </div>
 </div>
