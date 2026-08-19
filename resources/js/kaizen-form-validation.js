@@ -5,51 +5,54 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
 
-    const currentSituation = document.getElementById('current_situation');
-    const proposedSituation = document.getElementById('proposed_situation');
+    const requiredFields = kaizenForm.querySelectorAll('[data-kf-required="true"]');
 
-    if (!currentSituation || !proposedSituation) {
+    if (requiredFields.length === 0) {
         return;
     }
 
-    // Function to clear error when user types
+    // Function to clear error when user interacts
     const clearError = (element) => {
-        element.classList.remove('is-invalid');
-        element.setAttribute('aria-invalid', 'false');
-        
-        // Let server-side error handle its own message clearing if it exists,
-        // but for client-side we can just rely on CSS displaying the message
-        // when is-invalid is present. The view already uses .invalid-feedback
-        // which Bootstrap shows only when sibling has .is-invalid.
+        // If element has value or is valid
+        if (element.value.trim() !== '') {
+            element.classList.remove('is-invalid');
+            element.setAttribute('aria-invalid', 'false');
+        }
     };
 
-    currentSituation.addEventListener('input', () => clearError(currentSituation));
-    proposedSituation.addEventListener('input', () => clearError(proposedSituation));
+    requiredFields.forEach(field => {
+        // For textareas and text inputs, clear on input
+        if (field.tagName === 'TEXTAREA' || (field.tagName === 'INPUT' && field.type === 'text')) {
+            field.addEventListener('input', () => clearError(field));
+        } 
+        // For selects, clear on change
+        else if (field.tagName === 'SELECT') {
+            field.addEventListener('change', () => clearError(field));
+        }
+    });
 
     kaizenForm.addEventListener('submit', function(e) {
         let isValid = true;
         let firstInvalidField = null;
 
-        if (currentSituation.value.trim() === '') {
-            isValid = false;
-            currentSituation.classList.add('is-invalid');
-            currentSituation.setAttribute('aria-invalid', 'true');
-            if (!firstInvalidField) firstInvalidField = currentSituation;
-        }
-
-        if (proposedSituation.value.trim() === '') {
-            isValid = false;
-            proposedSituation.classList.add('is-invalid');
-            proposedSituation.setAttribute('aria-invalid', 'true');
-            if (!firstInvalidField) firstInvalidField = proposedSituation;
-        }
+        requiredFields.forEach(field => {
+            if (field.value.trim() === '') {
+                isValid = false;
+                field.classList.add('is-invalid');
+                field.setAttribute('aria-invalid', 'true');
+                
+                if (!firstInvalidField) {
+                    firstInvalidField = field;
+                }
+            }
+        });
 
         if (!isValid) {
             e.preventDefault(); // Prevent form submission
             
             if (firstInvalidField) {
                 firstInvalidField.focus();
-                // Smooth scroll might not be required, but we can do a safe scroll
+                // Safe scroll so it's vertically centered and visible to the user
                 firstInvalidField.scrollIntoView({ behavior: 'auto', block: 'center' });
             }
         }

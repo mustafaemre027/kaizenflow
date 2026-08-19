@@ -43,7 +43,7 @@
 
     <!-- Right Form Workspace -->
     <div class="kf-form-workspace">
-        <form method="POST" action="{{ route('kaizens.store') }}" enctype="multipart/form-data">
+        <form method="POST" action="{{ route('kaizens.store') }}" enctype="multipart/form-data" novalidate>
             @csrf
 
             <div class="p-4 p-md-5">
@@ -51,8 +51,8 @@
                     <h2 class="kf-form-section-title">01 &nbsp; Temel Bilgiler</h2>
                     <div class="row g-4">
                         <div class="col-md-4">
-                            <label for="category_id" class="kf-form-label">Kategori</label>
-                            <select name="category_id" id="category_id" class="kf-form-control @error('category_id') is-invalid @enderror" required>
+                            <label for="category_id" class="kf-form-label">Kategori <span class="badge bg-light text-secondary border ms-2 fw-normal">Zorunlu</span></label>
+                            <select name="category_id" id="category_id" class="kf-form-control @error('category_id') is-invalid @enderror" required data-kf-required="true" aria-describedby="category_id_error">
                                 <option value="">-- Seçiniz --</option>
                                 @foreach($categories as $category)
                                     <option value="{{ $category->id }}" {{ old('category_id') == $category->id ? 'selected' : '' }}>
@@ -60,18 +60,26 @@
                                     </option>
                                 @endforeach
                             </select>
-                            @error('category_id')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
+                            <div id="category_id_error" class="invalid-feedback kf-client-error">
+                                @error('category_id')
+                                    {{ $message }}
+                                @else
+                                    Kategori seçimi zorunludur.
+                                @enderror
+                            </div>
                         </div>
 
                         <div class="col-md-8">
-                            <label for="title" class="kf-form-label">Başlık</label>
-                            <input type="text" name="title" id="title" class="kf-form-control @error('title') is-invalid @enderror" value="{{ old('title') }}" required maxlength="255" placeholder="Kaizen'inizi özetleyen kısa başlık">
+                            <label for="title" class="kf-form-label">Başlık <span class="badge bg-light text-secondary border ms-2 fw-normal">Zorunlu</span></label>
+                            <input type="text" name="title" id="title" class="kf-form-control @error('title') is-invalid @enderror" value="{{ old('title') }}" required maxlength="255" placeholder="Kaizen'inizi özetleyen kısa başlık" data-kf-required="true" aria-describedby="title_error">
                             <span class="kf-form-help">Örn: Depo alanındaki etiketleme sürecinin iyileştirilmesi</span>
-                            @error('title')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
+                            <div id="title_error" class="invalid-feedback kf-client-error">
+                                @error('title')
+                                    {{ $message }}
+                                @else
+                                    Başlık alanı zorunludur.
+                                @enderror
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -81,7 +89,7 @@
 
                     <div class="kf-form-group">
                         <label for="current_situation" class="kf-form-label">Mevcut Durum <span class="badge bg-light text-secondary border ms-2 fw-normal">Zorunlu</span></label>
-                        <textarea name="current_situation" id="current_situation" class="kf-form-control @error('current_situation') is-invalid @enderror" rows="3" required maxlength="5000" placeholder="Şu anki süreci ve yaşanan problemi detaylı olarak açıklayın..." aria-describedby="current_situation_error">{{ old('current_situation') }}</textarea>
+                        <textarea name="current_situation" id="current_situation" class="kf-form-control @error('current_situation') is-invalid @enderror" rows="3" required maxlength="5000" placeholder="Şu anki süreci ve yaşanan problemi detaylı olarak açıklayın..." aria-describedby="current_situation_error" data-kf-required="true">{{ old('current_situation') }}</textarea>
                         <div id="current_situation_error" class="invalid-feedback kf-client-error">
                             @error('current_situation')
                                 {{ $message }}
@@ -122,7 +130,7 @@
 
                     <div class="kf-form-group mb-0">
                         <label for="proposed_situation" class="kf-form-label">Önerilen Durum <span class="badge bg-light text-secondary border ms-2 fw-normal">Zorunlu</span></label>
-                        <textarea name="proposed_situation" id="proposed_situation" class="kf-form-control @error('proposed_situation') is-invalid @enderror" rows="3" required maxlength="5000" placeholder="İyileştirme sonrasında sürecin nasıl işleyeceğini açıklayın..." aria-describedby="proposed_situation_error">{{ old('proposed_situation') }}</textarea>
+                        <textarea name="proposed_situation" id="proposed_situation" class="kf-form-control @error('proposed_situation') is-invalid @enderror" rows="3" required maxlength="5000" placeholder="İyileştirme sonrasında sürecin nasıl işleyeceğini açıklayın..." aria-describedby="proposed_situation_error" data-kf-required="true">{{ old('proposed_situation') }}</textarea>
                         <div id="proposed_situation_error" class="invalid-feedback kf-client-error">
                             @error('proposed_situation')
                                 {{ $message }}
