@@ -72,10 +72,13 @@ Her bir `ApprovalStage` adımında, ilgili `ApprovalGroup`'a atanan yetkili onay
 ## 7. Uygulama ve Tamamlama Akışı (Post-Approval Execution)
 **Yol:** APPROVED → IN_PROGRESS → COMPLETED
 
-Uygulama sorumlusu (`assigned_user_id`), onaylanmış işi operasyonel olarak yürütür:
-* **Başlangıç:** Onaylanan kayıt (`target_date` ve `assigned_user_id` ile donatılmış), sorumlusu tarafından uygulamaya alınır (IN_PROGRESS). Eşzamanlı işlemleri önlemek için işlem Transaction içinde kilitlenerek (`lockForUpdate`) yapılır.
-* **Sonuçlandırma:** İşlem tamamlanırken "Sonuç Açıklaması (actual_result)" zorunlu tutulur (İleride `realized_benefit` vb. eklenecektir).
+Uygulama sorumlusu (`assigned_user_id`), onaylanmış işi operasyonel olarak yürütür. Ancak atanmış olmak tek başına lifecycle statüsü değiştirme yetkisi sağlamaz.
+* **Assignee (Sorumlu) Sınırları:** Kaizen'i görebilir ve kendisine izin verilen uygulama bilgilerini (actual_result vb.) kaydedebilir. Ancak yalnızca atanmış olduğu için IN_PROGRESS veya COMPLETED geçişi yapamaz.
+* **Başlangıç:** Onaylanan kayıt uygulamaya alınır (IN_PROGRESS). Eşzamanlı işlemleri önlemek için işlem Transaction içinde kilitlenerek (`lockForUpdate`) yapılır.
+* **Sonuçlandırma:** İşlem tamamlanırken "Sonuç Açıklaması (actual_result)" zorunlu tutulur.
 * **Terminal Durum:** COMPLETED yapıldıktan sonra sistem durumu bir daha değiştirilemez.
+
+*Not: Atama, uygulamayı başlatma ve tamamlama aynı geniş yetki altında değerlendirilemez. Planlanan ayrı Policy yetenekleri: `assignImplementation`, `startImplementation`, `completeImplementation`.*
 
 ## 8. Yetki Matrisi
 
@@ -84,7 +87,7 @@ Uygulama sorumlusu (`assigned_user_id`), onaylanmış işi operasyonel olarak y�
 | Taslak oluşturma | İzinli | Yasak | Yasak | Yasak | N/A |
 | Gönderme / Yeniden Gönderme | İzinli | Yasak | Yasak | Yasak | N/A |
 | İş akışında onay / ret / revizyon | Atanmışsa | Atanmışsa | Atanmışsa | Yasak | N/A |
-| Uygulamayı başlatma / tamamlama | Yasak | İzinli | Kapsama bağlı | Yasak | İzinli |
+| Uygulamayı başlatma / tamamlama | Yasak | İzinli | Kapsama bağlı | Yasak | Yasak (Doğrudan değiştiremez) |
 | Sistem/Workflow tanımlarını yönetme | Yasak | Yasak | Yasak | İzinli | N/A |
 
 ## 9. Kayıt Sahipliği ve Görünürlük
@@ -92,8 +95,9 @@ Uygulama sorumlusu (`assigned_user_id`), onaylanmış işi operasyonel olarak y�
 * **Geçmiş (Archive):** Bir Kaizen üzerinde geçmişte işlem yapan onaycı (Historical Reviewer), o Kaizen'i her zaman salt-okunur (read-only) görebilir.
 
 ## 10. Audit Kaydı ve Geçmiş (History)
-- `kaizen_status_histories`: Ana (Lifecycle) statü değişikliklerini tutar. Atama değişiklikleri vb. durumlar da `metadata` JSON alanına append-only olarak loglanır.
+- `kaizen_status_histories`: Sadece lifecycle geçiş geçmişidir. Atama ve statü geçişi aynı transaction içindeyse ilgili transition metadata'sına assignee bilgisi eklenebilir. Yalnızca bağımsız atama değişikliği kaydetmek için sahte history satırı oluşturulmaz (statü değişmeden yapılacak yeniden atamalar için semantik append-only audit yaklaşımı ayrıca belirlenecektir).
 - `kaizen_workflow_transitions`: Dinamik iş akışındaki tüm ara onay (Approve), Ret ve Revizyon isteklerini yorumları/gerekçeleriyle birlikte iz bırakarak saklar.
+- **Yorumlar (Comments):** Yalnızca iletişim altyapısıdır. Yapılandırılmış execution plan, progress tracking veya deadline history yerine kullanılamaz (Yapılandırılmış takip Gün 17 kapsamındadır).
 
 ## 11. Tamamlanma Kriterleri (Gün 12)
 - [x] Legacy statüler (MANAGER_REVIEW vb.) kaldırıldı.

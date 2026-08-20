@@ -229,10 +229,16 @@ Nihai alan ve ilişkilerin Gün 3 ER diyagramıyla kesinleşeceği belirtilmekte
 | SUBMITTED, ... (Ara Aşamalar) | Onaycı (Reviewer) tarafından ara onay verildi | (Mevcut Statü Korunur) | Atanmış Onaycı |
 | SUBMITTED, ... (Ara Aşamalar) | Onaycı (Reviewer) tarafından reddedildi | REJECTED | Atanmış Onaycı |
 | SUBMITTED, ... (Nihai Aşama) | Nihai Onaycı (Final Reviewer) tarafından onaylandı | APPROVED | Atanmış Nihai Onaycı |
-| APPROVED | Uygulamayı başlat | IN_PROGRESS | OPEX_SPECIALIST / Yetkili MANAGER / Assignee |
-| IN_PROGRESS | Sonuçları kaydet ve tamamla | COMPLETED | OPEX_SPECIALIST / Yetkili MANAGER / Assignee |
+| APPROVED | Uygulamayı başlat | IN_PROGRESS | OPEX_SPECIALIST / Yetkili MANAGER |
+| IN_PROGRESS | Sonuçları kaydet ve tamamla | COMPLETED | OPEX_SPECIALIST / Yetkili MANAGER |
 
 Durum geçişleri dinamik iş akışı (ApprovalWorkflow) motoru üzerinden sağlanır, organizasyonel onay aşamaları (Yönetici, Kurul, OPEX) veritabanı tablolarında barındırılır. (Gün 11 sonrası onay akışı `ApprovalWorkflowResolver` ve `StartKaizenWorkflow` ile devralınmıştır).
+
+**Atama (Assignment) ve Yürütme (Execution) Sınırları:**
+- Atanmış olmak tek başına lifecycle statüsü değiştirme yetkisi sağlamaz. Assignee kullanıcı Kaizen'i görebilir ve kendisine izin verilen uygulama bilgilerini (actual_result vb.) kaydedebilir. Ancak yalnızca atanmış olduğu için IN_PROGRESS veya COMPLETED geçişi yapamaz.
+- Atama, uygulamayı başlatma ve tamamlama aynı geniş `implement` yetkisi altında değerlendirilmemelidir. Ayrı Policy yetenekleri (assignImplementation, startImplementation, completeImplementation) üzerinden yönetilir.
+- `kaizen_status_histories` yalnızca lifecycle geçiş geçmişidir. Atama değişikliğini kaydetmek için sahte statülü history satırı oluşturulmaz. Yalnızca geçişle aynı transaction içindeyse transition metadata'sına assignee eklenebilir. Gelecekte statü değişmeden yapılacak atamalar için ayrı bir semantik append-only audit yaklaşımı belirlenmelidir.
+- Yorumlar (Comments) iletişim altyapısıdır; yapılandırılmış execution plan veya progress tracking olarak kullanılamaz (Yapılandırılmış takip Gün 17 kapsamındadır).
 
 ## 9. YETKİ İLKELERİ
 - Çalışan yalnızca kendi kayıtlarına erişir.
