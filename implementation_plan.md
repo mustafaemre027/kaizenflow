@@ -162,8 +162,30 @@ Günlük yaklaşım: 2 ana ürün capability + entegrasyon + security + tests + 
 - **Teslimat Durumu:** Post-approval execution altyapısı ve HTTP/Blade UI entegrasyonu başarıyla tamamlandı. Capability bazlı yetkilendirme sağlandı. Assignment audit log'a, Start/Complete işlemleri lifecycle history'ye yazıldı. 1440/768/390 responsive manuel QA tamamlanıp taşma sorunları düzeltildi. Issue #29 PR inceleme aşamasındadır.
 
 ### Gün 13 — Approval configuration administration and organization management
-- Dinamik Kurul ve kurul üyelik yapısı (Admin yönetimi)
-- Onay iş akışları yapılandırmaları (ApprovalWorkflow config yönetimi)
+- Mevcut kullanıcı, departman ve approval workflow yapılarını yeniden kullanan yönetim katmanı.
+- Yönetim işlemleri için role bağlı olmayan (system ve department scope) capability tabanlı yetkilendirme (`UserCapability` ve `UserCapabilityResolver` yeniden kullanılacak).
+- Kullanıcı ve departman kayıtlarında güvenli aktif/pasif (deactivate) yönetimi; geçmiş kayıtları korumak adına fiziksel silme (delete) işlemleri engellenecek.
+- Approval workflow yapılandırmalarını, başlamış workflow'ları bozmadan (snapshot/versiyonlama ile) yönetme.
+- Yapılandırma ve organizasyon değişikliklerini `audit_logs` tablosuna append-only olarak kaydetme.
+- Güvenli HTTP ve Blade yönetim arayüzlerinin oluşturulması.
+
+**Gün 13 Mimari Kararları:**
+- **Varlık Matrisi:** User/Department listeleme, update ve toggle. Workflow listeleme, activation, sıralama ve yetki atama. Admin navigation.
+- **Tarihsel Workflow Koruması:** Kullanılmış workflow definition'lar ve stage'ler değiştirilmeyecek veya silinmeyecek; pasif duruma alınıp gerekirse yeni versiyon açılacaktır. (Version / Active-Passive strategy)
+- **Kullanıcı / Departman Silme Politikası:** Hiçbir kullanıcı veya departman silinmeyecek, `is_active = false` ile pasife alınacaktır.
+- **Capability Kararı:** Yeni yönetim yetkileri (`organization.view`, `organization.manage`, `approval_configuration.view`, `approval_configuration.manage`) için `UserCapabilityResolver` yapısı genişletilecek. Sistem kapsamlı yetkiler için `department_id = null` yapısı (null global yetki anlamına gelir) değerlendirilecektir.
+- **Audit Kararı:** Generic `audit_logs` yapısı üzerinden organizasyon ve yapılandırma değişiklikleri actor bazlı (authenticated user) ve JSON metadata ile loglanacaktır.
+
+**Kapsam Dışı Bırakılanlar:** Bildirimler (e-posta/SMS), deadline/work queue, ağırlıklı değerlendirme puanları, drag-and-drop UI, SSO, detaylı dashboard.
+
+**Gün 13 Önerilen Çalışma Blokları:**
+1. Başlangıç denetimi, kapsam ve branch planlaması
+2. Capability ve model (persistence) güncellemeleri, migration testleri
+3. Organizasyon yönetim (Action/Service) katmanı ve testleri
+4. Workflow config yönetim (Action/Service) katmanı ve versiyonlama/pasife alma mantığı
+5. Yönetim (HTTP Controller, Request, Policy) katmanı, IDOR/validation testleri
+6. Blade yönetim arayüzleri, navigation ve görünürlük testleri
+7. Mimari denetim, test paketinin kapatılması ve PR hazırlığı
 
 ### Gün 14 — User/organization management + notifications + work queue
 - Kullanıcı ve organizasyon yönetimi tamamlanması
