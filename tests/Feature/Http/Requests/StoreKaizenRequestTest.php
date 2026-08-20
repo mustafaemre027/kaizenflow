@@ -58,7 +58,21 @@ class StoreKaizenRequestTest extends TestCase
         $this->assertTrue($validator->errors()->has('title'));
         $this->assertTrue($validator->errors()->has('current_situation'));
         $this->assertTrue($validator->errors()->has('proposed_situation'));
-        $this->assertTrue($validator->errors()->has('expected_benefit'));
+    }
+
+    public function test_it_allows_missing_expected_benefit(): void
+    {
+        $category = Category::factory()->create(['is_active' => true]);
+
+        $validator = $this->validate([
+            'category_id' => $category->id,
+            'title' => 'Valid Title',
+            'current_situation' => 'Current situation is bad.',
+            'proposed_situation' => 'Proposed situation is good.',
+            // missing expected_benefit
+        ]);
+
+        $this->assertTrue($validator->passes());
     }
 
     public function test_it_rejects_inactive_category(): void
@@ -148,7 +162,6 @@ class StoreKaizenRequestTest extends TestCase
         $this->assertTrue($validator->fails());
         $this->assertTrue($validator->errors()->has('current_situation'));
         $this->assertTrue($validator->errors()->has('proposed_situation'));
-        $this->assertTrue($validator->errors()->has('expected_benefit'));
     }
 
     public function test_it_accepts_valid_priorities_and_rejects_invalid(): void

@@ -8,6 +8,7 @@ use App\Enums\UserRole;
 use App\Exceptions\InvalidKaizenTransition;
 use App\Models\Kaizen;
 use App\Models\User;
+use Database\Seeders\ApprovalWorkflowSeeder;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
@@ -23,6 +24,7 @@ class SubmitKaizenTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->seed(ApprovalWorkflowSeeder::class);
         $this->action = app(SubmitKaizen::class);
     }
 
@@ -50,12 +52,42 @@ class SubmitKaizenTest extends TestCase
         $this->assertDatabaseHas('kaizen_status_histories', [
             'kaizen_id' => $kaizen->id,
             'actor_user_id' => $creator->id,
-            'transition_code' => 'TR-001',
+            'transition_code' => 'SUBMIT',
             'from_status' => KaizenStatus::DRAFT->value,
             'to_status' => KaizenStatus::SUBMITTED->value,
             'reason' => 'This is a reason', // trimmed
             'metadata' => null,
         ]);
+    }
+
+    public function test_it_rejects_submission_if_expected_benefit_is_empty(): void
+    {
+        $creator = User::factory()->create(['role' => UserRole::EMPLOYEE]);
+        $kaizen = Kaizen::factory()->create([
+            'creator_user_id' => $creator->id,
+            'status' => KaizenStatus::DRAFT,
+            'expected_benefit' => null,
+        ]);
+
+        $this->expectException(ValidationException::class);
+        $this->expectExceptionMessage('Kaizen\'i onaya göndermeden önce beklenen fayda alanını doldurmalısınız.');
+
+        $this->action->execute($creator, $kaizen);
+    }
+
+    public function test_it_rejects_submission_if_expected_benefit_is_only_whitespace(): void
+    {
+        $creator = User::factory()->create(['role' => UserRole::EMPLOYEE]);
+        $kaizen = Kaizen::factory()->create([
+            'creator_user_id' => $creator->id,
+            'status' => KaizenStatus::DRAFT,
+            'expected_benefit' => '   ',
+        ]);
+
+        $this->expectException(ValidationException::class);
+        $this->expectExceptionMessage('Kaizen\'i onaya göndermeden önce beklenen fayda alanını doldurmalısınız.');
+
+        $this->action->execute($creator, $kaizen);
     }
 
     public function test_active_creator_employee_can_resubmit_revision_requested_kaizen(): void
@@ -73,7 +105,7 @@ class SubmitKaizenTest extends TestCase
         $this->assertDatabaseHas('kaizen_status_histories', [
             'kaizen_id' => $kaizen->id,
             'actor_user_id' => $creator->id,
-            'transition_code' => 'TR-002',
+            'transition_code' => 'SUBMIT',
             'from_status' => KaizenStatus::REVISION_REQUESTED->value,
             'to_status' => KaizenStatus::SUBMITTED->value,
             'reason' => null, // empty string is nullified
@@ -220,7 +252,7 @@ class SubmitKaizenTest extends TestCase
         $this->assertEquals(KaizenStatus::SUBMITTED, $result->status);
         $this->assertDatabaseHas('kaizen_status_histories', [
             'kaizen_id' => $kaizen->id,
-            'transition_code' => 'TR-001',
+            'transition_code' => 'SUBMIT',
         ]);
     }
 

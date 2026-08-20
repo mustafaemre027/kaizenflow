@@ -1,6 +1,9 @@
 <?php
 
+use App\Http\Controllers\ApprovalController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\HistoryController;
+use App\Http\Controllers\KaizenApprovalActionController;
 use App\Http\Controllers\KaizenAttachmentController;
 use App\Http\Controllers\KaizenController;
 use App\Http\Controllers\Settings\CategoryController;
@@ -20,12 +23,17 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
     Route::get('/kaizens', [KaizenController::class, 'index'])->name('kaizens.index');
+    Route::get('/approvals', [ApprovalController::class, 'index'])->name('approvals.index');
+    Route::get('/history', [HistoryController::class, 'index'])->name('history.index');
     Route::get('/kaizens/create', [KaizenController::class, 'create'])->name('kaizens.create');
     Route::get('/kaizens/{kaizen}/edit', [KaizenController::class, 'edit'])->name('kaizens.edit');
     Route::get('/kaizens/{kaizen}', [KaizenController::class, 'show'])->name('kaizens.show');
     Route::post('/kaizens', [KaizenController::class, 'store'])->name('kaizens.store');
     Route::patch('/kaizens/{kaizen}', [KaizenController::class, 'update'])->name('kaizens.update');
     Route::post('/kaizens/{kaizen}/submit', [KaizenController::class, 'submit'])->name('kaizens.submit');
+    Route::post('/kaizens/{kaizen}/workflow/approve', [KaizenApprovalActionController::class, 'approve'])->name('kaizens.workflow.approve');
+    Route::post('/kaizens/{kaizen}/workflow/request-revision', [KaizenApprovalActionController::class, 'requestRevision'])->name('kaizens.workflow.request-revision');
+    Route::post('/kaizens/{kaizen}/workflow/reject', [KaizenApprovalActionController::class, 'reject'])->name('kaizens.workflow.reject');
 
     Route::get('/kaizens/{kaizen}/attachments/{attachment}', [KaizenAttachmentController::class, 'show'])->name('kaizens.attachments.show');
     Route::get('/kaizens/{kaizen}/attachments/{attachment}/download', [KaizenAttachmentController::class, 'download'])->name('kaizens.attachments.download');

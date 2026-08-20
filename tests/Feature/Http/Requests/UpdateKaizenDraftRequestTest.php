@@ -186,6 +186,7 @@ class UpdateKaizenDraftRequestTest extends TestCase
         $validator = $this->validate([
             'priority' => null,
             'target_date' => null,
+            'expected_benefit' => null,
         ]);
 
         $this->assertTrue($validator->passes());

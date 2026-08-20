@@ -38,7 +38,7 @@ class UpdateKaizenDraftRequest extends FormRequest
             'title' => ['sometimes', 'required', 'string', 'min:5', 'max:255'],
             'current_situation' => ['sometimes', 'required', 'string', 'min:10', 'max:5000'],
             'proposed_situation' => ['sometimes', 'required', 'string', 'min:10', 'max:5000'],
-            'expected_benefit' => ['sometimes', 'required', 'string', 'min:10', 'max:5000'],
+            'expected_benefit' => ['sometimes', 'nullable', 'string', 'max:5000'],
             'priority' => ['sometimes', 'nullable', new Enum(KaizenPriority::class)],
             'target_date' => ['sometimes', 'nullable', 'date', 'after_or_equal:today'],
 

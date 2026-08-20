@@ -6,7 +6,7 @@ use App\Enums\KaizenStatus;
 use App\Enums\UserRole;
 use App\Models\Kaizen;
 use App\Models\User;
-use App\Services\Kaizens\KaizenTransitionMap;
+use App\Services\Workflow\ApprovalStageApproverResolver;
 
 class KaizenPolicy
 {
@@ -55,7 +55,23 @@ class KaizenPolicy
             return true;
         }
 
+        // Eligible current stage approvers can view the Kaizen
+        if (app(ApprovalStageApproverResolver::class)->isAssigned($user, $kaizen)) {
+            return true;
+        }
+
+        // Past actors (reviewers who made a decision on this Kaizen) retain view access
+        // for the history archive. This does not grant any write/action rights.
+        if ($kaizen->workflowTransitions()->where('actor_user_id', $user->id)->exists()) {
+            return true;
+        }
+
         return false;
+    }
+
+    public function reviewOnWorkflow(User $user, Kaizen $kaizen): bool
+    {
+        return app(ApprovalStageApproverResolver::class)->canAct($user, $kaizen);
     }
 
     public function create(User $user): bool
@@ -101,10 +117,11 @@ class KaizenPolicy
             return false;
         }
 
-        /** @var KaizenTransitionMap $transitionMap */
-        $transitionMap = app(KaizenTransitionMap::class);
+        if (! in_array($kaizen->status, [KaizenStatus::DRAFT, KaizenStatus::REVISION_REQUESTED], true)) {
+            return false;
+        }
 
-        return $transitionMap->canRolePerformTransition($kaizen->status, KaizenStatus::SUBMITTED, $user->role);
+        return $user->role === UserRole::EMPLOYEE;
     }
 
     public function delete(User $user, Kaizen $kaizen): bool

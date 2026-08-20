@@ -6,10 +6,18 @@ use App\Actions\Kaizens\CreateKaizenDraft;
 use App\Actions\Kaizens\UpdateKaizenDraft;
 use App\Enums\KaizenStatus;
 use App\Enums\UserRole;
+use App\Models\ApprovalGroup;
+use App\Models\ApprovalGroupMember;
+use App\Models\ApprovalStage;
+use App\Models\ApprovalStageAssignment;
+use App\Models\ApprovalWorkflow;
 use App\Models\Category;
 use App\Models\Department;
 use App\Models\Kaizen;
+use App\Models\KaizenWorkflowInstance;
 use App\Models\User;
+use App\Services\Workflow\ApprovalStageApproverResolver;
+use App\Services\Workflow\PendingApprovalsQuery;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Tests\TestCase;
@@ -724,5 +732,172 @@ class KaizenControllerTest extends TestCase
 
         $this->assertCount(15, $kaizens->items());
         $this->assertTrue($kaizens->hasPages());
+    }
+
+    // ==========================================
+    // SUBMIT METHOD TESTS
+    // ==========================================
+
+    public function test_submit_without_default_workflow_returns_redirect_with_friendly_error(): void
+    {
+        $this->user->role = UserRole::EMPLOYEE;
+        $this->user->save();
+
+        $kaizen = Kaizen::factory()->create([
+            'creator_user_id' => $this->user->id,
+            'status' => KaizenStatus::DRAFT,
+            'expected_benefit' => 'A valid benefit',
+        ]);
+
+        ApprovalWorkflow::query()->delete();
+
+        $response = $this->actingAs($this->user)->post(route('kaizens.submit', $kaizen));
+
+        $response->assertStatus(302);
+        $response->assertSessionHas('error', 'Kaizen şu anda onaya gönderilemiyor. Onay süreci yapılandırması tamamlanmamış. Lütfen sistem yöneticisine başvurun.');
+
+        $this->assertDatabaseHas('kaizens', [
+            'id' => $kaizen->id,
+            'status' => KaizenStatus::DRAFT->value,
+            'submitted_at' => null,
+        ]);
+
+        $this->assertDatabaseCount('kaizen_workflow_instances', 0);
+    }
+
+    public function test_submit_with_multiple_default_workflows_returns_redirect(): void
+    {
+        $this->user->role = UserRole::EMPLOYEE;
+        $this->user->save();
+
+        $kaizen = Kaizen::factory()->create([
+            'creator_user_id' => $this->user->id,
+            'status' => KaizenStatus::DRAFT,
+            'expected_benefit' => 'A valid benefit',
+        ]);
+
+        ApprovalWorkflow::factory()->count(2)->create([
+            'is_active' => true,
+            'is_default' => true,
+            'published_at' => now(),
+        ]);
+
+        $response = $this->actingAs($this->user)->post(route('kaizens.submit', $kaizen));
+
+        $response->assertStatus(302);
+        $response->assertSessionHas('error');
+    }
+
+    public function test_submit_with_valid_default_workflow_success(): void
+    {
+        $this->user->role = UserRole::EMPLOYEE;
+        $this->user->save();
+
+        $kaizen = Kaizen::factory()->create([
+            'creator_user_id' => $this->user->id,
+            'status' => KaizenStatus::DRAFT,
+            'expected_benefit' => 'A valid benefit',
+        ]);
+
+        $this->artisan('db:seed', ['--class' => 'ApprovalWorkflowSeeder']);
+
+        $response = $this->actingAs($this->user)->post(route('kaizens.submit', $kaizen));
+
+        $response->assertStatus(302);
+        $response->assertSessionHas('success', 'Kaizen başarıyla gönderildi.');
+
+        $this->assertDatabaseHas('kaizens', [
+            'id' => $kaizen->id,
+            'status' => KaizenStatus::SUBMITTED->value,
+        ]);
+
+        $this->assertDatabaseCount('kaizen_workflow_instances', 1);
+    }
+
+    public function test_submit_photo_optional_regression(): void
+    {
+        $this->user->role = UserRole::EMPLOYEE;
+        $this->user->save();
+
+        $kaizen = Kaizen::factory()->create([
+            'creator_user_id' => $this->user->id,
+            'status' => KaizenStatus::DRAFT,
+            'expected_benefit' => 'A valid benefit',
+        ]);
+
+        $this->artisan('db:seed', ['--class' => 'ApprovalWorkflowSeeder']);
+
+        // Submit without any attachments
+        $response = $this->actingAs($this->user)->post(route('kaizens.submit', $kaizen));
+
+        $response->assertSessionHasNoErrors();
+        $response->assertStatus(302);
+        $this->assertEquals(KaizenStatus::SUBMITTED, $kaizen->fresh()->status);
+    }
+
+    public function test_submit_expected_benefit_regression(): void
+    {
+        $this->user->role = UserRole::EMPLOYEE;
+        $this->user->save();
+
+        $kaizen = Kaizen::factory()->create([
+            'creator_user_id' => $this->user->id,
+            'status' => KaizenStatus::DRAFT,
+            'expected_benefit' => null, // empty expected_benefit
+        ]);
+
+        $this->artisan('db:seed', ['--class' => 'ApprovalWorkflowSeeder']);
+
+        $response = $this->actingAs($this->user)->from(route('kaizens.show', $kaizen))
+            ->post(route('kaizens.submit', $kaizen));
+
+        $response->assertStatus(302);
+        // It should fail business validation in SubmitKaizen action, throwing ValidationException
+        // ValidationException is automatically caught by Laravel and redirects back with errors
+        $response->assertSessionHasErrors();
+
+        $this->assertEquals(KaizenStatus::DRAFT, $kaizen->fresh()->status);
+    }
+
+    public function test_resubmit_loop(): void
+    {
+        $this->user->role = UserRole::EMPLOYEE;
+        $this->user->save();
+
+        $kaizen = Kaizen::factory()->create([
+            'creator_user_id' => $this->user->id,
+            'status' => KaizenStatus::REVISION_REQUESTED,
+            'expected_benefit' => 'A valid benefit',
+        ]);
+
+        $workflow = ApprovalWorkflow::factory()->create(['is_active' => true, 'is_default' => true]);
+        $stage = ApprovalStage::factory()->create(['approval_workflow_id' => $workflow->id]);
+        $instance = KaizenWorkflowInstance::factory()->create([
+            'kaizen_id' => $kaizen->id,
+            'approval_workflow_id' => $workflow->id,
+            'current_stage_id' => $stage->id,
+        ]);
+
+        $reviewer = User::factory()->create();
+        $group = ApprovalGroup::factory()->create();
+        ApprovalGroupMember::factory()->create(['approval_group_id' => $group->id, 'user_id' => $reviewer->id]);
+        ApprovalStageAssignment::factory()->create(['approval_stage_id' => $stage->id, 'approval_group_id' => $group->id]);
+
+        $query = app(PendingApprovalsQuery::class);
+        $this->assertEquals(0, $query->forUser($reviewer)->where('kaizens.id', $kaizen->id)->count());
+
+        $resolver = app(ApprovalStageApproverResolver::class);
+        $this->assertFalse($resolver->canAct($reviewer, $kaizen));
+
+        $response = $this->actingAs($this->user)->post(route('kaizens.submit', $kaizen));
+        $response->assertStatus(302);
+
+        $kaizen->refresh();
+        $this->assertEquals(KaizenStatus::SUBMITTED, $kaizen->status);
+        $this->assertEquals($instance->id, $kaizen->workflowInstance->id);
+        $this->assertEquals($stage->id, $kaizen->workflowInstance->current_stage_id);
+
+        $this->assertTrue($resolver->canAct($reviewer, $kaizen));
+        $this->assertEquals(1, $query->forUser($reviewer)->where('kaizens.id', $kaizen->id)->count());
     }
 }

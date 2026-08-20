@@ -1,0 +1,466 @@
+<?php
+
+namespace Tests\Feature\Http\Controllers;
+
+use App\Enums\KaizenStatus;
+use App\Enums\UserRole;
+use App\Enums\WorkflowAction;
+use App\Models\ApprovalGroup;
+use App\Models\ApprovalGroupMember;
+use App\Models\ApprovalStage;
+use App\Models\ApprovalStageAssignment;
+use App\Models\ApprovalWorkflow;
+use App\Models\Kaizen;
+use App\Models\KaizenWorkflowInstance;
+use App\Models\KaizenWorkflowTransition;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+class HistoryControllerTest extends TestCase
+{
+    use RefreshDatabase;
+
+    public function test_unauthenticated_redirects_to_login(): void
+    {
+        $response = $this->get(route('history.index'));
+        $response->assertRedirect(route('login'));
+    }
+
+    public function test_reviewed_history_shows_own_approve_action(): void
+    {
+        $reviewer = User::factory()->create();
+        $kaizen = Kaizen::factory()->create();
+        $instance = KaizenWorkflowInstance::factory()->create(['kaizen_id' => $kaizen->id]);
+        KaizenWorkflowTransition::factory()->create([
+            'kaizen_id' => $kaizen->id,
+            'kaizen_workflow_instance_id' => $instance->id,
+            'actor_user_id' => $reviewer->id,
+            'action' => WorkflowAction::APPROVE,
+        ]);
+
+        $response = $this->actingAs($reviewer)->get(route('history.index'));
+
+        $response->assertStatus(200);
+        $transitions = $response->viewData('reviewedTransitions');
+        $this->assertEquals(1, $transitions->total());
+    }
+
+    public function test_reviewed_history_shows_own_request_revision_action(): void
+    {
+        $reviewer = User::factory()->create();
+        $kaizen = Kaizen::factory()->create();
+        $instance = KaizenWorkflowInstance::factory()->create(['kaizen_id' => $kaizen->id]);
+        KaizenWorkflowTransition::factory()->create([
+            'kaizen_id' => $kaizen->id,
+            'kaizen_workflow_instance_id' => $instance->id,
+            'actor_user_id' => $reviewer->id,
+            'action' => WorkflowAction::REQUEST_REVISION,
+        ]);
+
+        $response = $this->actingAs($reviewer)->get(route('history.index'));
+
+        $transitions = $response->viewData('reviewedTransitions');
+        $this->assertEquals(1, $transitions->total());
+        $this->assertEquals(WorkflowAction::REQUEST_REVISION, $transitions->first()->action);
+    }
+
+    public function test_reviewed_history_shows_own_reject_action(): void
+    {
+        $reviewer = User::factory()->create();
+        $kaizen = Kaizen::factory()->create();
+        $instance = KaizenWorkflowInstance::factory()->create(['kaizen_id' => $kaizen->id]);
+        KaizenWorkflowTransition::factory()->create([
+            'kaizen_id' => $kaizen->id,
+            'kaizen_workflow_instance_id' => $instance->id,
+            'actor_user_id' => $reviewer->id,
+            'action' => WorkflowAction::REJECT,
+        ]);
+
+        $response = $this->actingAs($reviewer)->get(route('history.index'));
+
+        $transitions = $response->viewData('reviewedTransitions');
+        $this->assertEquals(1, $transitions->total());
+    }
+
+    public function test_reviewed_history_excludes_other_reviewers_actions(): void
+    {
+        $reviewer = User::factory()->create();
+        // Give reviewer a valid action so they can access the tab
+        KaizenWorkflowTransition::factory()->create(['actor_user_id' => $reviewer->id, 'action' => WorkflowAction::APPROVE]);
+
+        $otherReviewer = User::factory()->create();
+        $kaizen = Kaizen::factory()->create();
+        $instance = KaizenWorkflowInstance::factory()->create(['kaizen_id' => $kaizen->id]);
+        KaizenWorkflowTransition::factory()->create([
+            'kaizen_id' => $kaizen->id,
+            'kaizen_workflow_instance_id' => $instance->id,
+            'actor_user_id' => $otherReviewer->id,
+            'action' => WorkflowAction::APPROVE,
+        ]);
+
+        $response = $this->actingAs($reviewer)->get(route('history.index'));
+
+        $transitions = $response->viewData('reviewedTransitions');
+        $this->assertEquals(1, $transitions->total()); // Only their own valid action, not the otherReviewer's
+    }
+
+    public function test_reviewed_history_excludes_start_and_resubmit_actions(): void
+    {
+        $user = User::factory()->create();
+        // Give user a valid action so they can access the tab
+        KaizenWorkflowTransition::factory()->create(['actor_user_id' => $user->id, 'action' => WorkflowAction::APPROVE]);
+
+        $kaizen = Kaizen::factory()->create(['creator_user_id' => $user->id]);
+        $instance = KaizenWorkflowInstance::factory()->create(['kaizen_id' => $kaizen->id]);
+        KaizenWorkflowTransition::factory()->create([
+            'kaizen_id' => $kaizen->id, 'kaizen_workflow_instance_id' => $instance->id,
+            'actor_user_id' => $user->id, 'action' => WorkflowAction::START,
+        ]);
+        KaizenWorkflowTransition::factory()->create([
+            'kaizen_id' => $kaizen->id, 'kaizen_workflow_instance_id' => $instance->id,
+            'actor_user_id' => $user->id, 'action' => WorkflowAction::RESUBMIT,
+        ]);
+
+        $response = $this->actingAs($user)->get(route('history.index'));
+
+        $transitions = $response->viewData('reviewedTransitions');
+        $this->assertEquals(1, $transitions->total()); // Only the APPROVE, no START/RESUBMIT
+    }
+
+    public function test_multi_action_on_same_kaizen_shows_two_rows(): void
+    {
+        $reviewer = User::factory()->create();
+        $kaizen = Kaizen::factory()->create();
+        $instance = KaizenWorkflowInstance::factory()->create(['kaizen_id' => $kaizen->id]);
+        KaizenWorkflowTransition::factory()->create([
+            'kaizen_id' => $kaizen->id, 'kaizen_workflow_instance_id' => $instance->id,
+            'actor_user_id' => $reviewer->id, 'action' => WorkflowAction::REQUEST_REVISION,
+        ]);
+        KaizenWorkflowTransition::factory()->create([
+            'kaizen_id' => $kaizen->id, 'kaizen_workflow_instance_id' => $instance->id,
+            'actor_user_id' => $reviewer->id, 'action' => WorkflowAction::APPROVE,
+        ]);
+
+        $response = $this->actingAs($reviewer)->get(route('history.index'));
+
+        $transitions = $response->viewData('reviewedTransitions');
+        $this->assertEquals(2, $transitions->total());
+        $actions = $transitions->getCollection()->pluck('action');
+        $this->assertTrue($actions->contains(WorkflowAction::REQUEST_REVISION));
+        $this->assertTrue($actions->contains(WorkflowAction::APPROVE));
+    }
+
+    public function test_reviewed_action_filter_does_not_widen_scope(): void
+    {
+        $reviewer = User::factory()->create();
+        // Give reviewer a valid action so they can access the tab
+        KaizenWorkflowTransition::factory()->create(['actor_user_id' => $reviewer->id, 'action' => WorkflowAction::APPROVE]);
+
+        $other = User::factory()->create();
+        $kaizen = Kaizen::factory()->create();
+        $instance = KaizenWorkflowInstance::factory()->create(['kaizen_id' => $kaizen->id]);
+        KaizenWorkflowTransition::factory()->create([
+            'kaizen_id' => $kaizen->id, 'kaizen_workflow_instance_id' => $instance->id,
+            'actor_user_id' => $other->id, 'action' => WorkflowAction::APPROVE,
+        ]);
+
+        $response = $this->actingAs($reviewer)->get(route('history.index', [
+            'action' => WorkflowAction::APPROVE->value,
+        ]));
+
+        $transitions = $response->viewData('reviewedTransitions');
+        $this->assertEquals(1, $transitions->total()); // Only their own
+    }
+
+    public function test_reviewed_filter_rejects_non_review_action_values(): void
+    {
+        $user = User::factory()->create();
+        // Give user a valid action so they can access the tab
+        KaizenWorkflowTransition::factory()->create(['actor_user_id' => $user->id, 'action' => WorkflowAction::APPROVE]);
+
+        $kaizen = Kaizen::factory()->create(['creator_user_id' => $user->id]);
+        $instance = KaizenWorkflowInstance::factory()->create(['kaizen_id' => $kaizen->id]);
+        KaizenWorkflowTransition::factory()->create([
+            'kaizen_id' => $kaizen->id, 'kaizen_workflow_instance_id' => $instance->id,
+            'actor_user_id' => $user->id, 'action' => WorkflowAction::START,
+        ]);
+
+        $response = $this->actingAs($user)->get(route('history.index', [
+            'action' => WorkflowAction::START->value,
+        ]));
+
+        $transitions = $response->viewData('reviewedTransitions');
+        $this->assertEquals(1, $transitions->total()); // The filter is ignored, so it falls back to all reviews (which is just 1 APPROVE)
+    }
+
+    public function test_pagination_works_for_reviewed_history(): void
+    {
+        $reviewer = User::factory()->create();
+        $kaizen = Kaizen::factory()->create();
+        $instance = KaizenWorkflowInstance::factory()->create(['kaizen_id' => $kaizen->id]);
+        KaizenWorkflowTransition::factory()->count(20)->create([
+            'kaizen_id' => $kaizen->id,
+            'kaizen_workflow_instance_id' => $instance->id,
+            'actor_user_id' => $reviewer->id,
+            'action' => WorkflowAction::APPROVE,
+        ]);
+
+        $response = $this->actingAs($reviewer)->get(route('history.index'));
+
+        $transitions = $response->viewData('reviewedTransitions');
+        $this->assertEquals(15, $transitions->count());
+        $this->assertTrue($transitions->hasPages());
+        $this->assertEquals(20, $transitions->total());
+    }
+
+    public function test_past_actor_can_view_kaizen_they_acted_on(): void
+    {
+        $reviewer = User::factory()->create();
+        $creator = User::factory()->create();
+        $kaizen = Kaizen::factory()->create(['creator_user_id' => $creator->id, 'status' => KaizenStatus::APPROVED]);
+        $instance = KaizenWorkflowInstance::factory()->create(['kaizen_id' => $kaizen->id]);
+        KaizenWorkflowTransition::factory()->create([
+            'kaizen_id' => $kaizen->id, 'kaizen_workflow_instance_id' => $instance->id,
+            'actor_user_id' => $reviewer->id, 'action' => WorkflowAction::APPROVE,
+        ]);
+
+        $this->assertTrue($reviewer->can('view', $kaizen));
+
+        $response = $this->actingAs($reviewer)->get(route('history.index'));
+        $response->assertStatus(200);
+        $response->assertSee(route('kaizens.show', $kaizen));
+    }
+
+    public function test_non_actor_non_creator_cannot_view_kaizen(): void
+    {
+        $stranger = User::factory()->create();
+        $creator = User::factory()->create();
+        $kaizen = Kaizen::factory()->create(['creator_user_id' => $creator->id, 'status' => KaizenStatus::APPROVED]);
+
+        $this->assertFalse($stranger->can('view', $kaizen));
+    }
+
+    public function test_same_historical_actor_cannot_update(): void
+    {
+        $reviewer = User::factory()->create();
+        $kaizen = Kaizen::factory()->create(['status' => KaizenStatus::APPROVED]);
+        KaizenWorkflowTransition::factory()->create([
+            'kaizen_id' => $kaizen->id,
+            'actor_user_id' => $reviewer->id,
+            'action' => WorkflowAction::APPROVE,
+        ]);
+
+        $this->assertTrue($reviewer->can('view', $kaizen));
+        $this->assertFalse($reviewer->can('update', $kaizen));
+
+        $response = $this->actingAs($reviewer)->patch(route('kaizens.update', $kaizen), ['title' => 'Hacked']);
+        $response->assertStatus(403);
+    }
+
+    public function test_same_historical_actor_cannot_submit(): void
+    {
+        $reviewer = User::factory()->create();
+        $kaizen = Kaizen::factory()->create(['status' => KaizenStatus::DRAFT]);
+        KaizenWorkflowTransition::factory()->create([
+            'kaizen_id' => $kaizen->id,
+            'actor_user_id' => $reviewer->id,
+            'action' => WorkflowAction::APPROVE, // Mock past action
+        ]);
+
+        $this->assertFalse($reviewer->can('submit', $kaizen));
+
+        $response = $this->actingAs($reviewer)->post(route('kaizens.submit', $kaizen));
+        $response->assertStatus(403);
+    }
+
+    public function test_same_historical_actor_cannot_perform_review_actions_on_stale_record(): void
+    {
+        $reviewer = User::factory()->create();
+        $kaizen = Kaizen::factory()->create(['status' => KaizenStatus::APPROVED]);
+        KaizenWorkflowTransition::factory()->create([
+            'kaizen_id' => $kaizen->id,
+            'actor_user_id' => $reviewer->id,
+            'action' => WorkflowAction::APPROVE,
+        ]);
+
+        $this->assertFalse($reviewer->can('reviewOnWorkflow', $kaizen));
+
+        $response = $this->actingAs($reviewer)->post(route('kaizens.workflow.approve', $kaizen));
+        $response->assertStatus(403);
+
+        $response = $this->actingAs($reviewer)->post(route('kaizens.workflow.request-revision', $kaizen), ['comment' => 'Rev']);
+        $response->assertStatus(403);
+
+        $response = $this->actingAs($reviewer)->post(route('kaizens.workflow.reject', $kaizen), ['comment' => 'Rej']);
+        $response->assertStatus(403);
+    }
+
+    public function test_group_member_who_never_acted_does_not_gain_historical_view_merely_because_of_membership(): void
+    {
+        $groupMember = User::factory()->create();
+        $workflow = ApprovalWorkflow::factory()->create();
+        $stage = ApprovalStage::factory()->create(['approval_workflow_id' => $workflow->id]);
+        $group = ApprovalGroup::factory()->create();
+        ApprovalGroupMember::factory()->create(['approval_group_id' => $group->id, 'user_id' => $groupMember->id]);
+        ApprovalStageAssignment::factory()->create(['approval_stage_id' => $stage->id, 'approval_group_id' => $group->id]);
+
+        $kaizen = Kaizen::factory()->create(['status' => KaizenStatus::APPROVED]);
+
+        $this->assertFalse($groupMember->can('view', $kaizen));
+    }
+
+    public function test_approvals_inbox_still_shows_only_actionable_submitted_records(): void
+    {
+        $reviewer = User::factory()->create();
+        $workflow = ApprovalWorkflow::factory()->create();
+        $stage = ApprovalStage::factory()->create(['approval_workflow_id' => $workflow->id]);
+        $group = ApprovalGroup::factory()->create();
+        ApprovalGroupMember::factory()->create(['approval_group_id' => $group->id, 'user_id' => $reviewer->id]);
+        ApprovalStageAssignment::factory()->create(['approval_stage_id' => $stage->id, 'approval_group_id' => $group->id]);
+
+        $submitted = Kaizen::factory()->create(['status' => KaizenStatus::SUBMITTED]);
+        KaizenWorkflowInstance::factory()->create([
+            'kaizen_id' => $submitted->id, 'approval_workflow_id' => $workflow->id, 'current_stage_id' => $stage->id,
+        ]);
+        $approved = Kaizen::factory()->create(['status' => KaizenStatus::APPROVED]);
+        $revision = Kaizen::factory()->create(['status' => KaizenStatus::REVISION_REQUESTED]);
+
+        $response = $this->actingAs($reviewer)->get(route('approvals.index'));
+
+        $approvals = $response->viewData('approvals');
+        $this->assertTrue($approvals->getCollection()->contains($submitted));
+        $this->assertFalse($approvals->getCollection()->contains($approved));
+        $this->assertFalse($approvals->getCollection()->contains($revision));
+    }
+
+    public function test_plain_employee_does_not_have_history_access(): void
+    {
+        $employee = User::factory()->create(['role' => UserRole::EMPLOYEE]);
+
+        $this->assertFalse($employee->canAccessReviewedHistory());
+    }
+
+    public function test_plain_employee_requesting_history_is_redirected_to_kaizens(): void
+    {
+        $employee = User::factory()->create();
+
+        $response = $this->actingAs($employee)->get(route('history.index'));
+
+        $response->assertRedirect(route('kaizens.index'));
+    }
+
+    public function test_active_approval_group_member_has_history_access(): void
+    {
+        $member = User::factory()->create();
+        $group = ApprovalGroup::factory()->create(['is_active' => true]);
+        ApprovalGroupMember::factory()->create([
+            'approval_group_id' => $group->id,
+            'user_id' => $member->id,
+            'is_active' => true,
+        ]);
+
+        $this->assertTrue($member->canAccessReviewedHistory());
+
+        $response = $this->actingAs($member)->get(route('history.index'));
+        $response->assertStatus(200);
+    }
+
+    public function test_historical_actor_no_longer_active_member_has_history_access(): void
+    {
+        $actor = User::factory()->create();
+        // Not a member of any group, but has a past transition
+        KaizenWorkflowTransition::factory()->create([
+            'actor_user_id' => $actor->id,
+            'action' => WorkflowAction::APPROVE,
+        ]);
+
+        $this->assertTrue($actor->canAccessReviewedHistory());
+
+        $response = $this->actingAs($actor)->get(route('history.index'));
+        $response->assertStatus(200);
+    }
+
+    public function test_role_alone_does_not_determine_visibility(): void
+    {
+        // Manager with no active groups and no past transitions
+        $manager = User::factory()->create(['role' => UserRole::MANAGER]);
+
+        $this->assertFalse($manager->canAccessReviewedHistory());
+
+        $response = $this->actingAs($manager)->get(route('history.index'));
+        $response->assertRedirect(route('kaizens.index'));
+    }
+
+    public function test_active_reviewer_sees_navigation_in_correct_order(): void
+    {
+        $member = User::factory()->create();
+        $group = ApprovalGroup::factory()->create(['is_active' => true]);
+        ApprovalGroupMember::factory()->create([
+            'approval_group_id' => $group->id,
+            'user_id' => $member->id,
+            'is_active' => true,
+        ]);
+
+        $response = $this->actingAs($member)->get(route('kaizens.index'));
+        $response->assertStatus(200);
+
+        $response->assertSeeInOrder([
+            'Bekleyen Onaylar',
+            'Değerlendirme Geçmişi',
+        ]);
+    }
+
+    public function test_plain_employee_does_not_see_approval_navigation(): void
+    {
+        $employee = User::factory()->create(['role' => UserRole::EMPLOYEE]);
+
+        $response = $this->actingAs($employee)->get(route('kaizens.index'));
+        $response->assertStatus(200);
+
+        $response->assertDontSee('Bekleyen Onaylar');
+        $response->assertDontSee('Değerlendirme Geçmişi');
+    }
+
+    public function test_history_page_uses_correct_terminology(): void
+    {
+        $reviewer = User::factory()->create();
+        $kaizen = Kaizen::factory()->create();
+        $instance = KaizenWorkflowInstance::factory()->create(['kaizen_id' => $kaizen->id]);
+        KaizenWorkflowTransition::factory()->create([
+            'kaizen_id' => $kaizen->id,
+            'kaizen_workflow_instance_id' => $instance->id,
+            'actor_user_id' => $reviewer->id,
+            'action' => WorkflowAction::APPROVE,
+        ]);
+
+        $response = $this->actingAs($reviewer)->get(route('history.index'));
+
+        $response->assertStatus(200);
+        $response->assertSee('Güncel Durum');
+        $response->assertDontSee('Son Kaizen Durumu');
+        $response->assertDontSee('Onay Bekleyenler');
+    }
+
+    public function test_history_filter_reset_contract(): void
+    {
+        $reviewer = User::factory()->create();
+        $kaizen = Kaizen::factory()->create();
+        $instance = KaizenWorkflowInstance::factory()->create(['kaizen_id' => $kaizen->id]);
+        KaizenWorkflowTransition::factory()->create([
+            'kaizen_id' => $kaizen->id,
+            'kaizen_workflow_instance_id' => $instance->id,
+            'actor_user_id' => $reviewer->id,
+            'action' => WorkflowAction::APPROVE,
+        ]);
+
+        // When active filter is applied
+        $response = $this->actingAs($reviewer)->get(route('history.index', ['action' => WorkflowAction::APPROVE->value]));
+        $response->assertStatus(200);
+
+        // Assert the reset link is canonical
+        $resetUrl = route('history.index');
+        $response->assertSee('href="'.$resetUrl.'"', false);
+        $response->assertSee('Temizle');
+    }
+}
