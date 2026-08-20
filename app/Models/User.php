@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Enums\UserRole;
+use App\Enums\WorkflowAction;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -58,5 +59,22 @@ class User extends Authenticatable
     public function approvalGroupMemberships(): HasMany
     {
         return $this->hasMany(ApprovalGroupMember::class);
+    }
+
+    public function canAccessReviewedHistory(): bool
+    {
+        $hasActiveMembership = $this->approvalGroupMemberships()
+            ->where('is_active', true)
+            ->whereHas('group', function ($q) {
+                $q->where('is_active', true);
+            })->exists();
+
+        if ($hasActiveMembership) {
+            return true;
+        }
+
+        return KaizenWorkflowTransition::where('actor_user_id', $this->id)
+            ->whereIn('action', array_map(fn ($a) => $a->value, WorkflowAction::reviewActions()))
+            ->exists();
     }
 }

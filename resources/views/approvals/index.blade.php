@@ -3,8 +3,8 @@
 @section('content')
 <div class="kf-page-header">
     <span class="kf-page-eyebrow">ONAY YÖNETİMİ</span>
-    <h1 class="kf-page-title">Onay Bekleyenler</h1>
-    <p class="kf-page-desc">İşlem yapmanız beklenen Kaizenleri görüntüleyin.</p>
+    <h1 class="kf-page-title">Bekleyen Onaylar</h1>
+    <p class="kf-page-desc">İşlem yapmanız gereken Kaizen değerlendirmelerini görüntüleyin.</p>
 </div>
 
 <div class="kf-panel mb-4">

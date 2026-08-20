@@ -85,14 +85,8 @@ Gün 12 ve Gün 13 bloklarında:
 
 | Kavram | Kaynak | Filtre | Amaç |
 |---|---|---|---|
-| **Onay Bekleyenler** (`/approvals`) | `kaizens` | `status = SUBMITTED` + aktif stage assignee | Actionable queue: sadece üzerinde işlem yapılabilecek güncel kayıtlar |
-| **İşlem Geçmişi** (`/history`) | `kaizens` (Oluşturduklarım) + `kaizen_workflow_transitions` (Değerlendirdiklerim) | creator / actor scoping | Immutable past activity archive |
-
-### Created History (Oluşturduklarım)
-- Kaynak: `kaizens` tablosu
-- Kriter: `creator_user_id = auth()->id()`
-- Tüm yaşam döngüsü dahil (DRAFT, SUBMITTED, APPROVED, REJECTED vb.)
-- `CreatedKaizenHistoryQuery` servisi; controller client tarafından user_id almaz
+| **Bekleyen Onaylar** (`/approvals`) | `kaizens` | `status = SUBMITTED` + aktif stage assignee | Actionable queue: sadece üzerinde işlem yapılabilecek güncel kayıtlar |
+| **Değerlendirme Geçmişi** (`/history`) | `kaizen_workflow_transitions` | actor scoping | Immutable past review activity archive |
 
 ### Reviewed History (Değerlendirdiklerim)
 - Kaynak: `kaizen_workflow_transitions`

@@ -60,10 +60,10 @@ class KaizenApprovalActionUITest extends TestCase
         $response = $this->actingAs($user)->get(route('kaizens.show', $kaizen));
 
         $response->assertStatus(200);
-        $response->assertDontSee('Değerlendirme');
-        $response->assertDontSee('Onayla');
-        $response->assertDontSee('Revizyon İste');
-        $response->assertDontSee('Reddet');
+        $response->assertDontSee('<h2 class="kf-panel-title">Değerlendirme</h2>', false);
+        $response->assertDontSee('data-bs-target="#approveModal"', false);
+        $response->assertDontSee('data-bs-target="#revisionModal"', false);
+        $response->assertDontSee('data-bs-target="#rejectModal"', false);
     }
 
     public function test_ineligible_when_status_is_revision_requested_does_not_see_action_panel()
@@ -86,9 +86,9 @@ class KaizenApprovalActionUITest extends TestCase
         $response = $this->actingAs($reviewer)->get(route('kaizens.show', $kaizen));
 
         $response->assertStatus(200);
-        $response->assertDontSee('Değerlendirme');
-        $response->assertDontSee('Onayla');
-        $response->assertDontSee('Reddet');
+        $response->assertDontSee('<h2 class="kf-panel-title">Değerlendirme</h2>', false);
+        $response->assertDontSee('data-bs-target="#approveModal"', false);
+        $response->assertDontSee('data-bs-target="#rejectModal"', false);
     }
 
     public function test_cannot_post_approval_action_when_status_is_revision_requested()

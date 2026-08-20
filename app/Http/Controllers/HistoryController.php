@@ -3,9 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\ApprovalGroupMember;
-use App\Models\Category;
-use App\Services\Workflow\CreatedKaizenHistoryQuery;
 use App\Services\Workflow\ReviewedKaizenHistoryQuery;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -13,16 +12,11 @@ class HistoryController extends Controller
 {
     public function index(
         Request $request,
-        CreatedKaizenHistoryQuery $createdQuery,
         ReviewedKaizenHistoryQuery $reviewedQuery
-    ): View {
+    ): View|RedirectResponse {
         $user = $request->user();
-        $activeTab = $request->input('tab', 'created');
 
-        $filters = $request->only(['q', 'status', 'category_id', 'action', 'date_from', 'date_to']);
-
-        $createdKaizens = null;
-        $reviewedTransitions = null;
+        $filters = $request->only(['q', 'action', 'date_from', 'date_to']);
 
         $hasActiveMembership = ApprovalGroupMember::where('user_id', $user->id)
             ->where('is_active', true)
@@ -38,38 +32,22 @@ class HistoryController extends Controller
 
         $canAccessReviewedHistory = $hasActiveMembership || $hasHistoricalReviews;
 
-        if ($activeTab === 'reviewed' && ! $canAccessReviewedHistory) {
-            $activeTab = 'created';
+        if (! $canAccessReviewedHistory) {
+            return redirect()->route('kaizens.index');
         }
 
-        if ($activeTab === 'reviewed') {
-            $query = $reviewedQuery->forUser($user);
-            $query = $reviewedQuery->applyFilters($query, $filters);
-            $reviewedTransitions = $query
-                ->orderBy('kaizen_workflow_transitions.created_at', 'desc')
-                ->orderBy('kaizen_workflow_transitions.id', 'desc')
-                ->paginate(15)
-                ->withQueryString();
-        } else {
-            $activeTab = 'created';
-            $query = $createdQuery->forUser($user);
-            $query = $createdQuery->applyFilters($query, $filters);
-            $createdKaizens = $query
-                ->orderBy('kaizens.updated_at', 'desc')
-                ->orderBy('kaizens.id', 'desc')
-                ->paginate(15)
-                ->withQueryString();
-        }
+        $query = $reviewedQuery->forUser($user);
+        $query = $reviewedQuery->applyFilters($query, $filters);
 
-        $categories = Category::where('is_active', true)->orderBy('name')->get();
+        $reviewedTransitions = $query
+            ->orderBy('kaizen_workflow_transitions.created_at', 'desc')
+            ->orderBy('kaizen_workflow_transitions.id', 'desc')
+            ->paginate(15)
+            ->withQueryString();
 
         return view('history.index', compact(
-            'activeTab',
-            'createdKaizens',
             'reviewedTransitions',
-            'categories',
-            'filters',
-            'canAccessReviewedHistory'
+            'filters'
         ));
     }
 }
