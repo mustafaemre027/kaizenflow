@@ -4,6 +4,4 @@ namespace App\Exceptions;
 
 use LogicException;
 
-class ScopeMismatchException extends LogicException
-{
-}
+class ScopeMismatchException extends LogicException {}

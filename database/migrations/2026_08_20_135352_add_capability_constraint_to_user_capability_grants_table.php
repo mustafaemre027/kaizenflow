@@ -1,8 +1,6 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
@@ -37,10 +35,10 @@ return new class extends Migration
                 )
             ");
 
-            DB::statement("INSERT INTO user_capability_grants_new SELECT * FROM user_capability_grants");
-            DB::statement("DROP TABLE user_capability_grants");
-            DB::statement("ALTER TABLE user_capability_grants_new RENAME TO user_capability_grants");
-            DB::statement("CREATE INDEX cap_dept_active_idx ON user_capability_grants (capability, department_id, is_active)");
+            DB::statement('INSERT INTO user_capability_grants_new SELECT * FROM user_capability_grants');
+            DB::statement('DROP TABLE user_capability_grants');
+            DB::statement('ALTER TABLE user_capability_grants_new RENAME TO user_capability_grants');
+            DB::statement('CREATE INDEX cap_dept_active_idx ON user_capability_grants (capability, department_id, is_active)');
         } else {
             DB::statement("
                 ALTER TABLE user_capability_grants 
@@ -62,7 +60,7 @@ return new class extends Migration
         $driver = DB::getDriverName();
 
         if ($driver === 'sqlite') {
-            DB::statement("
+            DB::statement('
                 CREATE TABLE user_capability_grants_new (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     user_id INTEGER NOT NULL,
@@ -77,14 +75,14 @@ return new class extends Migration
                     FOREIGN KEY (granted_by_user_id) REFERENCES users(id),
                     CONSTRAINT user_dept_cap_unique UNIQUE (user_id, department_id, capability)
                 )
-            ");
+            ');
 
-            DB::statement("INSERT INTO user_capability_grants_new SELECT * FROM user_capability_grants");
-            DB::statement("DROP TABLE user_capability_grants");
-            DB::statement("ALTER TABLE user_capability_grants_new RENAME TO user_capability_grants");
-            DB::statement("CREATE INDEX cap_dept_active_idx ON user_capability_grants (capability, department_id, is_active)");
+            DB::statement('INSERT INTO user_capability_grants_new SELECT * FROM user_capability_grants');
+            DB::statement('DROP TABLE user_capability_grants');
+            DB::statement('ALTER TABLE user_capability_grants_new RENAME TO user_capability_grants');
+            DB::statement('CREATE INDEX cap_dept_active_idx ON user_capability_grants (capability, department_id, is_active)');
         } else {
-            DB::statement("ALTER TABLE user_capability_grants DROP CONSTRAINT chk_user_department_capability_scope");
+            DB::statement('ALTER TABLE user_capability_grants DROP CONSTRAINT chk_user_department_capability_scope');
         }
     }
 };

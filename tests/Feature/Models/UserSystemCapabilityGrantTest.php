@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Models;
 
-use App\Enums\CapabilityScope;
 use App\Enums\UserCapability;
 use App\Exceptions\ScopeMismatchException;
 use App\Models\User;

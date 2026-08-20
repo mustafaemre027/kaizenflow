@@ -2,12 +2,11 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
-
 use App\Enums\CapabilityScope;
 use App\Enums\UserCapability;
 use App\Exceptions\ScopeMismatchException;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
 class UserSystemCapabilityGrant extends Model
 {

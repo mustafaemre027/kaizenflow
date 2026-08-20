@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -11,10 +12,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        $driver = \Illuminate\Support\Facades\DB::getDriverName();
+        $driver = DB::getDriverName();
 
         if ($driver === 'sqlite') {
-            \Illuminate\Support\Facades\DB::statement("
+            DB::statement("
                 CREATE TABLE user_system_capability_grants (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     user_id INTEGER NOT NULL,
@@ -47,7 +48,7 @@ return new class extends Migration
                 $table->unique(['user_id', 'capability']);
             });
 
-            \Illuminate\Support\Facades\DB::statement("
+            DB::statement("
                 ALTER TABLE user_system_capability_grants 
                 ADD CONSTRAINT chk_user_system_capability_scope 
                 CHECK (capability IN (

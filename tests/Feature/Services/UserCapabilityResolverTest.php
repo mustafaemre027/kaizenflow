@@ -28,7 +28,7 @@ class UserCapabilityResolverTest extends TestCase
     public function test_allows_system_grants_access_for_active_user_and_active_grant(): void
     {
         $user = User::factory()->create(['is_active' => true]);
-        
+
         UserSystemCapabilityGrant::create([
             'user_id' => $user->id,
             'capability' => 'authorization.manage',
@@ -41,7 +41,7 @@ class UserCapabilityResolverTest extends TestCase
     public function test_allows_system_denies_access_for_inactive_grant(): void
     {
         $user = User::factory()->create(['is_active' => true]);
-        
+
         UserSystemCapabilityGrant::create([
             'user_id' => $user->id,
             'capability' => 'authorization.manage',
@@ -54,7 +54,7 @@ class UserCapabilityResolverTest extends TestCase
     public function test_allows_system_denies_access_for_inactive_user(): void
     {
         $user = User::factory()->create(['is_active' => false]);
-        
+
         UserSystemCapabilityGrant::create([
             'user_id' => $user->id,
             'capability' => 'authorization.manage',
@@ -68,7 +68,7 @@ class UserCapabilityResolverTest extends TestCase
     {
         $user = User::factory()->create(['is_active' => true]);
         $anotherUser = User::factory()->create(['is_active' => true]);
-        
+
         UserSystemCapabilityGrant::create([
             'user_id' => $anotherUser->id,
             'capability' => 'authorization.manage',
@@ -84,14 +84,14 @@ class UserCapabilityResolverTest extends TestCase
             'is_active' => true,
             'role' => UserRole::ADMIN,
         ]);
-        
+
         $this->assertFalse($this->resolver->allowsSystem($adminUser, UserCapability::from('authorization.manage')));
     }
 
     public function test_allows_system_throws_exception_for_department_capability(): void
     {
         $user = User::factory()->create(['is_active' => true]);
-        
+
         $this->expectException(ScopeMismatchException::class);
         $this->resolver->allowsSystem($user, UserCapability::KAIZEN_IMPLEMENTATION_ASSIGN);
     }
@@ -100,7 +100,7 @@ class UserCapabilityResolverTest extends TestCase
     {
         $user = User::factory()->create(['is_active' => true]);
         $department = Department::factory()->create();
-        
+
         $this->expectException(ScopeMismatchException::class);
         $this->resolver->allows($user, UserCapability::from('authorization.manage'), $department->id);
     }

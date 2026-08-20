@@ -2,14 +2,13 @@
 
 namespace Database\Factories;
 
-use App\Models\UserSystemCapabilityGrant;
-use Illuminate\Database\Eloquent\Factories\Factory;
-
+use App\Enums\UserCapability;
+use App\Models\User;
 /**
  * @extends Factory<UserSystemCapabilityGrant>
  */
-use App\Enums\UserCapability;
-use App\Models\User;
+use App\Models\UserSystemCapabilityGrant;
+use Illuminate\Database\Eloquent\Factories\Factory;
 
 class UserSystemCapabilityGrantFactory extends Factory
 {

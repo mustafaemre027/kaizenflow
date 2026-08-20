@@ -374,3 +374,16 @@ Merkezi bir `CapabilityScope` enum tanımı ile her `UserCapability` tek ve kesi
 
 ### 10. MySQL ve SQLite Concurrency/Test Farkları
 - SQLite testlerinin concurrency (row-lock) testlerinde MySQL davranışını tam simüle edemeyebileceği bilinerek MySQL için ek Integration DB testi planlanmıştır.
+
+## 15. GÜN 13 BLOK 2.3 UYGULAMA KAYDI (GERÇEKLEŞEN)
+
+Blok 2.3 kapsamında aşağıdaki persistence ve resolver katmanı başarıyla uygulanmış ve her iki veritabanı türünde de kanıtlanmıştır:
+
+- **CapabilityScope:** `SYSTEM` ve `DEPARTMENT` enum olarak oluşturuldu.
+- **Sekiz Capability Matrisi:** 5 SYSTEM ve 3 DEPARTMENT capability scope metoduna bağlandı.
+- **System Grant Persistence:** `user_system_capability_grants` migration ve model katmanı oluşturuldu.
+- **DB Constraint'leri:** `chk_user_system_capability_scope` ve `chk_user_department_capability_scope` constraint'leri MySQL native DDL ve SQLite table cloning stratejisi kullanılarak sisteme entegre edildi.
+- **Model Invariant'ları:** Saving hook'ları ile scope dışında atama girişimleri reddedilip `ScopeMismatchException` fırlatılması sağlandı.
+- **allowsSystem():** `UserCapabilityResolver` içinde ayrı bir metod olarak hayata geçirildi; yetki sınırları tamamen ayrıştırıldı.
+- **SQLite/MySQL Test Kanıtı:** `%100 GREEN` (538 test, 1552 assertion) durumu iki motor için de onaylandı; şema bütünlüğü SQL `sqlite_master` ve `information_schema` verileriyle doğrulandı.
+- **Henüz Yapılmayanlar (Blok 3 Beklentisi):** Domain action sınıfları, audit log event'leri, yetki aktarma/geri alma limitleri (son yönetici kısıtları), bootstrap CLI komutu ve concurrency kontrolleri henüz uygulanmamıştır. Bu işlemler doğrudan Action/Service katmanına devredilmiştir.

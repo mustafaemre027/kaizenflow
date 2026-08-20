@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Enums\CapabilityScope;
 use App\Enums\UserCapability;
+use App\Exceptions\ScopeMismatchException;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -27,8 +29,8 @@ class UserCapabilityGrant extends Model
     protected static function booted()
     {
         static::saving(function (self $grant) {
-            if ($grant->capability && $grant->capability->scope() !== \App\Enums\CapabilityScope::DEPARTMENT) {
-                throw new \App\Exceptions\ScopeMismatchException('Only DEPARTMENT capabilities can be assigned to user_capability_grants.');
+            if ($grant->capability && $grant->capability->scope() !== CapabilityScope::DEPARTMENT) {
+                throw new ScopeMismatchException('Only DEPARTMENT capabilities can be assigned to user_capability_grants.');
             }
         });
     }
