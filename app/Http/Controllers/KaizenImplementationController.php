@@ -38,7 +38,7 @@ class KaizenImplementationController extends Controller
 
             return redirect()->route('kaizens.show', $kaizen)
                 ->with('success', 'Kaizen uygulama süreci başlatıldı.');
-        } catch (\Exception $e) {
+        } catch (\DomainException $e) {
             return redirect()->route('kaizens.show', $kaizen)
                 ->withErrors(['error' => $e->getMessage()]);
         }

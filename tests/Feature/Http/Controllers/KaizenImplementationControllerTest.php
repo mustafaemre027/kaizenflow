@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Http\Controllers;
 
+use App\Actions\Kaizens\StartKaizenImplementation;
 use App\Enums\KaizenStatus;
 use App\Enums\UserCapability;
 use App\Models\Category;
@@ -269,6 +270,28 @@ class KaizenImplementationControllerTest extends TestCase
         $this->actingAs($this->opex)
             ->post(route('kaizens.implementation.start', $kaizen))
             ->assertSessionHasErrors(['error']);
+    }
+
+    public function test_generic_exception_is_not_masked_by_start_endpoint(): void
+    {
+        $this->grant($this->opex, $this->dept1, UserCapability::KAIZEN_IMPLEMENTATION_START);
+        $kaizen = Kaizen::factory()->create([
+            'department_id' => $this->dept1->id,
+            'status' => KaizenStatus::APPROVED->value,
+            'assigned_user_id' => $this->employee->id,
+            'target_date' => now()->addDays(5),
+        ]);
+
+        // Mock the action to throw a generic exception
+        $this->mock(StartKaizenImplementation::class, function ($mock) {
+            $mock->shouldReceive('execute')->andThrow(new \Exception('Critical DB failure'));
+        });
+
+        // The controller should NOT catch this \Exception and redirect with error.
+        // It should let it bubble up, resulting in a 500 error.
+        $this->actingAs($this->opex)
+            ->post(route('kaizens.implementation.start', $kaizen))
+            ->assertStatus(500);
     }
 
     // COMPLETE ENDPOINT

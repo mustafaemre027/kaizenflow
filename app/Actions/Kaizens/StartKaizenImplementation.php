@@ -18,27 +18,27 @@ class StartKaizenImplementation
         }
 
         if ($kaizen->status !== KaizenStatus::APPROVED) {
-            throw new \Exception('Only APPROVED Kaizens can be started.');
+            throw new \DomainException('Only APPROVED Kaizens can be started.');
         }
 
         if (! $kaizen->assigned_user_id) {
-            throw new \Exception('Kaizen must have an assignee before starting implementation.');
+            throw new \DomainException('Kaizen must have an assignee before starting implementation.');
         }
 
         if (! $kaizen->target_date) {
-            throw new \Exception('Kaizen must have a target date before starting implementation.');
+            throw new \DomainException('Kaizen must have a target date before starting implementation.');
         }
 
         $assignee = User::find($kaizen->assigned_user_id);
         if (! $assignee || ! $assignee->is_active) {
-            throw new \Exception('The assigned user is not active.');
+            throw new \DomainException('The assigned user is not active.');
         }
 
         return DB::transaction(function () use ($kaizen, $actor) {
             $lockedKaizen = Kaizen::where('id', $kaizen->id)->lockForUpdate()->first();
 
             if ($lockedKaizen->status !== KaizenStatus::APPROVED) {
-                throw new \Exception('Only APPROVED Kaizens can be started.');
+                throw new \DomainException('Only APPROVED Kaizens can be started.');
             }
 
             $lockedKaizen->status = KaizenStatus::IN_PROGRESS;
