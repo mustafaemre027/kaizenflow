@@ -19,11 +19,11 @@
                             <a href="{{ url('/') }}" class="kf-app-nav-link {{ request()->is('/') ? 'active' : '' }}">Ana Sayfa</a>
                             <a href="{{ route('kaizens.index') }}" class="kf-app-nav-link {{ request()->routeIs('kaizens.index', 'kaizens.show') ? 'active' : '' }}">Kaizenler</a>
                             <a href="{{ route('kaizens.create') }}" class="kf-app-nav-link {{ request()->routeIs('kaizens.create') ? 'active' : '' }}">Yeni Kaizen</a>
-                            @if(auth()->user()->canAccessReviewedHistory())
-                                <a href="{{ route('history.index') }}" class="kf-app-nav-link {{ request()->routeIs('history.index') ? 'active' : '' }}">Değerlendirme Geçmişi</a>
-                            @endif
                             @if(auth()->user()->approvalGroupMemberships()->where('is_active', true)->whereHas('group', function ($query) { $query->where('is_active', true); })->exists())
                                 <a href="{{ route('approvals.index') }}" class="kf-app-nav-link {{ request()->routeIs('approvals.index') ? 'active' : '' }}">Bekleyen Onaylar</a>
+                            @endif
+                            @if(auth()->user()->canAccessReviewedHistory())
+                                <a href="{{ route('history.index') }}" class="kf-app-nav-link {{ request()->routeIs('history.index') ? 'active' : '' }}">Değerlendirme Geçmişi</a>
                             @endif
                             @if(auth()->user()->role === \App\Enums\UserRole::ADMIN)
                                 <a href="{{ route('settings.reference-data.index') }}" class="kf-app-nav-link {{ request()->routeIs('settings.*') ? 'active' : '' }}">Yönetim</a>

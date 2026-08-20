@@ -25,12 +25,10 @@
                 <div class="col-12 col-md-3">
                     <label for="action" class="form-label">İşlem Türü</label>
                     <select name="action" id="action" class="kf-form-control">
-                        <option value="">Tüm işlemler</option>
-                        @foreach(\App\Enums\WorkflowAction::reviewActions() as $act)
-                            <option value="{{ $act->value }}" {{ ($filters['action'] ?? '') === $act->value ? 'selected' : '' }}>
-                                {{ $act->label() }}
-                            </option>
-                        @endforeach
+                        <option value="">Tüm İşlemler</option>
+                        <option value="{{ \App\Enums\WorkflowAction::APPROVE->value }}" {{ ($filters['action'] ?? '') === \App\Enums\WorkflowAction::APPROVE->value ? 'selected' : '' }}>Onaylandı</option>
+                        <option value="{{ \App\Enums\WorkflowAction::REQUEST_REVISION->value }}" {{ ($filters['action'] ?? '') === \App\Enums\WorkflowAction::REQUEST_REVISION->value ? 'selected' : '' }}>Revizyon İstendi</option>
+                        <option value="{{ \App\Enums\WorkflowAction::REJECT->value }}" {{ ($filters['action'] ?? '') === \App\Enums\WorkflowAction::REJECT->value ? 'selected' : '' }}>Reddedildi</option>
                     </select>
                 </div>
                 <div class="col-12 col-md-2">
@@ -43,17 +41,14 @@
                     <input type="date" name="date_to" id="date_to" class="kf-form-control"
                            value="{{ $filters['date_to'] ?? '' }}">
                 </div>
-                <div class="col-12 col-md-2 d-flex gap-2">
-                    <button type="submit" class="kf-btn kf-btn-primary w-100">Filtrele</button>
+                <div class="col-12 col-md-2">
+                    <label class="form-label">&nbsp;</label>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="kf-btn kf-btn-primary flex-grow-1">Filtrele</button>
+                        <a href="{{ route('history.index') }}" class="kf-btn kf-btn-secondary text-decoration-none px-3" title="Filtreleri Temizle">Temizle</a>
+                    </div>
                 </div>
             </div>
-            @if(!empty(array_filter([$filters['q'] ?? null, $filters['action'] ?? null, $filters['date_from'] ?? null, $filters['date_to'] ?? null])))
-                <div class="mt-2">
-                    <a href="{{ route('history.index') }}" class="text-decoration-none text-muted" style="font-size: 0.9rem; font-weight: 500;">
-                        Filtreleri Temizle
-                    </a>
-                </div>
-            @endif
         </form>
     </div>
 
@@ -76,7 +71,7 @@
                             <th scope="col" class="kf-hide-mobile">Aşama</th>
                             <th scope="col">Yaptığım İşlem</th>
                             <th scope="col" class="kf-hide-mobile">İşlem Tarihi</th>
-                            <th scope="col" class="kf-hide-mobile">Son Kaizen Durumu</th>
+                            <th scope="col" class="kf-hide-mobile">Güncel Durum</th>
                             <th scope="col" class="text-end">İncele</th>
                         </tr>
                     </thead>
@@ -93,6 +88,12 @@
                                     \App\Enums\KaizenStatus::IN_PROGRESS, \App\Enums\KaizenStatus::COMPLETED => 'info',
                                     default => 'secondary',
                                 };
+                                $actionPastLabel = match($transition->action) {
+                                    \App\Enums\WorkflowAction::APPROVE => 'Onaylandı',
+                                    \App\Enums\WorkflowAction::REQUEST_REVISION => 'Revizyon İstendi',
+                                    \App\Enums\WorkflowAction::REJECT => 'Reddedildi',
+                                    default => $transition->action->label()
+                                };
                             @endphp
                             <tr>
                                 <td>
@@ -104,8 +105,8 @@
                                     {{ $transition->fromStage?->name ?? '-' }}
                                 </td>
                                 <td>
-                                    <span class="kf-badge kf-badge-{{ $badgeVariant }}" aria-label="İşlem: {{ $transition->action->label() }}">
-                                        {{ $transition->action->label() }}
+                                    <span class="kf-badge kf-badge-{{ $badgeVariant }}" aria-label="İşlem: {{ $actionPastLabel }}">
+                                        {{ $actionPastLabel }}
                                     </span>
                                 </td>
                                 <td class="kf-hide-mobile text-secondary" style="font-size: 0.9rem;">
