@@ -5,6 +5,7 @@ namespace App\Actions\Kaizens;
 use App\Enums\KaizenStatus;
 use App\Models\Kaizen;
 use App\Models\User;
+use App\Services\AppendAuditLog;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -39,12 +40,24 @@ class AssignKaizenImplementation
             throw new \InvalidArgumentException('Target date cannot be in the past.');
         }
 
-        return DB::transaction(function () use ($kaizen, $assigneeId, $targetDate) {
+        return DB::transaction(function () use ($kaizen, $actor, $assigneeId, $targetDate) {
             $lockedKaizen = Kaizen::where('id', $kaizen->id)->lockForUpdate()->first();
+
+            $previousAssignedId = $lockedKaizen->assigned_user_id;
+            $previousTargetDate = $lockedKaizen->target_date ? $lockedKaizen->target_date->format('Y-m-d') : null;
 
             $lockedKaizen->assigned_user_id = $assigneeId;
             $lockedKaizen->target_date = $targetDate;
             $lockedKaizen->save();
+
+            /** @var AppendAuditLog $auditLogger */
+            $auditLogger = app(AppendAuditLog::class);
+            $auditLogger->execute($actor, $lockedKaizen, 'implementation.assigned', [
+                'previous_assigned_user_id' => $previousAssignedId,
+                'assigned_user_id' => $assigneeId,
+                'previous_target_date' => $previousTargetDate,
+                'target_date' => $targetDate,
+            ]);
 
             return $lockedKaizen;
         });
