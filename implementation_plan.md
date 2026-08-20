@@ -234,10 +234,13 @@ Nihai alan ve ilişkilerin Gün 3 ER diyagramıyla kesinleşeceği belirtilmekte
 
 Durum geçişleri dinamik iş akışı (ApprovalWorkflow) motoru üzerinden sağlanır, organizasyonel onay aşamaları (Yönetici, Kurul, OPEX) veritabanı tablolarında barındırılır. (Gün 11 sonrası onay akışı `ApprovalWorkflowResolver` ve `StartKaizenWorkflow` ile devralınmıştır).
 
-**Atama (Assignment) ve Yürütme (Execution) Sınırları:**
+**Atama (Assignment) ve Yürütme (Execution) Sınırları (Gün 12 İtibarıyla):**
+- Implementation (Uygulama) yetkileri statik rollere (OPEX, MANAGER vb.) bağlı değildir; doğrudan **Capability Grant** sistemine (örn. `KAIZEN_IMPLEMENTATION_ASSIGN`) bağlıdır.
+- Grant'ler (Yetkinlik atamaları) MVP kapsamında departman bazlıdır (Kullanıcı + Departman + Yetkinlik).
+- Atama (Assignment) gibi metadata değişiklikleri `audit_logs` tablosuna append-only olarak yazılır. Statü geçmişine sahte satır eklenmez.
+- `START` ve `COMPLETE` işlemleri ise doğrudan `IN_PROGRESS` ve `COMPLETED` durum geçişlerini tetiklediği için `kaizen_status_histories` (lifecycle) tablosunda loglanır.
+- Capability (Yetkinlik) atama yönetim ekranları Gün 13 kapsamındadır; MVP için seed/tinker veya backend resolver katmanı kullanılır.
 - Atanmış olmak tek başına lifecycle statüsü değiştirme yetkisi sağlamaz. Assignee kullanıcı Kaizen'i görebilir ve kendisine izin verilen uygulama bilgilerini (actual_result vb.) kaydedebilir. Ancak yalnızca atanmış olduğu için IN_PROGRESS veya COMPLETED geçişi yapamaz.
-- Atama, uygulamayı başlatma ve tamamlama aynı geniş `implement` yetkisi altında değerlendirilmemelidir. Ayrı Policy yetenekleri (assignImplementation, startImplementation, completeImplementation) üzerinden yönetilir.
-- `kaizen_status_histories` yalnızca lifecycle geçiş geçmişidir. Atama değişikliğini kaydetmek için sahte statülü history satırı oluşturulmaz. Yalnızca geçişle aynı transaction içindeyse transition metadata'sına assignee eklenebilir. Gelecekte statü değişmeden yapılacak atamalar için ayrı bir semantik append-only audit yaklaşımı belirlenmelidir.
 - Yorumlar (Comments) iletişim altyapısıdır; yapılandırılmış execution plan veya progress tracking olarak kullanılamaz (Yapılandırılmış takip Gün 17 kapsamındadır).
 
 ## 9. YETKİ İLKELERİ
