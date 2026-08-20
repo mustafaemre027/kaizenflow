@@ -110,17 +110,15 @@ class UserCapabilityResolverTest extends TestCase
         $user = User::factory()->create(['is_active' => true]);
         $department = Department::factory()->create();
 
-        // Let's directly create via DB so it bypasses our model's exception for this specific edge case test.
-        \Illuminate\Support\Facades\DB::table('user_capability_grants')->insert([
+        UserCapabilityGrant::factory()->create([
             'user_id' => $user->id,
             'department_id' => $department->id,
-            'capability' => 'authorization.manage',
+            'capability' => UserCapability::KAIZEN_IMPLEMENTATION_ASSIGN,
             'is_active' => true,
-            'created_at' => now(),
-            'updated_at' => now(),
         ]);
 
-        $this->assertFalse($this->resolver->allowsSystem($user, UserCapability::from('authorization.manage')));
+        $this->expectException(ScopeMismatchException::class);
+        $this->resolver->allowsSystem($user, UserCapability::KAIZEN_IMPLEMENTATION_ASSIGN);
     }
 
     public function test_system_grant_cannot_provide_department_access(): void
@@ -134,7 +132,6 @@ class UserCapabilityResolverTest extends TestCase
             'is_active' => true,
         ]);
 
-        // Trying to use allows with system capability will anyway throw ScopeMismatchException
         $this->expectException(ScopeMismatchException::class);
         $this->resolver->allows($user, UserCapability::from('authorization.manage'), $department->id);
     }
