@@ -34,4 +34,44 @@ class UserCapabilityGrantTest extends TestCase
             'capability' => $capability,
         ]);
     }
+
+    public function test_model_rejects_system_capability(): void
+    {
+        $user = User::factory()->create();
+        $department = Department::factory()->create();
+
+        $this->expectException(\App\Exceptions\ScopeMismatchException::class);
+
+        UserCapabilityGrant::create([
+            'user_id' => $user->id,
+            'department_id' => $department->id,
+            'capability' => 'authorization.manage',
+        ]);
+    }
+
+    public function test_factory_cannot_bypass_scope(): void
+    {
+        $this->expectException(\App\Exceptions\ScopeMismatchException::class);
+
+        UserCapabilityGrant::factory()->create([
+            'capability' => 'authorization.manage',
+        ]);
+    }
+
+    public function test_db_raw_insert_rejects_system_capability(): void
+    {
+        $user = User::factory()->create();
+        $department = Department::factory()->create();
+
+        $this->expectException(QueryException::class);
+
+        \Illuminate\Support\Facades\DB::table('user_capability_grants')->insert([
+            'user_id' => $user->id,
+            'department_id' => $department->id,
+            'capability' => 'authorization.manage',
+            'is_active' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    }
 }
