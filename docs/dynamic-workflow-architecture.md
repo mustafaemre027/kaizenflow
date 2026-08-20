@@ -78,3 +78,37 @@ Gün 12 ve Gün 13 bloklarında:
 - Onay yapan yetkililerin `Actor / Approver` konsepti devreye girecek.
 - Raporlama, OPEX dashboard'ları ve role bazlı görünürlük bu dinamik sisteme (instance current_stage'ine) bağlanacaktır.
 - Mevcut submit (başvuru) mekanizması yeni instance oluşturucu ile harmanlanacaktır.
+
+## User History Archive (Gün 11 — Blok 7)
+
+### Pending Approvals vs. History — Semantic Boundary
+
+| Kavram | Kaynak | Filtre | Amaç |
+|---|---|---|---|
+| **Onay Bekleyenler** (`/approvals`) | `kaizens` | `status = SUBMITTED` + aktif stage assignee | Actionable queue: sadece üzerinde işlem yapılabilecek güncel kayıtlar |
+| **İşlem Geçmişi** (`/history`) | `kaizens` (Oluşturduklarım) + `kaizen_workflow_transitions` (Değerlendirdiklerim) | creator / actor scoping | Immutable past activity archive |
+
+### Created History (Oluşturduklarım)
+- Kaynak: `kaizens` tablosu
+- Kriter: `creator_user_id = auth()->id()`
+- Tüm yaşam döngüsü dahil (DRAFT, SUBMITTED, APPROVED, REJECTED vb.)
+- `CreatedKaizenHistoryQuery` servisi; controller client tarafından user_id almaz
+
+### Reviewed History (Değerlendirdiklerim)
+- Kaynak: `kaizen_workflow_transitions`
+- Kriter: `actor_user_id = auth()->id()` AND `action IN [APPROVE, REQUEST_REVISION, REJECT]`
+- `START` ve `RESUBMIT` hariç tutulur (creator aksiyonları, reviewer kararı değil)
+- Her karar ayrı satır — multi-action audit korunur, geçmiş ezilmez
+- `ReviewedKaizenHistoryQuery` servisi
+
+### Authorization Boundaries
+- `KaizenPolicy::view`: `wasActor` clause eklendi — geçmişte aynı Kaizen üzerinde transition.actor_user_id olan reviewerlar view hakkını korur
+- Bu, geçmişe erişimi mümkün kılar ama herhangi bir write/action hakkı vermez
+- History query'leri asla client'tan `user_id` veya `creator_user_id` kabul etmez (IDOR koruması)
+- Filter parametreleri authorized dataset içinde çalışır; scope'u genişletemez
+
+### WorkflowAction Enum Genişlemesi
+- `label()`: Türkçe sunum metni
+- `badgeVariant()`: CSS badge semantiği (success/warning/danger)
+- `reviewActions()`: `[APPROVE, REQUEST_REVISION, REJECT]` — query ve filter validasyonunda kullanılır
+
