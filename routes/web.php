@@ -6,6 +6,7 @@ use App\Http\Controllers\HistoryController;
 use App\Http\Controllers\KaizenApprovalActionController;
 use App\Http\Controllers\KaizenAttachmentController;
 use App\Http\Controllers\KaizenController;
+use App\Http\Controllers\KaizenImplementationController;
 use App\Http\Controllers\Settings\CategoryController;
 use App\Http\Controllers\Settings\DepartmentController;
 use App\Http\Controllers\Settings\ReferenceDataController;
@@ -25,6 +26,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/kaizens', [KaizenController::class, 'index'])->name('kaizens.index');
     Route::get('/approvals', [ApprovalController::class, 'index'])->name('approvals.index');
     Route::get('/history', [HistoryController::class, 'index'])->name('history.index');
+
+    // Implementation Execution Routes
+    Route::post('/kaizens/{kaizen}/implementation/assign', [KaizenImplementationController::class, 'assign'])->name('kaizens.implementation.assign');
+    Route::post('/kaizens/{kaizen}/implementation/start', [KaizenImplementationController::class, 'start'])->name('kaizens.implementation.start');
+    Route::post('/kaizens/{kaizen}/implementation/complete', [KaizenImplementationController::class, 'complete'])->name('kaizens.implementation.complete');
+
     Route::get('/kaizens/create', [KaizenController::class, 'create'])->name('kaizens.create');
     Route::get('/kaizens/{kaizen}/edit', [KaizenController::class, 'edit'])->name('kaizens.edit');
     Route::get('/kaizens/{kaizen}', [KaizenController::class, 'show'])->name('kaizens.show');
