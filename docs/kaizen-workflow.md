@@ -87,7 +87,7 @@ Uygulama sorumlusu (`assigned_user_id`), onaylanmış işi operasyonel olarak y�
 | Taslak oluşturma | İzinli | Yasak | Yasak | Yasak | N/A |
 | Gönderme / Yeniden Gönderme | İzinli | Yasak | Yasak | Yasak | N/A |
 | İş akışında onay / ret / revizyon | Atanmışsa | Atanmışsa | Atanmışsa | Yasak | N/A |
-| Uygulamayı başlatma / tamamlama | Yasak | İzinli | Kapsama bağlı | Yasak | Yasak (Doğrudan değiştiremez) |
+| Uygulamayı başlatma / tamamlama | Yasak | **Capability Grant ile** | **Capability Grant ile** | Yasak | Yasak (Doğrudan değiştiremez) |
 | Sistem/Workflow tanımlarını yönetme | Yasak | Yasak | Yasak | İzinli | N/A |
 
 ## 9. Kayıt Sahipliği ve Görünürlük
