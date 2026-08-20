@@ -387,3 +387,18 @@ Blok 2.3 kapsamında aşağıdaki persistence ve resolver katmanı başarıyla u
 - **allowsSystem():** `UserCapabilityResolver` içinde ayrı bir metod olarak hayata geçirildi; yetki sınırları tamamen ayrıştırıldı.
 - **SQLite/MySQL Test Kanıtı:** `%100 GREEN` (538 test, 1552 assertion) durumu iki motor için de onaylandı; şema bütünlüğü SQL `sqlite_master` ve `information_schema` verileriyle doğrulandı.
 - **Henüz Yapılmayanlar (Blok 3 Beklentisi):** Domain action sınıfları, audit log event'leri, yetki aktarma/geri alma limitleri (son yönetici kısıtları), bootstrap CLI komutu ve concurrency kontrolleri henüz uygulanmamıştır. Bu işlemler doğrudan Action/Service katmanına devredilmiştir.
+
+## 16. GÜN 13 BLOK 3 UYGULAMA KAYDI (GERÇEKLEŞEN)
+
+Blok 3 kapsamında System Capability yönetimi için Action katmanı (Grant/Revoke) TDD ile uygulanmış ve audit-rollback mekanizmaları kanıtlanmıştır:
+
+- **Bootstrap Erişilebilirlik Kararı:** Exact-capability delegation kuralı sebebiyle ilk yetkilinin (yalnızca `authorization.manage` sahibi olan) başka yetkiler verememesi (kilitlenme) sorunu tespit edilmiştir. Çözüm olarak; Bootstrap komutu, ilk aktif kullanıcıya sadece `authorization.manage` değil, sabit SYSTEM yönetim paketi (`organization.view`, `organization.manage`, `approval_configuration.view`, `approval_configuration.manage`, `authorization.manage`) atayacak şekilde planlanmıştır. Bootstrap (CLI) komutunun implementasyonu sonraki bloğa bırakılmıştır.
+- **Grant Kuralları:** Scope mismatch reddedilir. Actor ve Target aktif olmalı. Actor kendisi hariç başkasına verebilir (Self-grant yasağı). Actor `authorization.manage` ve vereceği `capability` yetkisine bizzat sahip olmalıdır (Exact-capability delegation).
+- **Revoke Kuralları:** Scope mismatch reddedilir. Actor aktif olmalı ve `authorization.manage` sahibi olmalıdır. Actor kendi yetkisini bile revoke edebilir.
+- **Idempotent No-Op Davranışları:** Zaten aktif olan bir yetki tekrar verilmek istendiğinde veya var olmayan/zaten pasif olan bir yetki alınmak istendiğinde işlem idempotent no-op olarak döner ve audit kaydı **üretilmez**.
+- **Last Active Authorization Manager Invariant:** `authorization.manage` yetkisi geri alınırken (revoke), sistemde en az bir `is_active=true` olan kullanıcıda aktif bir `authorization.manage` yetkisi kaldığı garantilenir. Sayı sıfıra düşüyorsa `LastAuthorizationManagerException` fırlatılır.
+- **Audit Eventleri:** `authorization.system_capability.granted` ve `authorization.system_capability.revoked`. Eski ve yeni `is_active` durumları metadata'ya eklenir.
+- **Audit Rollback:** `AppendAuditLog` servisinde hata oluşursa tüm mutation işlemleri (`is_active` veya `granted_by_user_id` güncellemeleri) tamamen geri alınır (rollback).
+- **Kilit Sırası (Deadlock Koruması):** Eşzamanlı işlemlerde önce ilgili tüm kullanıcı satırları ID artan sırasına göre kilitlenir (`lockForUpdate`), ardından ilgili grant satırları kilitlenir. Son yönetici kontrolünde de bu kilit sırası garanti altına alınır.
+- **Concurrency Kanıtı:** Eşzamanlı revoke simülasyonu MySQL ortamında asenkron (background jobs) olarak doğrulanmış, sadece tek bir işlemin commit edildiği ve son yetkilinin korunduğu ispatlanmıştır.
+- **Henüz Yapılmayanlar (HTTP/UI):** Controller, Request validation, Route tanımları, Bootstrap CLI komutu ve Blade UI henüz yapılmamıştır. Sonraki blokların konusudur.
