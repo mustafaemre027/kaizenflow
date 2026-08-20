@@ -94,15 +94,15 @@ Günlük yaklaşım: 2 ana ürün capability + entegrasyon + security + tests + 
 | Gün 9 | Listeleme, taslak düzenleme ve dynamic business audit (Müşteriye özel sabit kodların tespiti). | feature/ |
 | Gün 10 | Enterprise evidence/media/attachment module | feature/ |
 | Gün 11 | Dynamic approval workflow + stage config + history | feature/ |
-| Gün 12 | OPEX workspace + queue + revision/reject/handoff | feature/ |
-| Gün 13 | Manager + Committee + final approval + assignments | feature/ |
-| Gün 14 | User/organization management + notifications + work queue | feature/ |
-| Gün 15 | Dynamic evaluation criteria + weighted scoring | feature/ |
-| Gün 16 | Dynamic optional benefit types + target/realized metrics | feature/ |
-| Gün 17 | Implementation/execution tracking + responsibility + deadlines | feature/ |
-| Gün 18 | Dashboard + reporting + export | feature/ |
-| Gün 19 | Enterprise hardening + final hard-code/security/performance audit | chore/ |
-| Gün 20 | Final product UI/UX + documentation + demo + delivery | docs/ |
+| Gün 12 | Uygulama planlama ve yürütme altyapısı (Post-approval execution) | feature/ |
+| Gün 13 | Approval configuration administration and organization management | feature/ |
+| Gün 14 | Notifications, work queue and deadline tracking | feature/ |
+| Gün 15 | Dynamic evaluation criteria and weighted scoring | feature/ |
+| Gün 16 | Dynamic optional benefit types and target/realized metrics | feature/ |
+| Gün 17 | Implementation execution tracking, progress and completion | feature/ |
+| Gün 18 | Dashboard, reporting and CSV export | feature/ |
+| Gün 19 | Enterprise hardening, security, performance, N+1, index and hard-code audit | chore/ |
+| Gün 20 | Final professional UI/UX, responsive/accessibility, documentation, demo and delivery | docs/ |
 
 ## 6. GÜNLÜK FAZLARIN AYRINTILARI (Gün 5-20)
 
@@ -154,15 +154,16 @@ Günlük yaklaşım: 2 ana ürün capability + entegrasyon + security + tests + 
 - `MANAGER_REVIEW` gibi iş aşamalarının hard-coded olmaktan çıkarılıp dinamik `ApprovalStage` domain'ine devredilmesi.
 - Lifecycle statü geçmişi (`KaizenStatusHistory`) ile Onay İş Akışı geçmişinin (`KaizenWorkflowTransition`) birbirinden ayrılması.
 
-### Gün 12 — OPEX workspace + queue + revision/reject/handoff
-- Gönderilen Kaizenleri OPEX incelemesi ve çalışma alanı
-- Revizyon isteme, reddetme veya sonraki aşamaya (Yönetici vb.) gönderme
-- Açıklama zorunlulukları ve UI entegrasyonu
+### Gün 12 — Uygulama planlama ve yürütme altyapısı (Tamamlandı)
+- Onaylanan Kaizenlerin uygulamaya alınması (IN_PROGRESS)
+- Sorumlu (assignee) atamaları ve hedeflenen termin (target_date) takibi
+- Uygulama süreci (actual_result) ve tamamlama (COMPLETED) işlemleri
+- Durum geçişlerinde append-only loglama ve yetkilendirmeler
+- **Teslimat Durumu:** Post-approval execution altyapısı ve HTTP/Blade UI entegrasyonu başarıyla tamamlandı. Capability bazlı yetkilendirme sağlandı. Assignment audit log'a, Start/Complete işlemleri lifecycle history'ye yazıldı. 1440/768/390 responsive manuel QA tamamlanıp taşma sorunları düzeltildi. Issue #29 PR inceleme aşamasındadır.
 
-### Gün 13 — Manager + Committee + final approval + assignments
-- Yönetici -> Kurul -> Nihai Onay geçişleri
-- Dinamik Kurul ve kurul üyelik yapısı
-- Uygulama sorumlusu atama
+### Gün 13 — Approval configuration administration and organization management
+- Dinamik Kurul ve kurul üyelik yapısı (Admin yönetimi)
+- Onay iş akışları yapılandırmaları (ApprovalWorkflow config yönetimi)
 
 ### Gün 14 — User/organization management + notifications + work queue
 - Kullanıcı ve organizasyon yönetimi tamamlanması
@@ -225,15 +226,23 @@ Nihai alan ve ilişkilerin Gün 3 ER diyagramıyla kesinleşeceği belirtilmekte
 |---|---|---|---|
 | DRAFT | Çalışan tarafından gönderildi | SUBMITTED | EMPLOYEE |
 | REVISION_REQUESTED | Çalışan tarafından güncellendi | SUBMITTED | EMPLOYEE |
-| SUBMITTED | Düzeltme istendi | REVISION_REQUESTED | OPEX_SPECIALIST |
-| SUBMITTED | Onay için yöneticiye iletildi | MANAGER_REVIEW (Legacy) | OPEX_SPECIALIST |
-| SUBMITTED | Reddedildi | REJECTED | OPEX_SPECIALIST |
-| MANAGER_REVIEW | Onaylandı | APPROVED | MANAGER |
-| MANAGER_REVIEW | Reddedildi | REJECTED | MANAGER |
-| APPROVED | Uygulamayı başlat | IN_PROGRESS | OPEX_SPECIALIST / yetkili MANAGER |
-| IN_PROGRESS | Sonuçları kaydet ve tamamla | COMPLETED | OPEX_SPECIALIST / yetkili MANAGER |
+| SUBMITTED, ... (Ara Aşamalar) | Onaycı (Reviewer) tarafından revizyon istendi | REVISION_REQUESTED | Atanmış Onaycı |
+| SUBMITTED, ... (Ara Aşamalar) | Onaycı (Reviewer) tarafından ara onay verildi | (Mevcut Statü Korunur) | Atanmış Onaycı |
+| SUBMITTED, ... (Ara Aşamalar) | Onaycı (Reviewer) tarafından reddedildi | REJECTED | Atanmış Onaycı |
+| SUBMITTED, ... (Nihai Aşama) | Nihai Onaycı (Final Reviewer) tarafından onaylandı | APPROVED | Atanmış Nihai Onaycı |
+| APPROVED | Uygulamayı başlat | IN_PROGRESS | OPEX_SPECIALIST / Yetkili MANAGER |
+| IN_PROGRESS | Sonuçları kaydet ve tamamla | COMPLETED | OPEX_SPECIALIST / Yetkili MANAGER |
 
-Durum geçişlerinin tek bir merkezi servis üzerinden uygulanacağı, controller veya Blade içinde kopyalanmayacağı belirtilmektedir. (Gün 11 sonrası onay akışı `ApprovalWorkflowResolver` ve `StartKaizenWorkflow` ile devralınmıştır).
+Durum geçişleri dinamik iş akışı (ApprovalWorkflow) motoru üzerinden sağlanır, organizasyonel onay aşamaları (Yönetici, Kurul, OPEX) veritabanı tablolarında barındırılır. (Gün 11 sonrası onay akışı `ApprovalWorkflowResolver` ve `StartKaizenWorkflow` ile devralınmıştır).
+
+**Atama (Assignment) ve Yürütme (Execution) Sınırları (Gün 12 İtibarıyla):**
+- Implementation (Uygulama) yetkileri statik rollere (OPEX, MANAGER vb.) bağlı değildir; doğrudan **Capability Grant** sistemine (örn. `KAIZEN_IMPLEMENTATION_ASSIGN`) bağlıdır.
+- Grant'ler (Yetkinlik atamaları) MVP kapsamında departman bazlıdır (Kullanıcı + Departman + Yetkinlik).
+- Atama (Assignment) gibi metadata değişiklikleri `audit_logs` tablosuna append-only olarak yazılır. Statü geçmişine sahte satır eklenmez.
+- `START` ve `COMPLETE` işlemleri ise doğrudan `IN_PROGRESS` ve `COMPLETED` durum geçişlerini tetiklediği için `kaizen_status_histories` (lifecycle) tablosunda loglanır.
+- Capability (Yetkinlik) atama yönetim ekranları Gün 13 kapsamındadır; MVP için seed/tinker veya backend resolver katmanı kullanılır.
+- Atanmış olmak tek başına lifecycle statüsü değiştirme yetkisi sağlamaz. Assignee kullanıcı Kaizen'i görebilir ve kendisine izin verilen uygulama bilgilerini (actual_result vb.) kaydedebilir. Ancak yalnızca atanmış olduğu için IN_PROGRESS veya COMPLETED geçişi yapamaz.
+- Yorumlar (Comments) iletişim altyapısıdır; yapılandırılmış execution plan veya progress tracking olarak kullanılamaz (Yapılandırılmış takip Gün 17 kapsamındadır).
 
 ## 9. YETKİ İLKELERİ
 - Çalışan yalnızca kendi kayıtlarına erişir.

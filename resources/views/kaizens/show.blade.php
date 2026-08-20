@@ -22,7 +22,7 @@
                 $isCompletable = trim($kaizen->expected_benefit ?? '') !== '';
                 $btnText = $kaizen->status === \App\Enums\KaizenStatus::REVISION_REQUESTED ? 'Yeniden Gönder' : 'Onaya Gönder';
             @endphp
-            
+
             @if($isCompletable)
                 <form action="{{ route('kaizens.submit', $kaizen) }}" method="POST" class="d-inline m-0 p-0">
                     @csrf
@@ -63,9 +63,6 @@
         @if($workflowTimeline->isAvailable && $workflowTimeline->workflowName)
             <div class="fs-6 fw-medium text-dark">{{ $workflowTimeline->workflowName }}</div>
         @endif
-    </div>
-
-    <div class="kf-workflow-track {{ count($workflowTimeline->stages) > 5 ? 'overflow-auto pb-3' : '' }}">
         @if($workflowTimeline->isDraft)
             <div class="p-4 text-center text-muted fst-italic bg-light rounded border">
                 Süreç henüz başlatılmadı. Kaizen gönderildiğinde onay akışı oluşturulacaktır.
@@ -75,52 +72,54 @@
                 Bu kayıt için dinamik onay akışı bulunmuyor.
             </div>
         @else
-            <div class="position-relative d-flex justify-content-between align-items-start px-md-4 py-2" style="min-width: {{ count($workflowTimeline->stages) > 5 ? count($workflowTimeline->stages) * 160 : 100 }}%;">
-                <!-- Connector Line -->
-                <div class="position-absolute" style="top: 24px; left: 10%; right: 10%; height: 2px; background-color: var(--kf-border-light); z-index: 1;"></div>
+            <div class="kf-workflow-track {{ count($workflowTimeline->stages) > 5 ? 'overflow-auto pb-3' : '' }}">
+                <div class="position-relative d-flex justify-content-between align-items-start px-md-4 py-2" style="min-width: {{ count($workflowTimeline->stages) > 5 ? count($workflowTimeline->stages) * 160 : 100 }}%;">
+                    <!-- Connector Line -->
+                    <div class="position-absolute" style="top: 24px; left: 10%; right: 10%; height: 2px; background-color: var(--kf-border-light); z-index: 1;"></div>
 
-                @foreach($workflowTimeline->stages as $stage)
-                    @php
-                        $borderColor = 'var(--kf-border-strong)';
-                        $fillColor = 'transparent';
-                        $iconColor = 'transparent';
-                        $stateLabel = '';
-                        $stateTextColor = 'var(--kf-primary)';
+                    @foreach($workflowTimeline->stages as $stage)
+                        @php
+                            $borderColor = 'var(--kf-border-strong)';
+                            $fillColor = 'transparent';
+                            $iconColor = 'transparent';
+                            $stateLabel = '';
+                            $stateTextColor = 'var(--kf-primary)';
 
-                        if ($stage->presentation_state === 'completed') {
-                            $borderColor = 'var(--kf-primary)';
-                            $iconColor = 'var(--kf-primary)';
-                        } elseif ($stage->presentation_state === 'current') {
-                            $borderColor = 'var(--kf-primary)';
-                            $fillColor = 'var(--kf-primary)';
-                            $stateLabel = 'Mevcut Aşama';
-                        } elseif ($stage->presentation_state === 'rejected') {
-                            $borderColor = 'var(--kf-danger)';
-                            $fillColor = 'var(--kf-danger)';
-                            $stateLabel = 'Reddedildi';
-                            $stateTextColor = 'var(--kf-danger)';
-                        } elseif ($stage->presentation_state === 'revision') {
-                            $borderColor = 'var(--kf-warning)';
-                            $fillColor = 'var(--kf-warning)';
-                            $stateLabel = 'Revizyon Bekleniyor';
-                            $stateTextColor = 'var(--kf-warning)';
-                        }
-                    @endphp
+                            if ($stage->presentation_state === 'completed') {
+                                $borderColor = 'var(--kf-primary)';
+                                $iconColor = 'var(--kf-primary)';
+                            } elseif ($stage->presentation_state === 'current') {
+                                $borderColor = 'var(--kf-primary)';
+                                $fillColor = 'var(--kf-primary)';
+                                $stateLabel = 'Mevcut Aşama';
+                            } elseif ($stage->presentation_state === 'rejected') {
+                                $borderColor = 'var(--kf-danger)';
+                                $fillColor = 'var(--kf-danger)';
+                                $stateLabel = 'Reddedildi';
+                                $stateTextColor = 'var(--kf-danger)';
+                            } elseif ($stage->presentation_state === 'revision') {
+                                $borderColor = 'var(--kf-warning)';
+                                $fillColor = 'var(--kf-warning)';
+                                $stateLabel = 'Revizyon Bekleniyor';
+                                $stateTextColor = 'var(--kf-warning)';
+                            }
+                        @endphp
 
-                    <div class="kf-workflow-item flex-fill d-flex flex-column align-items-center position-relative" style="z-index: 2; max-width: 200px;">
-                        <div class="kf-workflow-marker d-flex align-items-center justify-content-center bg-white border border-2 rounded-circle mb-2" style="width: 32px; height: 32px; border-color: {{ $borderColor }} !important;" title="{{ $stage->name }}">
-                            @if($stage->presentation_state === 'completed')
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="{{ $iconColor }}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                            @elseif(in_array($stage->presentation_state, ['current', 'revision', 'rejected']))
-                                <div class="rounded-circle" style="width: 12px; height: 12px; background-color: {{ $fillColor }};"></div>
+                        <div class="kf-workflow-item flex-fill d-flex flex-column align-items-center position-relative" style="z-index: 2; max-width: 200px;">
+                            <div class="d-flex align-items-center justify-content-center bg-white mb-2" style="width: 48px; height: 48px; border-radius: 50%; border: 3px solid {{ $borderColor }}; box-shadow: var(--kf-shadow-sm);">
+                                @if($iconColor !== 'transparent')
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="{{ $iconColor }}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                @else
+                                    <div class="rounded-circle" style="width: 12px; height: 12px; background-color: {{ $fillColor }};"></div>
+                                @endif
+                            </div>
+                            <span class="text-center px-2 fw-medium text-wrap text-break lh-sm" style="font-size: 0.85rem; color: var(--kf-text); max-width: 150px;">{{ $stage->name }}</span>
+                            @if($stateLabel)
+                                <span class="badge rounded-pill mt-2" style="background-color: var(--kf-surface); color: {{ $stateTextColor }}; font-weight: 600; font-size: 0.7rem; border: 1px solid {{ $borderColor }}; box-shadow: var(--kf-shadow-sm);">{{ $stateLabel }}</span>
                             @endif
                         </div>
-                        <span class="text-center px-2 fw-medium text-wrap text-break lh-sm" style="font-size: 0.85rem; color: var(--kf-text); max-width: 150px;">{{ $stage->name }}</span>
-                        @if($stateLabel)
-                            <span class="badge rounded-pill mt-2" style="background-color: var(--kf-surface); color: {{ $stateTextColor }}; font-weight: 600; font-size: 0.7rem; border: 1px solid {{ $borderColor }}; box-shadow: var(--kf-shadow-sm);">{{ $stateLabel }}</span>
-                        @endif
-                    </div>
-                @endforeach
+                    @endforeach
+                </div>
             </div>
         @endif
     </div>
@@ -214,7 +213,28 @@
                 @if($kaizen->actual_result)
                     <p class="kf-detail-text">{{ $kaizen->actual_result }}</p>
                 @else
-                    <p class="kf-detail-text text-muted fst-italic">Henüz sonuç girilmedi.</p>
+                    @can('completeImplementation', $kaizen)
+                        @if($kaizen->status === \App\Enums\KaizenStatus::IN_PROGRESS)
+                            <form action="{{ route('kaizens.implementation.complete', $kaizen) }}" method="POST" class="mt-3">
+                                @csrf
+                                <div class="kf-form-group mb-3">
+                                    <label for="actual_result" class="kf-form-label visually-hidden">Gerçekleşen Sonuç Açıklaması</label>
+                                    <textarea class="kf-form-control @error('actual_result') is-invalid @enderror" id="actual_result" name="actual_result" rows="5" maxlength="5000" placeholder="Kaizen uygulaması sonucunda elde edilen durum ve kazanımları detaylıca açıklayınız..." required aria-describedby="actualResultHelp">{{ old('actual_result') }}</textarea>
+                                    <div id="actualResultHelp" class="form-text">Maksimum 5000 karakter. Bu bilgi onay sonrasında raporlarda kullanılacaktır.</div>
+                                    @error('actual_result')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                                <button type="submit" class="kf-btn kf-btn-primary" onclick="if(this.form.checkValidity()){this.disabled=true;this.form.submit();}">
+                                    Uygulamayı Tamamla
+                                </button>
+                            </form>
+                        @else
+                            <p class="kf-detail-text text-muted fst-italic">Henüz sonuç girilmedi.</p>
+                        @endif
+                    @else
+                        <p class="kf-detail-text text-muted fst-italic">Henüz sonuç girilmedi.</p>
+                    @endcan
                 @endif
             </div>
         </div>
@@ -280,6 +300,87 @@
                         </li>
                     </ul>
                 </div>
+            </div>
+        </div>
+
+        <div class="kf-panel mt-4">
+            <div class="kf-panel-header">
+                <h2 class="kf-panel-title">Uygulama Yönetimi</h2>
+            </div>
+            <div class="kf-panel-body p-4">
+                <div class="kf-meta-group mb-0">
+                    <ul class="kf-meta-list">
+                        <li class="kf-meta-item">
+                            <span class="kf-meta-label">Başlangıç Tarihi</span>
+                            @if($kaizen->started_at)
+                                <span class="kf-meta-value">{{ \Carbon\Carbon::parse($kaizen->started_at)->format('d.m.Y H:i') }}</span>
+                            @else
+                                <span class="kf-meta-value text-muted fst-italic">Henüz başlatılmadı</span>
+                            @endif
+                        </li>
+                        <li class="kf-meta-item">
+                            <span class="kf-meta-label">Tamamlanma Tarihi</span>
+                            @if($kaizen->completed_at)
+                                <span class="kf-meta-value">{{ \Carbon\Carbon::parse($kaizen->completed_at)->format('d.m.Y H:i') }}</span>
+                            @else
+                                <span class="kf-meta-value text-muted fst-italic">Henüz tamamlanmadı</span>
+                            @endif
+                        </li>
+                    </ul>
+                </div>
+
+                @can('assignImplementation', $kaizen)
+                    @if($kaizen->status === \App\Enums\KaizenStatus::APPROVED && !$kaizen->assigned_user_id)
+                        <div class="mt-4 pt-4 border-top">
+                            <h3 class="kf-meta-group-title">Sorumlu Ata</h3>
+                            <form action="{{ route('kaizens.implementation.assign', $kaizen) }}" method="POST">
+                                @csrf
+                                <div class="kf-form-group mb-3">
+                                    <label for="assigned_user_id" class="kf-form-label">Uygulama Sorumlusu <span class="text-danger">*</span></label>
+                                    @if(empty($implementationCandidates) || $implementationCandidates->isEmpty())
+                                        <div class="alert alert-warning py-2 mb-0" style="font-size: 0.85rem;">Bu departmanda atanabilecek aktif kullanıcı bulunmuyor.</div>
+                                    @else
+                                        <select class="kf-form-control @error('assigned_user_id') is-invalid @enderror" id="assigned_user_id" name="assigned_user_id" required>
+                                            <option value="">Seçiniz...</option>
+                                            @foreach($implementationCandidates as $candidate)
+                                                <option value="{{ $candidate->id }}" {{ old('assigned_user_id') == $candidate->id ? 'selected' : '' }}>
+                                                    {{ $candidate->name }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                        @error('assigned_user_id')
+                                            <div class="invalid-feedback">{{ $message }}</div>
+                                        @enderror
+                                    @endif
+                                </div>
+
+                                <div class="kf-form-group mb-3">
+                                    <label for="target_date" class="kf-form-label">Hedef Tarih <span class="text-danger">*</span></label>
+                                    <input type="date" class="kf-form-control @error('target_date') is-invalid @enderror" id="target_date" name="target_date" value="{{ old('target_date') }}" min="{{ date('Y-m-d') }}" required>
+                                    @error('target_date')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+
+                                <button type="submit" class="kf-btn kf-btn-primary w-100" {{ empty($implementationCandidates) || $implementationCandidates->isEmpty() ? 'disabled' : '' }}>Kaydet</button>
+                            </form>
+                        </div>
+                    @endif
+                @endcan
+
+                @can('startImplementation', $kaizen)
+                    @if($kaizen->status === \App\Enums\KaizenStatus::APPROVED && $kaizen->assigned_user_id && $kaizen->target_date)
+                        <div class="mt-4 pt-4 border-top">
+                            <form action="{{ route('kaizens.implementation.start', $kaizen) }}" method="POST">
+                                @csrf
+                                <p class="text-muted mb-3" style="font-size: 0.85rem;">Bu işlem uygulamayı başlatacak ve durumu IN PROGRESS olarak güncelleyecektir. Bu işlem geri alınamaz.</p>
+                                <button type="submit" class="kf-btn kf-btn-primary w-100" onclick="return confirm('Uygulamayı başlatmak istediğinize emin misiniz?');">
+                                    Uygulamayı Başlat
+                                </button>
+                            </form>
+                        </div>
+                    @endif
+                @endcan
             </div>
         </div>
 

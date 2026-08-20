@@ -41,6 +41,16 @@ class User extends Authenticatable
         return $this->belongsTo(Department::class);
     }
 
+    public function opexReviews()
+    {
+        return $this->hasMany(Kaizen::class, 'opex_reviewer_id');
+    }
+
+    public function capabilityGrants()
+    {
+        return $this->hasMany(UserCapabilityGrant::class);
+    }
+
     public function createdKaizens(): HasMany
     {
         return $this->hasMany(Kaizen::class, 'creator_user_id');

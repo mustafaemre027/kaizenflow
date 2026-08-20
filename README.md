@@ -15,12 +15,13 @@ Projede hiçbir gerçek şirket adı, logo, çalışan bilgisi, üretim verisi v
 
 ## Temel Kullanım Akışı
 1. Çalışanın Kaizen önerisi oluşturması
-2. OPEX ön değerlendirmesi
-3. Gerekirse düzeltme talebi
-4. Yönetici onayı
-5. Sorumlu kişi ve hedef tarih belirlenmesi
-6. Uygulama sonucunun ve faydanın kaydedilmesi
-7. Yönetim panelinde metriklerin görüntülenmesi
+2. Onay İş Akışının başlatılması (Dinamik onaycı atamaları)
+3. İlgili aşama (OPEX, Yönetici, Kurul vb.) onaycılarının değerlendirmesi
+4. Gerekirse onaycıların düzeltme (revizyon) talebi
+5. Nihai onay ve Uygulama Sorumlusu (Assignee) ile hedeflenen termin atanması
+6. Uygulamanın yürütülmesi (Uygulamaya başlama ve tamamlama)
+7. Elde edilen sonuçların ve faydanın kaydedilmesi
+8. Yönetim panelinde metriklerin görüntülenmesi
 
 ## Planlanan Temel Özellikler
 - **Kimlik doğrulama:** Kullanıcıların sisteme güvenli şekilde giriş yapabilmesi.
@@ -41,22 +42,21 @@ Projede hiçbir gerçek şirket adı, logo, çalışan bilgisi, üretim verisi v
 | Rol | Yetki Özeti |
 |---|---|
 | EMPLOYEE | Çalışan. Kendi Kaizen önerilerini oluşturabilir ve takip edebilir. |
-| OPEX_SPECIALIST | OPEX Yetkilisi. Önerileri ön değerlendirmeden geçirir, düzeltme talep edebilir ve uygun olanları yöneticiye iletir. |
-| MANAGER | Yönetici. OPEX tarafından iletilen önerileri onaylar veya reddeder. Sorumlu kişi ve hedef tarihleri belirler. |
-| ADMIN | Sistem Yöneticisi. Sistemdeki tüm ayarlara erişebilir, kullanıcı ve rol yönetimini gerçekleştirir. |
+| OPEX_SPECIALIST | Sürekli İyileştirme Uzmanı. Sistemin işleyişine rehberlik eder, kendisine iş akışında onay tanımlanmışsa değerlendirir. Yürütme aşamasını takip eder. |
+| MANAGER | Yönetici. Kendisine (departmanına veya özel olarak) atanan iş akışı aşamalarındaki önerileri onaylar, reddeder veya düzeltme ister. |
+| ADMIN | Sistem Yöneticisi. Sistemdeki referans verilerine ve dinamik iş akışı tanımlarına (ApprovalWorkflow) erişebilir, kullanıcı ve rol yönetimini gerçekleştirir. |
 
 ## Kaizen Durumları
 
 | Durum | Açıklama |
 |---|---|
 | DRAFT | Taslak. Çalışan öneriyi henüz göndermemiştir, düzenlemeye devam edebilir. |
-| SUBMITTED | Gönderildi. Öneri değerlendirme için OPEX yetkilisine iletilmiştir. |
-| REVISION_REQUESTED | Düzeltme İstendi. Önerinin çalışan tarafından güncellenmesi beklenmektedir. |
-| MANAGER_REVIEW | Yönetici İncelemesinde. OPEX yetkilisi tarafından onaylanıp yöneticiye iletilmiştir. |
-| APPROVED | Onaylandı. Yönetici tarafından onaylanmış ve uygulamaya geçilmesi planlanmıştır. |
-| IN_PROGRESS | Devam Ediyor. Onaylanan Kaizen önerisinin uygulaması sürmektedir. |
-| COMPLETED | Tamamlandı. Uygulama bitmiş ve elde edilen faydalar kaydedilmiştir. |
-| REJECTED | Reddedildi. Öneri OPEX yetkilisi veya yönetici tarafından reddedilmiştir. |
+| SUBMITTED | Gönderildi. Öneri dinamik onay iş akışına dahil edilmiştir, ilgili aşama onaycılarını beklemektedir. |
+| REVISION_REQUESTED | Düzeltme İstendi. İlgili aşamadaki onaycının revizyon isteği üzerine önerinin güncellenmesi beklenmektedir. |
+| APPROVED | Onaylandı. İş akışındaki nihai (final) onaycı tarafından onaylanmış ve uygulama (yürütme) için beklemektedir. |
+| IN_PROGRESS | Devam Ediyor. Onaylanan Kaizen önerisinin sorumlusu tarafından uygulaması sürmektedir. |
+| COMPLETED | Tamamlandı. Uygulama bitmiş ve elde edilen sonuçlar kaydedilmiştir. |
+| REJECTED | Reddedildi. Öneri iş akışındaki herhangi bir onaycı tarafından reddedilmiştir. |
 
 *Durum geçişleri yalnızca yetkili roller ve tanımlı geçiş kuralları aracılığıyla değiştirilebilecektir.*
 
@@ -158,11 +158,11 @@ npm.cmd run build
 | Gün 2–3 | Gereksinim ve mimari |
 | Gün 4–5 | Laravel temeli ve yetkilendirme |
 | Gün 6–8 | Kaizen öneri yönetimi |
-| Gün 9–11 | Değerlendirme ve onay akışı |
-| Gün 12–14 | Uygulama ve fayda takibi |
-| Gün 15–16 | Dashboard ve raporlama |
-| Gün 17–18 | Test, güvenlik ve kullanıcı deneyimi |
-| Gün 19–20 | Teslim ve sunum |
+| Gün 9–11 | Dinamik değerlendirme ve onay iş akışı (Approval Workflow) |
+| Gün 12–14 | Uygulama, yürütme altyapısı ve bildirim/kuyruk yönetimi |
+| Gün 15–16 | Dinamik değerlendirme kriterleri ve fayda türleri metrikleri |
+| Gün 17–18 | Uygulama takibi, dashboard ve raporlama |
+| Gün 19–20 | Güvenlik, optimizasyon, arayüz iyileştirmeleri ve proje teslimi |
 
 *Ayrıntılı planlama için bkz: [implementation_plan.md](implementation_plan.md)*
 

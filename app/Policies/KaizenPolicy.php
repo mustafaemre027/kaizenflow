@@ -3,9 +3,11 @@
 namespace App\Policies;
 
 use App\Enums\KaizenStatus;
+use App\Enums\UserCapability;
 use App\Enums\UserRole;
 use App\Models\Kaizen;
 use App\Models\User;
+use App\Services\UserCapabilityResolver;
 use App\Services\Workflow\ApprovalStageApproverResolver;
 
 class KaizenPolicy
@@ -18,6 +20,11 @@ class KaizenPolicy
             UserRole::MANAGER,
             UserRole::ADMIN,
         ], true);
+    }
+
+    private function isHistoricalReviewer(User $user, Kaizen $kaizen): bool
+    {
+        return $kaizen->workflowTransitions()->where('actor_user_id', $user->id)->exists();
     }
 
     public function viewAny(User $user): bool
@@ -137,5 +144,44 @@ class KaizenPolicy
     public function forceDelete(User $user, Kaizen $kaizen): bool
     {
         return false;
+    }
+
+    public function assignImplementation(User $user, Kaizen $kaizen): bool
+    {
+        // Historical reviewer cannot modify.
+        if ($this->isHistoricalReviewer($user, $kaizen)) {
+            return false;
+        }
+
+        /** @var UserCapabilityResolver $resolver */
+        $resolver = app(UserCapabilityResolver::class);
+
+        return $resolver->allows($user, UserCapability::KAIZEN_IMPLEMENTATION_ASSIGN, $kaizen->department_id);
+    }
+
+    public function startImplementation(User $user, Kaizen $kaizen): bool
+    {
+        // Historical reviewer cannot modify.
+        if ($this->isHistoricalReviewer($user, $kaizen)) {
+            return false;
+        }
+
+        /** @var UserCapabilityResolver $resolver */
+        $resolver = app(UserCapabilityResolver::class);
+
+        return $resolver->allows($user, UserCapability::KAIZEN_IMPLEMENTATION_START, $kaizen->department_id);
+    }
+
+    public function completeImplementation(User $user, Kaizen $kaizen): bool
+    {
+        // Historical reviewer cannot modify.
+        if ($this->isHistoricalReviewer($user, $kaizen)) {
+            return false;
+        }
+
+        /** @var UserCapabilityResolver $resolver */
+        $resolver = app(UserCapabilityResolver::class);
+
+        return $resolver->allows($user, UserCapability::KAIZEN_IMPLEMENTATION_COMPLETE, $kaizen->department_id);
     }
 }

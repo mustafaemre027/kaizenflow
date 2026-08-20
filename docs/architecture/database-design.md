@@ -34,6 +34,7 @@ Veritabanı tabloları, iş gereksinimlerine ve uygulama altyapısına göre iki
 * `kaizen_comments`
 * `kaizen_status_histories`
 * `audit_logs`
+* `user_capability_grants`
 
 ### Laravel Destek Tabloları
 * `password_reset_tokens`
@@ -63,6 +64,8 @@ erDiagram
     kaizens ||--o{ kaizen_status_histories : "has many"
     users ||--o{ kaizen_status_histories : "performs"
     users ||--o{ audit_logs : "acts in"
+    users ||--o{ user_capability_grants : "granted"
+    departments ||--o{ user_capability_grants : "scoped to"
 
     departments {
         unsigned_bigint id PK
@@ -110,6 +113,13 @@ erDiagram
         unsigned_bigint actor_user_id FK
         string auditable_type
         unsigned_bigint auditable_id
+    }
+    user_capability_grants {
+        unsigned_bigint id PK
+        unsigned_bigint user_id FK
+        unsigned_bigint department_id FK
+        string capability
+        boolean is_active
     }
 ```
 
@@ -275,7 +285,24 @@ Her Kaizen için gerçekleşen değiştirilemez durum geçmişini ve iş akış�
 * Reddetme veya revizyon geçişlerindeki gerekçe (reason) zorunluluğu, bu alanda saklanmalı ve Service ile Form Request katmanlarında uygulama seviyesinde uygulanmalıdır.
 * `metadata` alanı gerekiyorsa ek durum bilgileri için JSON formatında kullanılabilir; ancak parola, token, dosya içeriği veya gereksiz hassas kişisel veriler bu alana kesinlikle yazılmamalıdır.
 
-## 12. `audit_logs` Tablosu
+## 12. `user_capability_grants` Tablosu
+
+Sistem içindeki kullanıcı yetkinliklerini (capabilities) ve atanmış departman kapsamlarını departman düzeyinde granüler olarak tutan tablodur.
+
+* `id`: unsigned bigint primary key
+* `user_id`: unsigned bigint
+* `department_id`: unsigned bigint
+* `capability`: string
+* `is_active`: boolean (default true)
+* `created_at`: timestamp
+* `updated_at`: timestamp
+
+**Kurallar:**
+* Bir kullanıcının aynı departmanda ve aynı yetenekte aktif olan tek bir kaydı olabilir (Unique constraint: `user_id, department_id, capability`).
+* Uygulamaya özgü yetkilendirmelerde rollerden ziyade (örn: `OPEX_SPECIALIST`, `MANAGER`) bu yetkinlik atamalarına bakılır. (Örn: `KAIZEN_IMPLEMENTATION_ASSIGN`).
+* İlgili departman silindiğinde veya pasife alındığında bu yetkiler devreden çıkar.
+
+## 13. `audit_logs` Tablosu
 
 Durum geçmişi iş akışı sürecini takip ederken, `audit_logs` tablosu genel sistem ve veri güvenliği açısından önemli teknik ve yönetsel eylemleri izler.
 
@@ -313,6 +340,8 @@ Tüm Foreign Key bağlantıları veri bütünlüğü için tablolarda şu şekil
 | `kaizen_status_histories.kaizen_id` | `kaizens.id` | Hayır | RESTRICT | Geçmişin aidiyetini korur, Cascade delete önlenir. |
 | `kaizen_status_histories.actor_user_id` | `users.id` | Hayır | RESTRICT | İşlemi yapanın teknik denetimi zorunludur. |
 | `audit_logs.actor_user_id` | `users.id` | Evet | RESTRICT | Sistemsel bir işlem değilse tetikleyiciyi tutar. |
+| `user_capability_grants.user_id` | `users.id` | Hayır | RESTRICT | Kullanıcı silinmez (is_active=false yapılır), yetim grant bırakmaz. |
+| `user_capability_grants.department_id` | `departments.id` | Hayır | RESTRICT | Departman silinmez, fiziksel tutarlılık korunur. |
 
 Veritabanı ilişkileri gereği kritik geçmiş ve audit kayıtlarında Cascade Delete (otomatik silme) kesinlikle kullanılmamalıdır. Bunun yerine ilgili kayıtlar fiziksel olarak silinmeyip pasifleştirme (`is_active` vb.) mantığıyla yönetilmelidir.
 
