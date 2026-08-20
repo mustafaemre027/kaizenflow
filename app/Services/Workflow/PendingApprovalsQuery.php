@@ -17,7 +17,7 @@ class PendingApprovalsQuery
         }
 
         return Kaizen::query()
-            ->whereIn('status', [KaizenStatus::SUBMITTED->value, KaizenStatus::REVISION_REQUESTED->value])
+            ->where('status', KaizenStatus::SUBMITTED->value)
             ->whereHas('workflowInstance', function (Builder $instanceQuery) use ($user) {
                 $instanceQuery->whereNull('completed_at')
                     ->whereNull('cancelled_at')

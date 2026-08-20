@@ -2,6 +2,7 @@
 
 namespace App\Services\Workflow;
 
+use App\Enums\KaizenStatus;
 use App\Models\Kaizen;
 use App\Models\User;
 
@@ -12,14 +13,26 @@ class ApprovalStageApproverResolver
      */
     public function canAct(User $user, Kaizen $kaizen): bool
     {
-        // 1. Fail closed on basic checks
+        // 1. Canonical Eligibility Contract
+        if ($kaizen->status !== KaizenStatus::SUBMITTED) {
+            return false;
+        }
+
+        return $this->isAssigned($user, $kaizen);
+    }
+
+    /**
+     * Determines if a user is currently assigned to the active stage of a Kaizen.
+     * Does not check the Kaizen's lifecycle status.
+     */
+    public function isAssigned(User $user, Kaizen $kaizen): bool
+    {
         if (! $user->is_active) {
             return false;
         }
 
         $instance = $kaizen->workflowInstance;
 
-        // 2. Active workflow instance check
         if (! $instance || $instance->completed_at || $instance->cancelled_at) {
             return false;
         }
@@ -29,8 +42,6 @@ class ApprovalStageApproverResolver
             return false;
         }
 
-        // 3. User must have at least one active membership in an active group assigned to this stage
-        // that satisfies the scope (GLOBAL or DEPARTMENT matching the kaizen's department).
         $eligibleAssignmentsCount = $currentStage->stageAssignments()
             ->where('is_active', true)
             ->whereHas('group', function ($groupQuery) use ($user) {

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Workflow;
 
+use App\Enums\KaizenStatus;
 use App\Models\ApprovalGroup;
 use App\Models\ApprovalGroupMember;
 use App\Models\ApprovalStage;
@@ -30,7 +31,7 @@ class ApprovalStageApproverResolverTest extends TestCase
     public function test_inactive_user_is_not_eligible()
     {
         $user = User::factory()->inactive()->create();
-        $kaizen = Kaizen::factory()->create();
+        $kaizen = Kaizen::factory()->create(['status' => KaizenStatus::SUBMITTED]);
 
         $this->assertFalse($this->resolver->canAct($user, $kaizen));
     }
@@ -38,7 +39,7 @@ class ApprovalStageApproverResolverTest extends TestCase
     public function test_fails_when_no_active_instance()
     {
         $user = User::factory()->create();
-        $kaizen = Kaizen::factory()->create();
+        $kaizen = Kaizen::factory()->create(['status' => KaizenStatus::SUBMITTED]);
 
         $this->assertFalse($this->resolver->canAct($user, $kaizen));
 
@@ -58,7 +59,7 @@ class ApprovalStageApproverResolverTest extends TestCase
     public function test_eligible_when_active_global_membership()
     {
         $user = User::factory()->create();
-        $kaizen = Kaizen::factory()->create();
+        $kaizen = Kaizen::factory()->create(['status' => KaizenStatus::SUBMITTED]);
 
         $workflow = ApprovalWorkflow::factory()->create();
         $stage = ApprovalStage::factory()->create(['approval_workflow_id' => $workflow->id]);
@@ -85,7 +86,7 @@ class ApprovalStageApproverResolverTest extends TestCase
     public function test_not_eligible_when_group_inactive()
     {
         $user = User::factory()->create();
-        $kaizen = Kaizen::factory()->create();
+        $kaizen = Kaizen::factory()->create(['status' => KaizenStatus::SUBMITTED]);
 
         $workflow = ApprovalWorkflow::factory()->create();
         $stage = ApprovalStage::factory()->create(['approval_workflow_id' => $workflow->id]);
@@ -112,7 +113,7 @@ class ApprovalStageApproverResolverTest extends TestCase
     public function test_not_eligible_when_membership_inactive()
     {
         $user = User::factory()->create();
-        $kaizen = Kaizen::factory()->create();
+        $kaizen = Kaizen::factory()->create(['status' => KaizenStatus::SUBMITTED]);
 
         $workflow = ApprovalWorkflow::factory()->create();
         $stage = ApprovalStage::factory()->create(['approval_workflow_id' => $workflow->id]);
@@ -141,7 +142,7 @@ class ApprovalStageApproverResolverTest extends TestCase
     {
         $department = Department::factory()->create();
         $user = User::factory()->create();
-        $kaizen = Kaizen::factory()->create(['department_id' => $department->id]);
+        $kaizen = Kaizen::factory()->create(['status' => KaizenStatus::SUBMITTED, 'department_id' => $department->id]);
 
         $workflow = ApprovalWorkflow::factory()->create();
         $stage = ApprovalStage::factory()->create(['approval_workflow_id' => $workflow->id]);
@@ -171,7 +172,7 @@ class ApprovalStageApproverResolverTest extends TestCase
         $department1 = Department::factory()->create();
         $department2 = Department::factory()->create();
         $user = User::factory()->create();
-        $kaizen = Kaizen::factory()->create(['department_id' => $department1->id]);
+        $kaizen = Kaizen::factory()->create(['status' => KaizenStatus::SUBMITTED, 'department_id' => $department1->id]);
 
         $workflow = ApprovalWorkflow::factory()->create();
         $stage = ApprovalStage::factory()->create(['approval_workflow_id' => $workflow->id]);
@@ -200,7 +201,7 @@ class ApprovalStageApproverResolverTest extends TestCase
     {
         $userA = User::factory()->create();
         $userB = User::factory()->create();
-        $kaizen = Kaizen::factory()->create();
+        $kaizen = Kaizen::factory()->create(['status' => KaizenStatus::SUBMITTED]);
 
         $workflow = ApprovalWorkflow::factory()->create();
         $stage1 = ApprovalStage::factory()->create(['approval_workflow_id' => $workflow->id]);
@@ -231,5 +232,52 @@ class ApprovalStageApproverResolverTest extends TestCase
 
         $this->assertFalse($this->resolver->canAct($userA, $kaizen));
         $this->assertTrue($this->resolver->canAct($userB, $kaizen));
+    }
+
+    public function test_not_eligible_when_status_is_revision_requested()
+    {
+        $user = User::factory()->create();
+        $kaizen = Kaizen::factory()->create(['status' => KaizenStatus::REVISION_REQUESTED]);
+
+        $workflow = ApprovalWorkflow::factory()->create();
+        $stage = ApprovalStage::factory()->create(['approval_workflow_id' => $workflow->id]);
+        KaizenWorkflowInstance::factory()->create([
+            'kaizen_id' => $kaizen->id,
+            'approval_workflow_id' => $workflow->id,
+            'current_stage_id' => $stage->id,
+        ]);
+
+        $group = ApprovalGroup::factory()->create();
+        ApprovalGroupMember::factory()->create(['approval_group_id' => $group->id, 'user_id' => $user->id]);
+        ApprovalStageAssignment::factory()->create(['approval_stage_id' => $stage->id, 'approval_group_id' => $group->id, 'scope' => 'GLOBAL']);
+
+        $this->assertFalse($this->resolver->canAct($user, $kaizen->refresh()));
+    }
+
+    public function test_not_eligible_when_status_is_terminal()
+    {
+        $user = User::factory()->create();
+        $workflow = ApprovalWorkflow::factory()->create();
+        $stage = ApprovalStage::factory()->create(['approval_workflow_id' => $workflow->id]);
+        $group = ApprovalGroup::factory()->create();
+        ApprovalGroupMember::factory()->create(['approval_group_id' => $group->id, 'user_id' => $user->id]);
+        ApprovalStageAssignment::factory()->create(['approval_stage_id' => $stage->id, 'approval_group_id' => $group->id, 'scope' => 'GLOBAL']);
+
+        $statuses = [
+            KaizenStatus::DRAFT,
+            KaizenStatus::APPROVED,
+            KaizenStatus::REJECTED,
+        ];
+
+        foreach ($statuses as $status) {
+            $kaizen = Kaizen::factory()->create(['status' => $status]);
+            KaizenWorkflowInstance::factory()->create([
+                'kaizen_id' => $kaizen->id,
+                'approval_workflow_id' => $workflow->id,
+                'current_stage_id' => $stage->id,
+            ]);
+
+            $this->assertFalse($this->resolver->canAct($user, $kaizen->refresh()));
+        }
     }
 }

@@ -65,4 +65,58 @@ class KaizenApprovalActionUITest extends TestCase
         $response->assertDontSee('Revizyon İste');
         $response->assertDontSee('Reddet');
     }
+
+    public function test_ineligible_when_status_is_revision_requested_does_not_see_action_panel()
+    {
+        $reviewer = User::factory()->create();
+        $workflow = ApprovalWorkflow::factory()->create();
+        $stage = ApprovalStage::factory()->create(['approval_workflow_id' => $workflow->id]);
+
+        $group = ApprovalGroup::factory()->create();
+        ApprovalGroupMember::factory()->create(['approval_group_id' => $group->id, 'user_id' => $reviewer->id]);
+        ApprovalStageAssignment::factory()->create(['approval_stage_id' => $stage->id, 'approval_group_id' => $group->id]);
+
+        $kaizen = Kaizen::factory()->create(['status' => KaizenStatus::REVISION_REQUESTED]);
+        KaizenWorkflowInstance::factory()->create([
+            'kaizen_id' => $kaizen->id,
+            'approval_workflow_id' => $workflow->id,
+            'current_stage_id' => $stage->id,
+        ]);
+
+        $response = $this->actingAs($reviewer)->get(route('kaizens.show', $kaizen));
+
+        $response->assertStatus(200);
+        $response->assertDontSee('Değerlendirme');
+        $response->assertDontSee('Onayla');
+        $response->assertDontSee('Reddet');
+    }
+
+    public function test_cannot_post_approval_action_when_status_is_revision_requested()
+    {
+        $reviewer = User::factory()->create();
+        $workflow = ApprovalWorkflow::factory()->create();
+        $stage = ApprovalStage::factory()->create(['approval_workflow_id' => $workflow->id]);
+
+        $group = ApprovalGroup::factory()->create();
+        ApprovalGroupMember::factory()->create(['approval_group_id' => $group->id, 'user_id' => $reviewer->id]);
+        ApprovalStageAssignment::factory()->create(['approval_stage_id' => $stage->id, 'approval_group_id' => $group->id]);
+
+        $kaizen = Kaizen::factory()->create(['status' => KaizenStatus::REVISION_REQUESTED]);
+        KaizenWorkflowInstance::factory()->create([
+            'kaizen_id' => $kaizen->id,
+            'approval_workflow_id' => $workflow->id,
+            'current_stage_id' => $stage->id,
+        ]);
+
+        $endpoints = [
+            route('kaizens.workflow.approve', $kaizen),
+            route('kaizens.workflow.request-revision', $kaizen),
+            route('kaizens.workflow.reject', $kaizen),
+        ];
+
+        foreach ($endpoints as $endpoint) {
+            $response = $this->actingAs($reviewer)->post($endpoint, ['comment' => 'test comment']);
+            $response->assertStatus(403);
+        }
+    }
 }

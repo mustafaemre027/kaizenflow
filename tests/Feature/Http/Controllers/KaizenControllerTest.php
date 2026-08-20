@@ -6,11 +6,18 @@ use App\Actions\Kaizens\CreateKaizenDraft;
 use App\Actions\Kaizens\UpdateKaizenDraft;
 use App\Enums\KaizenStatus;
 use App\Enums\UserRole;
+use App\Models\ApprovalGroup;
+use App\Models\ApprovalGroupMember;
+use App\Models\ApprovalStage;
+use App\Models\ApprovalStageAssignment;
 use App\Models\ApprovalWorkflow;
 use App\Models\Category;
 use App\Models\Department;
 use App\Models\Kaizen;
+use App\Models\KaizenWorkflowInstance;
 use App\Models\User;
+use App\Services\Workflow\ApprovalStageApproverResolver;
+use App\Services\Workflow\PendingApprovalsQuery;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Tests\TestCase;
@@ -850,5 +857,47 @@ class KaizenControllerTest extends TestCase
         $response->assertSessionHasErrors();
 
         $this->assertEquals(KaizenStatus::DRAFT, $kaizen->fresh()->status);
+    }
+
+    public function test_resubmit_loop(): void
+    {
+        $this->user->role = UserRole::EMPLOYEE;
+        $this->user->save();
+
+        $kaizen = Kaizen::factory()->create([
+            'creator_user_id' => $this->user->id,
+            'status' => KaizenStatus::REVISION_REQUESTED,
+            'expected_benefit' => 'A valid benefit',
+        ]);
+
+        $workflow = ApprovalWorkflow::factory()->create(['is_active' => true, 'is_default' => true]);
+        $stage = ApprovalStage::factory()->create(['approval_workflow_id' => $workflow->id]);
+        $instance = KaizenWorkflowInstance::factory()->create([
+            'kaizen_id' => $kaizen->id,
+            'approval_workflow_id' => $workflow->id,
+            'current_stage_id' => $stage->id,
+        ]);
+
+        $reviewer = User::factory()->create();
+        $group = ApprovalGroup::factory()->create();
+        ApprovalGroupMember::factory()->create(['approval_group_id' => $group->id, 'user_id' => $reviewer->id]);
+        ApprovalStageAssignment::factory()->create(['approval_stage_id' => $stage->id, 'approval_group_id' => $group->id]);
+
+        $query = app(PendingApprovalsQuery::class);
+        $this->assertEquals(0, $query->forUser($reviewer)->where('kaizens.id', $kaizen->id)->count());
+
+        $resolver = app(ApprovalStageApproverResolver::class);
+        $this->assertFalse($resolver->canAct($reviewer, $kaizen));
+
+        $response = $this->actingAs($this->user)->post(route('kaizens.submit', $kaizen));
+        $response->assertStatus(302);
+
+        $kaizen->refresh();
+        $this->assertEquals(KaizenStatus::SUBMITTED, $kaizen->status);
+        $this->assertEquals($instance->id, $kaizen->workflowInstance->id);
+        $this->assertEquals($stage->id, $kaizen->workflowInstance->current_stage_id);
+
+        $this->assertTrue($resolver->canAct($reviewer, $kaizen));
+        $this->assertEquals(1, $query->forUser($reviewer)->where('kaizens.id', $kaizen->id)->count());
     }
 }

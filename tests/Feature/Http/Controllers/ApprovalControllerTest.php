@@ -98,4 +98,28 @@ class ApprovalControllerTest extends TestCase
         $response = $this->get(route('kaizens.show', $kaizen));
         $response->assertStatus(200);
     }
+
+    public function test_does_not_display_pending_approvals_for_revision_requested_kaizen()
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        $workflow = ApprovalWorkflow::factory()->create();
+        $stage = ApprovalStage::factory()->create(['approval_workflow_id' => $workflow->id]);
+        $group = ApprovalGroup::factory()->create();
+        ApprovalGroupMember::factory()->create(['approval_group_id' => $group->id, 'user_id' => $user->id]);
+        ApprovalStageAssignment::factory()->create(['approval_stage_id' => $stage->id, 'approval_group_id' => $group->id]);
+
+        $kaizen = Kaizen::factory()->create(['status' => KaizenStatus::REVISION_REQUESTED]);
+        KaizenWorkflowInstance::factory()->create([
+            'kaizen_id' => $kaizen->id,
+            'approval_workflow_id' => $workflow->id,
+            'current_stage_id' => $stage->id,
+        ]);
+
+        $response = $this->get(route('approvals.index'));
+
+        $response->assertStatus(200);
+        $response->assertDontSee($kaizen->code);
+    }
 }

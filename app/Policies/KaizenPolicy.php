@@ -56,7 +56,7 @@ class KaizenPolicy
         }
 
         // Eligible current stage approvers can view the Kaizen
-        if (app(ApprovalStageApproverResolver::class)->canAct($user, $kaizen)) {
+        if (app(ApprovalStageApproverResolver::class)->isAssigned($user, $kaizen)) {
             return true;
         }
 
