@@ -4,7 +4,6 @@ namespace App\Actions\Kaizens;
 
 use App\Enums\KaizenStatus;
 use App\Models\Kaizen;
-use App\Models\KaizenStatusHistory;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Carbon;
@@ -40,25 +39,12 @@ class AssignKaizenImplementation
             throw new \InvalidArgumentException('Target date cannot be in the past.');
         }
 
-        return DB::transaction(function () use ($kaizen, $actor, $assigneeId, $targetDate) {
+        return DB::transaction(function () use ($kaizen, $assigneeId, $targetDate) {
             $lockedKaizen = Kaizen::where('id', $kaizen->id)->lockForUpdate()->first();
 
             $lockedKaizen->assigned_user_id = $assigneeId;
             $lockedKaizen->target_date = $targetDate;
             $lockedKaizen->save();
-
-            // Create status history entry
-            KaizenStatusHistory::create([
-                'kaizen_id' => $lockedKaizen->id,
-                'from_status' => KaizenStatus::APPROVED->value,
-                'to_status' => KaizenStatus::APPROVED->value,
-                'transition_code' => 'ASSIGN_IMPLEMENTATION',
-                'actor_user_id' => $actor->id,
-                'metadata' => [
-                    'assigned_user_id' => $assigneeId,
-                    'target_date' => $targetDate,
-                ],
-            ]);
 
             return $lockedKaizen;
         });

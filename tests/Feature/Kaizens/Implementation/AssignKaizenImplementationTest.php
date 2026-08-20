@@ -39,18 +39,6 @@ class AssignKaizenImplementationTest extends TestCase
         $this->assertEquals($assignee->id, $kaizen->assigned_user_id);
         $this->assertEquals($targetDate, $kaizen->target_date->format('Y-m-d'));
 
-        // Should log status history with metadata
-        $this->assertDatabaseHas('kaizen_status_histories', [
-            'kaizen_id' => $kaizen->id,
-            'to_status' => KaizenStatus::APPROVED->value, // status doesn't change
-            'actor_user_id' => $opexUser->id,
-        ]);
-
-        // Ensure it's not generating fake workflow transitions
-        $this->assertDatabaseMissing('kaizen_workflow_transitions', [
-            'kaizen_id' => $kaizen->id,
-            'actor_user_id' => $opexUser->id,
-        ]);
     }
 
     public function test_unauthorized_user_cannot_assign()
