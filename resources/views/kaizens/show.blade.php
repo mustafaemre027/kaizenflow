@@ -63,9 +63,6 @@
         @if($workflowTimeline->isAvailable && $workflowTimeline->workflowName)
             <div class="fs-6 fw-medium text-dark">{{ $workflowTimeline->workflowName }}</div>
         @endif
-    </div>
-
-    <div class="kf-workflow-track {{ count($workflowTimeline->stages) > 5 ? 'overflow-auto pb-3' : '' }}">
         @if($workflowTimeline->isDraft)
             <div class="p-4 text-center text-muted fst-italic bg-light rounded border">
                 Süreç henüz başlatılmadı. Kaizen gönderildiğinde onay akışı oluşturulacaktır.
@@ -75,52 +72,54 @@
                 Bu kayıt için dinamik onay akışı bulunmuyor.
             </div>
         @else
-            <div class="position-relative d-flex justify-content-between align-items-start px-md-4 py-2" style="min-width: {{ count($workflowTimeline->stages) > 5 ? count($workflowTimeline->stages) * 160 : 100 }}%;">
-                <!-- Connector Line -->
-                <div class="position-absolute" style="top: 24px; left: 10%; right: 10%; height: 2px; background-color: var(--kf-border-light); z-index: 1;"></div>
+            <div class="kf-workflow-track {{ count($workflowTimeline->stages) > 5 ? 'overflow-auto pb-3' : '' }}">
+                <div class="position-relative d-flex justify-content-between align-items-start px-md-4 py-2" style="min-width: {{ count($workflowTimeline->stages) > 5 ? count($workflowTimeline->stages) * 160 : 100 }}%;">
+                    <!-- Connector Line -->
+                    <div class="position-absolute" style="top: 24px; left: 10%; right: 10%; height: 2px; background-color: var(--kf-border-light); z-index: 1;"></div>
 
-                @foreach($workflowTimeline->stages as $stage)
-                    @php
-                        $borderColor = 'var(--kf-border-strong)';
-                        $fillColor = 'transparent';
-                        $iconColor = 'transparent';
-                        $stateLabel = '';
-                        $stateTextColor = 'var(--kf-primary)';
+                    @foreach($workflowTimeline->stages as $stage)
+                        @php
+                            $borderColor = 'var(--kf-border-strong)';
+                            $fillColor = 'transparent';
+                            $iconColor = 'transparent';
+                            $stateLabel = '';
+                            $stateTextColor = 'var(--kf-primary)';
 
-                        if ($stage->presentation_state === 'completed') {
-                            $borderColor = 'var(--kf-primary)';
-                            $iconColor = 'var(--kf-primary)';
-                        } elseif ($stage->presentation_state === 'current') {
-                            $borderColor = 'var(--kf-primary)';
-                            $fillColor = 'var(--kf-primary)';
-                            $stateLabel = 'Mevcut Aşama';
-                        } elseif ($stage->presentation_state === 'rejected') {
-                            $borderColor = 'var(--kf-danger)';
-                            $fillColor = 'var(--kf-danger)';
-                            $stateLabel = 'Reddedildi';
-                            $stateTextColor = 'var(--kf-danger)';
-                        } elseif ($stage->presentation_state === 'revision') {
-                            $borderColor = 'var(--kf-warning)';
-                            $fillColor = 'var(--kf-warning)';
-                            $stateLabel = 'Revizyon Bekleniyor';
-                            $stateTextColor = 'var(--kf-warning)';
-                        }
-                    @endphp
+                            if ($stage->presentation_state === 'completed') {
+                                $borderColor = 'var(--kf-primary)';
+                                $iconColor = 'var(--kf-primary)';
+                            } elseif ($stage->presentation_state === 'current') {
+                                $borderColor = 'var(--kf-primary)';
+                                $fillColor = 'var(--kf-primary)';
+                                $stateLabel = 'Mevcut Aşama';
+                            } elseif ($stage->presentation_state === 'rejected') {
+                                $borderColor = 'var(--kf-danger)';
+                                $fillColor = 'var(--kf-danger)';
+                                $stateLabel = 'Reddedildi';
+                                $stateTextColor = 'var(--kf-danger)';
+                            } elseif ($stage->presentation_state === 'revision') {
+                                $borderColor = 'var(--kf-warning)';
+                                $fillColor = 'var(--kf-warning)';
+                                $stateLabel = 'Revizyon Bekleniyor';
+                                $stateTextColor = 'var(--kf-warning)';
+                            }
+                        @endphp
 
-                    <div class="kf-workflow-item flex-fill d-flex flex-column align-items-center position-relative" style="z-index: 2; max-width: 200px;">
-                        <div class="kf-workflow-marker d-flex align-items-center justify-content-center bg-white border border-2 rounded-circle mb-2" style="width: 32px; height: 32px; border-color: {{ $borderColor }} !important;" title="{{ $stage->name }}">
-                            @if($stage->presentation_state === 'completed')
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="{{ $iconColor }}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                            @elseif(in_array($stage->presentation_state, ['current', 'revision', 'rejected']))
-                                <div class="rounded-circle" style="width: 12px; height: 12px; background-color: {{ $fillColor }};"></div>
+                        <div class="kf-workflow-item flex-fill d-flex flex-column align-items-center position-relative" style="z-index: 2; max-width: 200px;">
+                            <div class="d-flex align-items-center justify-content-center bg-white mb-2" style="width: 48px; height: 48px; border-radius: 50%; border: 3px solid {{ $borderColor }}; box-shadow: var(--kf-shadow-sm);">
+                                @if($iconColor !== 'transparent')
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="{{ $iconColor }}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                @else
+                                    <div class="rounded-circle" style="width: 12px; height: 12px; background-color: {{ $fillColor }};"></div>
+                                @endif
+                            </div>
+                            <span class="text-center px-2 fw-medium text-wrap text-break lh-sm" style="font-size: 0.85rem; color: var(--kf-text); max-width: 150px;">{{ $stage->name }}</span>
+                            @if($stateLabel)
+                                <span class="badge rounded-pill mt-2" style="background-color: var(--kf-surface); color: {{ $stateTextColor }}; font-weight: 600; font-size: 0.7rem; border: 1px solid {{ $borderColor }}; box-shadow: var(--kf-shadow-sm);">{{ $stateLabel }}</span>
                             @endif
                         </div>
-                        <span class="text-center px-2 fw-medium text-wrap text-break lh-sm" style="font-size: 0.85rem; color: var(--kf-text); max-width: 150px;">{{ $stage->name }}</span>
-                        @if($stateLabel)
-                            <span class="badge rounded-pill mt-2" style="background-color: var(--kf-surface); color: {{ $stateTextColor }}; font-weight: 600; font-size: 0.7rem; border: 1px solid {{ $borderColor }}; box-shadow: var(--kf-shadow-sm);">{{ $stateLabel }}</span>
-                        @endif
-                    </div>
-                @endforeach
+                    @endforeach
+                </div>
             </div>
         @endif
     </div>

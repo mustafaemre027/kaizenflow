@@ -598,6 +598,27 @@ class KaizenControllerTest extends TestCase
         $response->assertSee('Reddedildi');
     }
 
+    public function test_show_renders_empty_state_without_timeline_track_wrapper(): void
+    {
+        // Bir draft kaizen oluştur, approval workflow instance olmayacak
+        $kaizen = Kaizen::factory()->create([
+            'creator_user_id' => $this->user->id,
+            'status' => KaizenStatus::DRAFT->value,
+        ]);
+
+        $response = $this->actingAs($this->user)->get(route('kaizens.show', $kaizen));
+
+        $response->assertStatus(200);
+
+        $content = $response->getContent();
+
+        // Empty state render edilmeli
+        $response->assertSee('Süreç henüz başlatılmadı. Kaizen gönderildiğinde onay akışı oluşturulacaktır.');
+
+        // "kf-workflow-track" class'ı hiç render edilmemeli (çünkü overflow'a neden olan wrapper bu)
+        $response->assertDontSee('class="kf-workflow-track');
+    }
+
     // ==========================================
     // INDEX METHOD TESTS
     // ==========================================
