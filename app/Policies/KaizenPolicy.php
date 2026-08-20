@@ -138,4 +138,31 @@ class KaizenPolicy
     {
         return false;
     }
+
+    public function assignImplementation(User $user, Kaizen $kaizen): bool
+    {
+        if (! $user->is_active) {
+            return false;
+        }
+
+        if ($user->role === UserRole::OPEX_SPECIALIST) {
+            return true;
+        }
+
+        if ($user->role === UserRole::MANAGER && $user->department_id === $kaizen->department_id) {
+            return true;
+        }
+
+        return false;
+    }
+
+    public function startImplementation(User $user, Kaizen $kaizen): bool
+    {
+        return $this->assignImplementation($user, $kaizen);
+    }
+
+    public function completeImplementation(User $user, Kaizen $kaizen): bool
+    {
+        return $this->assignImplementation($user, $kaizen);
+    }
 }
