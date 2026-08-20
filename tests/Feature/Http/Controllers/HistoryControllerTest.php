@@ -313,6 +313,80 @@ class HistoryControllerTest extends TestCase
         $this->assertFalse($stranger->can('view', $kaizen));
     }
 
+    public function test_same_historical_actor_cannot_update(): void
+    {
+        $reviewer = User::factory()->create();
+        $kaizen = Kaizen::factory()->create(['status' => KaizenStatus::APPROVED]);
+        KaizenWorkflowTransition::factory()->create([
+            'kaizen_id' => $kaizen->id,
+            'actor_user_id' => $reviewer->id,
+            'action' => WorkflowAction::APPROVE,
+        ]);
+
+        $this->assertTrue($reviewer->can('view', $kaizen));
+        $this->assertFalse($reviewer->can('update', $kaizen));
+
+        $response = $this->actingAs($reviewer)->patch(route('kaizens.update', $kaizen), ['title' => 'Hacked']);
+        $response->assertStatus(403);
+    }
+
+    public function test_same_historical_actor_cannot_submit(): void
+    {
+        $reviewer = User::factory()->create();
+        $kaizen = Kaizen::factory()->create(['status' => KaizenStatus::DRAFT]);
+        KaizenWorkflowTransition::factory()->create([
+            'kaizen_id' => $kaizen->id,
+            'actor_user_id' => $reviewer->id,
+            'action' => WorkflowAction::APPROVE, // Mock past action
+        ]);
+
+        $this->assertFalse($reviewer->can('submit', $kaizen));
+
+        $response = $this->actingAs($reviewer)->post(route('kaizens.submit', $kaizen));
+        $response->assertStatus(403);
+    }
+
+    public function test_same_historical_actor_cannot_perform_review_actions_on_stale_record(): void
+    {
+        $reviewer = User::factory()->create();
+        $kaizen = Kaizen::factory()->create(['status' => KaizenStatus::APPROVED]);
+        KaizenWorkflowTransition::factory()->create([
+            'kaizen_id' => $kaizen->id,
+            'actor_user_id' => $reviewer->id,
+            'action' => WorkflowAction::APPROVE,
+        ]);
+
+        $this->assertFalse($reviewer->can('reviewOnWorkflow', $kaizen));
+
+        // D. approve
+        $response = $this->actingAs($reviewer)->post(route('kaizens.workflow.approve', $kaizen));
+        $response->assertStatus(403);
+
+        // E. request revision
+        $response = $this->actingAs($reviewer)->post(route('kaizens.workflow.request-revision', $kaizen), ['comment' => 'Rev']);
+        $response->assertStatus(403);
+
+        // F. reject
+        $response = $this->actingAs($reviewer)->post(route('kaizens.workflow.reject', $kaizen), ['comment' => 'Rej']);
+        $response->assertStatus(403);
+    }
+
+    public function test_group_member_who_never_acted_does_not_gain_historical_view_merely_because_of_membership(): void
+    {
+        $groupMember = User::factory()->create();
+        $workflow = ApprovalWorkflow::factory()->create();
+        $stage = ApprovalStage::factory()->create(['approval_workflow_id' => $workflow->id]);
+        $group = ApprovalGroup::factory()->create();
+        ApprovalGroupMember::factory()->create(['approval_group_id' => $group->id, 'user_id' => $groupMember->id]);
+        ApprovalStageAssignment::factory()->create(['approval_stage_id' => $stage->id, 'approval_group_id' => $group->id]);
+
+        $kaizen = Kaizen::factory()->create(['status' => KaizenStatus::APPROVED]);
+        // Note: No KaizenWorkflowTransition exists for this user on this kaizen.
+        // It's not in SUBMITTED state, and they are not the assigned user.
+
+        $this->assertFalse($groupMember->can('view', $kaizen));
+    }
+
     public function test_approvals_inbox_still_shows_only_actionable_submitted_records(): void
     {
         $reviewer = User::factory()->create();
