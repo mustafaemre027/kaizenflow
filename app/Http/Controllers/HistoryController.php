@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ApprovalGroupMember;
 use App\Models\Category;
 use App\Services\Workflow\CreatedKaizenHistoryQuery;
 use App\Services\Workflow\ReviewedKaizenHistoryQuery;
@@ -22,6 +23,24 @@ class HistoryController extends Controller
 
         $createdKaizens = null;
         $reviewedTransitions = null;
+
+        $hasActiveMembership = ApprovalGroupMember::where('user_id', $user->id)
+            ->where('is_active', true)
+            ->whereHas('group', function ($q) {
+                $q->where('is_active', true);
+            })
+            ->exists();
+
+        $hasHistoricalReviews = false;
+        if (! $hasActiveMembership) {
+            $hasHistoricalReviews = $reviewedQuery->forUser($user)->exists();
+        }
+
+        $canAccessReviewedHistory = $hasActiveMembership || $hasHistoricalReviews;
+
+        if ($activeTab === 'reviewed' && ! $canAccessReviewedHistory) {
+            $activeTab = 'created';
+        }
 
         if ($activeTab === 'reviewed') {
             $query = $reviewedQuery->forUser($user);
@@ -49,7 +68,8 @@ class HistoryController extends Controller
             'createdKaizens',
             'reviewedTransitions',
             'categories',
-            'filters'
+            'filters',
+            'canAccessReviewedHistory'
         ));
     }
 }

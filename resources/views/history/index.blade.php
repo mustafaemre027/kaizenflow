@@ -29,6 +29,7 @@
                     Olusturduklarim
                 </a>
             </li>
+            @if($canAccessReviewedHistory)
             <li class="nav-item" role="presentation">
                 <a href="{{ route('history.index', array_merge(request()->except(['tab', 'page']), ['tab' => 'reviewed'])) }}"
                    class="kf-history-tab {{ $activeTab === 'reviewed' ? 'active' : '' }}"
@@ -42,6 +43,7 @@
                     Degerlendirdiklerim
                 </a>
             </li>
+            @endif
         </ul>
     </div>
 

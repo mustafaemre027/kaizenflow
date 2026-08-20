@@ -3,6 +3,7 @@
 namespace Tests\Feature\Http\Controllers;
 
 use App\Enums\KaizenStatus;
+use App\Enums\UserRole;
 use App\Enums\WorkflowAction;
 use App\Models\ApprovalGroup;
 use App\Models\ApprovalGroupMember;
@@ -127,6 +128,9 @@ class HistoryControllerTest extends TestCase
     public function test_reviewed_tab_excludes_other_reviewers_actions(): void
     {
         $reviewer = User::factory()->create();
+        // Give reviewer a valid action so they can access the tab
+        KaizenWorkflowTransition::factory()->create(['actor_user_id' => $reviewer->id, 'action' => WorkflowAction::APPROVE]);
+
         $otherReviewer = User::factory()->create();
         $kaizen = Kaizen::factory()->create();
         $instance = KaizenWorkflowInstance::factory()->create(['kaizen_id' => $kaizen->id]);
@@ -140,12 +144,15 @@ class HistoryControllerTest extends TestCase
         $response = $this->actingAs($reviewer)->get(route('history.index', ['tab' => 'reviewed']));
 
         $transitions = $response->viewData('reviewedTransitions');
-        $this->assertEquals(0, $transitions->total());
+        $this->assertEquals(1, $transitions->total()); // Only their own valid action, not the otherReviewer's
     }
 
     public function test_reviewed_tab_excludes_start_and_resubmit_actions(): void
     {
         $user = User::factory()->create();
+        // Give user a valid action so they can access the tab
+        KaizenWorkflowTransition::factory()->create(['actor_user_id' => $user->id, 'action' => WorkflowAction::APPROVE]);
+
         $kaizen = Kaizen::factory()->create(['creator_user_id' => $user->id]);
         $instance = KaizenWorkflowInstance::factory()->create(['kaizen_id' => $kaizen->id]);
         KaizenWorkflowTransition::factory()->create([
@@ -160,7 +167,7 @@ class HistoryControllerTest extends TestCase
         $response = $this->actingAs($user)->get(route('history.index', ['tab' => 'reviewed']));
 
         $transitions = $response->viewData('reviewedTransitions');
-        $this->assertEquals(0, $transitions->total());
+        $this->assertEquals(1, $transitions->total()); // Only the APPROVE, no START/RESUBMIT
     }
 
     public function test_multi_action_on_same_kaizen_shows_two_rows(): void
@@ -203,6 +210,9 @@ class HistoryControllerTest extends TestCase
     public function test_reviewed_action_filter_does_not_widen_scope(): void
     {
         $reviewer = User::factory()->create();
+        // Give reviewer a valid action so they can access the tab
+        KaizenWorkflowTransition::factory()->create(['actor_user_id' => $reviewer->id, 'action' => WorkflowAction::APPROVE]);
+
         $other = User::factory()->create();
         $kaizen = Kaizen::factory()->create();
         $instance = KaizenWorkflowInstance::factory()->create(['kaizen_id' => $kaizen->id]);
@@ -216,12 +226,15 @@ class HistoryControllerTest extends TestCase
         ]));
 
         $transitions = $response->viewData('reviewedTransitions');
-        $this->assertEquals(0, $transitions->total());
+        $this->assertEquals(1, $transitions->total()); // Only their own
     }
 
     public function test_reviewed_filter_rejects_non_review_action_values(): void
     {
         $user = User::factory()->create();
+        // Give user a valid action so they can access the tab
+        KaizenWorkflowTransition::factory()->create(['actor_user_id' => $user->id, 'action' => WorkflowAction::APPROVE]);
+
         $kaizen = Kaizen::factory()->create(['creator_user_id' => $user->id]);
         $instance = KaizenWorkflowInstance::factory()->create(['kaizen_id' => $kaizen->id]);
         KaizenWorkflowTransition::factory()->create([
@@ -234,7 +247,7 @@ class HistoryControllerTest extends TestCase
         ]));
 
         $transitions = $response->viewData('reviewedTransitions');
-        $this->assertEquals(0, $transitions->total());
+        $this->assertEquals(1, $transitions->total()); // The filter is ignored, so it falls back to all reviews (which is just 1 APPROVE)
     }
 
     public function test_pagination_works_for_created_tab(): void
@@ -409,5 +422,74 @@ class HistoryControllerTest extends TestCase
         $this->assertTrue($approvals->getCollection()->contains($submitted));
         $this->assertFalse($approvals->getCollection()->contains($approved));
         $this->assertFalse($approvals->getCollection()->contains($revision));
+    }
+
+    public function test_plain_employee_does_not_see_reviewed_tab(): void
+    {
+        $employee = User::factory()->create(['role' => UserRole::EMPLOYEE]);
+
+        $response = $this->actingAs($employee)->get(route('history.index'));
+        $response->assertStatus(200);
+
+        $this->assertFalse($response->viewData('canAccessReviewedHistory'));
+        $response->assertDontSee('tab-reviewed');
+    }
+
+    public function test_plain_employee_requesting_reviewed_tab_is_normalized_to_created(): void
+    {
+        $employee = User::factory()->create();
+
+        $response = $this->actingAs($employee)->get(route('history.index', ['tab' => 'reviewed']));
+        $response->assertStatus(200);
+
+        $this->assertFalse($response->viewData('canAccessReviewedHistory'));
+        $this->assertEquals('created', $response->viewData('activeTab'));
+        $this->assertNotNull($response->viewData('createdKaizens'));
+        $this->assertNull($response->viewData('reviewedTransitions'));
+    }
+
+    public function test_active_approval_group_member_sees_reviewed_tab(): void
+    {
+        $member = User::factory()->create();
+        $group = ApprovalGroup::factory()->create(['is_active' => true]);
+        ApprovalGroupMember::factory()->create([
+            'approval_group_id' => $group->id,
+            'user_id' => $member->id,
+            'is_active' => true,
+        ]);
+
+        $response = $this->actingAs($member)->get(route('history.index'));
+        $response->assertStatus(200);
+
+        $this->assertTrue($response->viewData('canAccessReviewedHistory'));
+        $response->assertSee('tab-reviewed');
+    }
+
+    public function test_historical_actor_no_longer_active_member_sees_reviewed_tab(): void
+    {
+        $actor = User::factory()->create();
+        // Not a member of any group, but has a past transition
+        KaizenWorkflowTransition::factory()->create([
+            'actor_user_id' => $actor->id,
+            'action' => WorkflowAction::APPROVE,
+        ]);
+
+        $response = $this->actingAs($actor)->get(route('history.index'));
+        $response->assertStatus(200);
+
+        $this->assertTrue($response->viewData('canAccessReviewedHistory'));
+        $response->assertSee('tab-reviewed');
+    }
+
+    public function test_role_alone_does_not_determine_visibility(): void
+    {
+        // Manager with no active groups and no past transitions
+        $manager = User::factory()->create(['role' => UserRole::MANAGER]);
+
+        $response = $this->actingAs($manager)->get(route('history.index'));
+        $response->assertStatus(200);
+
+        $this->assertFalse($response->viewData('canAccessReviewedHistory'));
+        $response->assertDontSee('tab-reviewed');
     }
 }
