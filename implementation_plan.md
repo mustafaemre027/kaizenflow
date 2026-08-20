@@ -325,3 +325,59 @@ MVP kapsamını, rol yetkilerini, durum geçişlerini veya güvenlik yaklaşım�
 - Takvim ve risk etkisinin yazılması
 - Kapsam genişletmeden önce zorunlu MVP’nin kontrol edilmesi
 gerekmektedir.
+
+## 14. GÜN 13 YETKİ GÜVENLİĞİ VE SCOPE MİMARİSİ (PLANLANAN)
+
+Bu bölüm Gün 13 Blok 1.2 karar tutanağıdır. Üretim koduna (Blok 2) geçilmeden önce kesinleştirilmiş güvenlik sözleşmesidir.
+
+### 1. Kesin Capability Scope Matrisi
+- **`SYSTEM` Scope:** `organization.view`, `organization.manage`, `approval_configuration.view`, `approval_configuration.manage`, `authorization.manage`.
+- **`DEPARTMENT` Scope:** `kaizen.implementation.assign`, `kaizen.implementation.start`, `kaizen.implementation.complete`.
+
+### 2. System ve Department Persistence Ayrımı
+- Mevcut `user_capability_grants` tablosu tamamen `DEPARTMENT` scope için korunacaktır.
+- `SYSTEM` scope için ayrı `user_system_capability_grants` tablosu tasarlanacak ve MySQL Null-Duplicate açığı engellenerek DB seviyesinde `(user_id, capability)` unique constraint'i kurulacaktır.
+
+### 3. Merkezi Scope Allowlist ve Fail-Closed Davranış
+- Merkezi bir `CapabilityScope` tanımlanarak her enum değerinin tek bir scope'a ait olması sağlanacaktır.
+- Belirtilmeyen yetkiler fail-closed prensibiyle hiçbir yere yazılamaz.
+- `UserCapabilityResolver::allows()` yalnızca DEPARTMENT; `allowsSystem()` yalnızca SYSTEM kabul edecektir. Yanlış scope sorgusu sessizce `false` dönerek güvenliği ihlal etmeyecektir.
+
+### 4. System Grant Privilege Escalation Kuralları
+- Rol tabanlı bypass (ADMIN, MANAGER) kesinlikle yasaktır.
+- Aktörün, hedef kullanıcıya bir system yetkisi verebilmesi için kendisinin de aynı aktif system yetkisine VE `authorization.manage` yetkisine sahip olması şarttır.
+- Actor kimliği URL/Request/Body üzerinden alınamaz, yalnızca authenticated server session üzerinden alınabilir.
+
+### 5. Self-Grant ve Capability Delegation Sınırları
+- Bir aktör kendisine yetki veremez (Self-grant yasaktır).
+- Sahip olmadığı yetkiyi devredemez.
+- `organization.manage` (departman/kullanıcı düzenleme yetkisi) tek başına grant verme yetkisi sağlamaz; bu işlem ayrı `authorization.manage` çatısına alınmıştır.
+
+### 6. Son Aktif Authorization Manager Invariant’ı
+- Sistemde her zaman şu iki şartı aynı anda sağlayan en az bir kullanıcı kalmak zorundadır: `users.is_active = true` VE `user_system_capability_grants.is_active = true` (capability = `authorization.manage`).
+- Self-revoke veya hesabı deaktive etme işlemi ancak sistemde başka bir aktif yetkili varsa çalışacaktır.
+
+### 7. Transaction ve Concurrency Locking Stratejisi
+- Eşzamanlı son-yetkili eksilme (race-condition) ihtimalini önlemek için `DB::transaction()` içinde aktif yetkililer `lockForUpdate()` ile kilitlenerek sayım baştan teyit edilecektir.
+
+### 8. Bootstrap Artisan Command Güvenlik Sözleşmesi
+- İlk admin ataması için sadece CLI'dan (web'den ulaşılamaz) çalışacak, kullanıcıyı E-posta veya ID ile seçen idempotent bir Artisan komutu (`php artisan capability:bootstrap-admin`) yazılacaktır.
+- Sadece `authorization.manage` verir, duplicate oluşturmaz, audit kaydı bırakır.
+
+### 9. Audit Event ve Rollback Sözleşmesi
+- `authorization.system_capability.granted`, `revoked`, `activated`, `deactivated` gibi olaylar `audit_logs` tablosuna yazılacaktır.
+- Audit'e şifre, token veya session gibi hassas bilgiler yazılmayacak; metadata'ya sadece Actor, Target, Capability, Scope ve State eklenecektir.
+- Audit log satırı atılamazsa tüm mutation (grant/revoke) `rollback` edilecektir.
+
+### 10. Blok 2 TDD Test Matrisi
+- Persistence: System grant DB unique, is_active cascade (restrict), yanlış scope yazım reddi.
+- Resolver: allowsSystem() fail-closed testleri, role bypass reddi testleri.
+- Privilege Escalation: Yetkisiz verme, self-grant reddi, sahte actor enjeksiyon testleri.
+- Revoke ve Lockout: Son yönetici silme engeli, eşzamanlı lockForUpdate testi, duplicate revoke testleri.
+- Audit & Bootstrap: CLI idempotency, audit metadata içeriği, rollback testleri.
+
+### 11. Gün 12 Regression Sınırı
+- Mevcut implementation ve assign/start/complete testleri, Kaizen Policy ve HTTP authorization testleri hiçbir şekilde kırılmayacak, mevcut department_id'li `allows()` çağrıları korunacaktır.
+
+### 12. MySQL–SQLite Test Farkları
+- SQLite testlerinin concurrency (row-lock) testlerinde MySQL davranışını tam simüle edemeyebileceği bilinerek, son yetkili lockForUpdate mantığı application transaction mock'u veya strict validation kurallarıyla güvence altına alınacaktır.
