@@ -90,6 +90,11 @@ class Kaizen extends Model
         return $this->hasOne(KaizenWorkflowInstance::class);
     }
 
+    public function workflowTransitions(): HasMany
+    {
+        return $this->hasMany(KaizenWorkflowTransition::class);
+    }
+
     public function attachments(): HasMany
     {
         return $this->hasMany(KaizenAttachment::class)->orderBy('sort_order');

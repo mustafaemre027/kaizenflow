@@ -60,6 +60,12 @@ class KaizenPolicy
             return true;
         }
 
+        // Past actors (reviewers who made a decision on this Kaizen) retain view access
+        // for the history archive. This does not grant any write/action rights.
+        if ($kaizen->workflowTransitions()->where('actor_user_id', $user->id)->exists()) {
+            return true;
+        }
+
         return false;
     }
 
