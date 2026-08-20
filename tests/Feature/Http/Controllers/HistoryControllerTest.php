@@ -391,4 +391,76 @@ class HistoryControllerTest extends TestCase
         $response = $this->actingAs($manager)->get(route('history.index'));
         $response->assertRedirect(route('kaizens.index'));
     }
+
+    public function test_active_reviewer_sees_navigation_in_correct_order(): void
+    {
+        $member = User::factory()->create();
+        $group = ApprovalGroup::factory()->create(['is_active' => true]);
+        ApprovalGroupMember::factory()->create([
+            'approval_group_id' => $group->id,
+            'user_id' => $member->id,
+            'is_active' => true,
+        ]);
+
+        $response = $this->actingAs($member)->get(route('kaizens.index'));
+        $response->assertStatus(200);
+
+        $response->assertSeeInOrder([
+            'Bekleyen Onaylar',
+            'Değerlendirme Geçmişi',
+        ]);
+    }
+
+    public function test_plain_employee_does_not_see_approval_navigation(): void
+    {
+        $employee = User::factory()->create(['role' => UserRole::EMPLOYEE]);
+
+        $response = $this->actingAs($employee)->get(route('kaizens.index'));
+        $response->assertStatus(200);
+
+        $response->assertDontSee('Bekleyen Onaylar');
+        $response->assertDontSee('Değerlendirme Geçmişi');
+    }
+
+    public function test_history_page_uses_correct_terminology(): void
+    {
+        $reviewer = User::factory()->create();
+        $kaizen = Kaizen::factory()->create();
+        $instance = KaizenWorkflowInstance::factory()->create(['kaizen_id' => $kaizen->id]);
+        KaizenWorkflowTransition::factory()->create([
+            'kaizen_id' => $kaizen->id,
+            'kaizen_workflow_instance_id' => $instance->id,
+            'actor_user_id' => $reviewer->id,
+            'action' => WorkflowAction::APPROVE,
+        ]);
+
+        $response = $this->actingAs($reviewer)->get(route('history.index'));
+
+        $response->assertStatus(200);
+        $response->assertSee('Güncel Durum');
+        $response->assertDontSee('Son Kaizen Durumu');
+        $response->assertDontSee('Onay Bekleyenler');
+    }
+
+    public function test_history_filter_reset_contract(): void
+    {
+        $reviewer = User::factory()->create();
+        $kaizen = Kaizen::factory()->create();
+        $instance = KaizenWorkflowInstance::factory()->create(['kaizen_id' => $kaizen->id]);
+        KaizenWorkflowTransition::factory()->create([
+            'kaizen_id' => $kaizen->id,
+            'kaizen_workflow_instance_id' => $instance->id,
+            'actor_user_id' => $reviewer->id,
+            'action' => WorkflowAction::APPROVE,
+        ]);
+
+        // When active filter is applied
+        $response = $this->actingAs($reviewer)->get(route('history.index', ['action' => WorkflowAction::APPROVE->value]));
+        $response->assertStatus(200);
+
+        // Assert the reset link is canonical
+        $resetUrl = route('history.index');
+        $response->assertSee('href="'.$resetUrl.'"', false);
+        $response->assertSee('Temizle');
+    }
 }
