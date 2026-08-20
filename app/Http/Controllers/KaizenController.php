@@ -16,6 +16,7 @@ use App\Http\Requests\Kaizens\UpdateKaizenDraftRequest;
 use App\Models\Category;
 use App\Models\Department;
 use App\Models\Kaizen;
+use App\Models\User;
 use App\Services\Kaizens\VisibleKaizensQuery;
 use App\Services\Workflow\KaizenWorkflowTimelinePresenter;
 use Illuminate\Support\Facades\Gate;
@@ -136,11 +137,21 @@ class KaizenController extends Controller
 
         $workflowTimeline = $presenter->present($kaizen);
 
+        $implementationCandidates = [];
+        if (request()->user()->can('assignImplementation', $kaizen)) {
+            $implementationCandidates = User::where('is_active', true)
+                ->where('department_id', $kaizen->department_id)
+                ->orderBy('name')
+                ->select('id', 'name')
+                ->get();
+        }
+
         return view('kaizens.show', compact(
             'kaizen',
             'workflowTimeline',
             'currentSituationAttachments',
-            'proposedSituationAttachments'
+            'proposedSituationAttachments',
+            'implementationCandidates'
         ));
     }
 

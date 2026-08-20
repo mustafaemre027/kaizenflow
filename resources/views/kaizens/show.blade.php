@@ -22,7 +22,7 @@
                 $isCompletable = trim($kaizen->expected_benefit ?? '') !== '';
                 $btnText = $kaizen->status === \App\Enums\KaizenStatus::REVISION_REQUESTED ? 'Yeniden Gönder' : 'Onaya Gönder';
             @endphp
-            
+
             @if($isCompletable)
                 <form action="{{ route('kaizens.submit', $kaizen) }}" method="POST" class="d-inline m-0 p-0">
                     @csrf
@@ -214,7 +214,28 @@
                 @if($kaizen->actual_result)
                     <p class="kf-detail-text">{{ $kaizen->actual_result }}</p>
                 @else
-                    <p class="kf-detail-text text-muted fst-italic">Henüz sonuç girilmedi.</p>
+                    @can('completeImplementation', $kaizen)
+                        @if($kaizen->status === \App\Enums\KaizenStatus::IN_PROGRESS)
+                            <form action="{{ route('kaizens.implementation.complete', $kaizen) }}" method="POST" class="mt-3">
+                                @csrf
+                                <div class="kf-form-group mb-3">
+                                    <label for="actual_result" class="kf-form-label visually-hidden">Gerçekleşen Sonuç Açıklaması</label>
+                                    <textarea class="kf-form-control @error('actual_result') is-invalid @enderror" id="actual_result" name="actual_result" rows="5" maxlength="5000" placeholder="Kaizen uygulaması sonucunda elde edilen durum ve kazanımları detaylıca açıklayınız..." required aria-describedby="actualResultHelp">{{ old('actual_result') }}</textarea>
+                                    <div id="actualResultHelp" class="form-text">Maksimum 5000 karakter. Bu bilgi onay sonrasında raporlarda kullanılacaktır.</div>
+                                    @error('actual_result')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                                <button type="submit" class="kf-btn kf-btn-primary" onclick="if(this.form.checkValidity()){this.disabled=true;this.form.submit();}">
+                                    Uygulamayı Tamamla
+                                </button>
+                            </form>
+                        @else
+                            <p class="kf-detail-text text-muted fst-italic">Henüz sonuç girilmedi.</p>
+                        @endif
+                    @else
+                        <p class="kf-detail-text text-muted fst-italic">Henüz sonuç girilmedi.</p>
+                    @endcan
                 @endif
             </div>
         </div>
@@ -280,6 +301,87 @@
                         </li>
                     </ul>
                 </div>
+            </div>
+        </div>
+
+        <div class="kf-panel mt-4">
+            <div class="kf-panel-header">
+                <h2 class="kf-panel-title">Uygulama Yönetimi</h2>
+            </div>
+            <div class="kf-panel-body p-4">
+                <div class="kf-meta-group mb-0">
+                    <ul class="kf-meta-list">
+                        <li class="kf-meta-item">
+                            <span class="kf-meta-label">Başlangıç Tarihi</span>
+                            @if($kaizen->started_at)
+                                <span class="kf-meta-value">{{ \Carbon\Carbon::parse($kaizen->started_at)->format('d.m.Y H:i') }}</span>
+                            @else
+                                <span class="kf-meta-value text-muted fst-italic">Henüz başlatılmadı</span>
+                            @endif
+                        </li>
+                        <li class="kf-meta-item">
+                            <span class="kf-meta-label">Tamamlanma Tarihi</span>
+                            @if($kaizen->completed_at)
+                                <span class="kf-meta-value">{{ \Carbon\Carbon::parse($kaizen->completed_at)->format('d.m.Y H:i') }}</span>
+                            @else
+                                <span class="kf-meta-value text-muted fst-italic">Henüz tamamlanmadı</span>
+                            @endif
+                        </li>
+                    </ul>
+                </div>
+
+                @can('assignImplementation', $kaizen)
+                    @if($kaizen->status === \App\Enums\KaizenStatus::APPROVED && !$kaizen->assigned_user_id)
+                        <div class="mt-4 pt-4 border-top">
+                            <h3 class="kf-meta-group-title">Sorumlu Ata</h3>
+                            <form action="{{ route('kaizens.implementation.assign', $kaizen) }}" method="POST">
+                                @csrf
+                                <div class="kf-form-group mb-3">
+                                    <label for="assigned_user_id" class="kf-form-label">Uygulama Sorumlusu <span class="text-danger">*</span></label>
+                                    @if(empty($implementationCandidates) || $implementationCandidates->isEmpty())
+                                        <div class="alert alert-warning py-2 mb-0" style="font-size: 0.85rem;">Bu departmanda atanabilecek aktif kullanıcı bulunmuyor.</div>
+                                    @else
+                                        <select class="kf-form-control @error('assigned_user_id') is-invalid @enderror" id="assigned_user_id" name="assigned_user_id" required>
+                                            <option value="">Seçiniz...</option>
+                                            @foreach($implementationCandidates as $candidate)
+                                                <option value="{{ $candidate->id }}" {{ old('assigned_user_id') == $candidate->id ? 'selected' : '' }}>
+                                                    {{ $candidate->name }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                        @error('assigned_user_id')
+                                            <div class="invalid-feedback">{{ $message }}</div>
+                                        @enderror
+                                    @endif
+                                </div>
+
+                                <div class="kf-form-group mb-3">
+                                    <label for="target_date" class="kf-form-label">Hedef Tarih <span class="text-danger">*</span></label>
+                                    <input type="date" class="kf-form-control @error('target_date') is-invalid @enderror" id="target_date" name="target_date" value="{{ old('target_date') }}" min="{{ date('Y-m-d') }}" required>
+                                    @error('target_date')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+
+                                <button type="submit" class="kf-btn kf-btn-primary w-100" {{ empty($implementationCandidates) || $implementationCandidates->isEmpty() ? 'disabled' : '' }}>Kaydet</button>
+                            </form>
+                        </div>
+                    @endif
+                @endcan
+
+                @can('startImplementation', $kaizen)
+                    @if($kaizen->status === \App\Enums\KaizenStatus::APPROVED && $kaizen->assigned_user_id && $kaizen->target_date)
+                        <div class="mt-4 pt-4 border-top">
+                            <form action="{{ route('kaizens.implementation.start', $kaizen) }}" method="POST">
+                                @csrf
+                                <p class="text-muted mb-3" style="font-size: 0.85rem;">Bu işlem uygulamayı başlatacak ve durumu IN PROGRESS olarak güncelleyecektir. Bu işlem geri alınamaz.</p>
+                                <button type="submit" class="kf-btn kf-btn-primary w-100" onclick="return confirm('Uygulamayı başlatmak istediğinize emin misiniz?');">
+                                    Uygulamayı Başlat
+                                </button>
+                            </form>
+                        </div>
+                    @endif
+                @endcan
             </div>
         </div>
 
