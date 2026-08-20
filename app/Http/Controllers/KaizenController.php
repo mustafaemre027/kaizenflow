@@ -138,12 +138,14 @@ class KaizenController extends Controller
         $workflowTimeline = $presenter->present($kaizen);
 
         $implementationCandidates = [];
-        if (request()->user()->can('assignImplementation', $kaizen)) {
-            $implementationCandidates = User::where('is_active', true)
-                ->where('department_id', $kaizen->department_id)
-                ->orderBy('name')
-                ->select('id', 'name')
-                ->get();
+        if ($kaizen->status === KaizenStatus::APPROVED && ! $kaizen->assigned_user_id) {
+            if (request()->user()->can('assignImplementation', $kaizen)) {
+                $implementationCandidates = User::where('is_active', true)
+                    ->where('department_id', $kaizen->department_id)
+                    ->orderBy('name')
+                    ->select('id', 'name')
+                    ->get();
+            }
         }
 
         return view('kaizens.show', compact(

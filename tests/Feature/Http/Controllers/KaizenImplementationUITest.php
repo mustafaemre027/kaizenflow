@@ -186,6 +186,7 @@ class KaizenImplementationUITest extends TestCase
 
         $response = $this->actingAs($this->opex)->get(route('kaizens.show', $kaizenDraft));
         $response->assertDontSee('Sorumlu Ata');
+        $response->assertViewHas('implementationCandidates', []);
     }
 
     public function test_assign_form_not_visible_if_already_assigned(): void
