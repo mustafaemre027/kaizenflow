@@ -84,7 +84,7 @@ class GrantSystemCapabilityTest extends TestCase
             'user_id' => $actor->id,
             'capability' => UserCapability::AUTHORIZATION_MANAGE,
         ]);
-        
+
         $target = User::factory()->create();
         $action = app(GrantSystemCapability::class);
 
@@ -98,9 +98,9 @@ class GrantSystemCapabilityTest extends TestCase
         $actor = User::factory()->create();
         UserSystemCapabilityGrant::factory()->create(['user_id' => $actor->id, 'capability' => UserCapability::AUTHORIZATION_MANAGE]);
         UserSystemCapabilityGrant::factory()->create(['user_id' => $actor->id, 'capability' => UserCapability::ORGANIZATION_VIEW]);
-        
+
         $target = User::factory()->create();
-        
+
         $action = app(GrantSystemCapability::class);
         $action->execute($actor, $target, UserCapability::ORGANIZATION_VIEW);
 
@@ -115,7 +115,7 @@ class GrantSystemCapabilityTest extends TestCase
             'actor_user_id' => $actor->id,
             'event' => 'authorization.system_capability.granted',
         ]);
-        
+
         $log = AuditLog::first();
         $this->assertEquals($target->id, $log->metadata['target_user_id']);
         $this->assertEquals(UserCapability::ORGANIZATION_VIEW->value, $log->metadata['capability']);
@@ -129,7 +129,7 @@ class GrantSystemCapabilityTest extends TestCase
         $actor = User::factory()->create();
         UserSystemCapabilityGrant::factory()->create(['user_id' => $actor->id, 'capability' => UserCapability::AUTHORIZATION_MANAGE]);
         UserSystemCapabilityGrant::factory()->create(['user_id' => $actor->id, 'capability' => UserCapability::ORGANIZATION_VIEW]);
-        
+
         $target = User::factory()->create();
         UserSystemCapabilityGrant::factory()->create([
             'user_id' => $target->id,
@@ -159,7 +159,7 @@ class GrantSystemCapabilityTest extends TestCase
         $actor = User::factory()->create();
         UserSystemCapabilityGrant::factory()->create(['user_id' => $actor->id, 'capability' => UserCapability::AUTHORIZATION_MANAGE]);
         UserSystemCapabilityGrant::factory()->create(['user_id' => $actor->id, 'capability' => UserCapability::ORGANIZATION_VIEW]);
-        
+
         $target = User::factory()->create();
         UserSystemCapabilityGrant::factory()->create([
             'user_id' => $target->id,
@@ -186,7 +186,7 @@ class GrantSystemCapabilityTest extends TestCase
         $actor = User::factory()->create();
         UserSystemCapabilityGrant::factory()->create(['user_id' => $actor->id, 'capability' => UserCapability::AUTHORIZATION_MANAGE]);
         UserSystemCapabilityGrant::factory()->create(['user_id' => $actor->id, 'capability' => UserCapability::ORGANIZATION_VIEW]);
-        
+
         $target = User::factory()->create();
 
         $mockAudit = $this->createMock(AppendAuditLog::class);
@@ -194,7 +194,7 @@ class GrantSystemCapabilityTest extends TestCase
         $this->app->instance(AppendAuditLog::class, $mockAudit);
 
         $action = app(GrantSystemCapability::class);
-        
+
         try {
             $action->execute($actor, $target, UserCapability::ORGANIZATION_VIEW);
         } catch (Exception $e) {

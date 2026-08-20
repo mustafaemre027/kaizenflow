@@ -4,6 +4,7 @@ namespace Tests\Feature\Actions\Authorization;
 
 use App\Actions\Authorization\RevokeSystemCapability;
 use App\Enums\UserCapability;
+use App\Exceptions\LastAuthorizationManagerException;
 use App\Exceptions\ScopeMismatchException;
 use App\Models\AuditLog;
 use App\Models\User;
@@ -58,9 +59,9 @@ class RevokeSystemCapabilityTest extends TestCase
             'user_id' => $actor->id,
             'capability' => UserCapability::AUTHORIZATION_MANAGE,
         ]);
-        
+
         $target = User::factory()->create();
-        
+
         $action = app(RevokeSystemCapability::class);
         $action->execute($actor, $target, UserCapability::ORGANIZATION_VIEW);
 
@@ -79,14 +80,14 @@ class RevokeSystemCapabilityTest extends TestCase
             'user_id' => $actor->id,
             'capability' => UserCapability::AUTHORIZATION_MANAGE,
         ]);
-        
+
         $target = User::factory()->create();
         UserSystemCapabilityGrant::factory()->create([
             'user_id' => $target->id,
             'capability' => UserCapability::ORGANIZATION_VIEW,
             'is_active' => false,
         ]);
-        
+
         $action = app(RevokeSystemCapability::class);
         $action->execute($actor, $target, UserCapability::ORGANIZATION_VIEW);
 
@@ -106,7 +107,7 @@ class RevokeSystemCapabilityTest extends TestCase
             'user_id' => $actor->id,
             'capability' => UserCapability::AUTHORIZATION_MANAGE,
         ]);
-        
+
         $target = User::factory()->create();
         $grant = UserSystemCapabilityGrant::factory()->create([
             'user_id' => $target->id,
@@ -129,7 +130,7 @@ class RevokeSystemCapabilityTest extends TestCase
             'actor_user_id' => $actor->id,
             'event' => 'authorization.system_capability.revoked',
         ]);
-        
+
         $log = AuditLog::first();
         $this->assertEquals($target->id, $log->metadata['target_user_id']);
         $this->assertEquals(UserCapability::ORGANIZATION_VIEW->value, $log->metadata['capability']);
@@ -167,7 +168,7 @@ class RevokeSystemCapabilityTest extends TestCase
         $action = app(RevokeSystemCapability::class);
 
         // Should use specific Exception
-        $this->expectException(\App\Exceptions\LastAuthorizationManagerException::class);
+        $this->expectException(LastAuthorizationManagerException::class);
         $action->execute($actor, $actor, UserCapability::AUTHORIZATION_MANAGE);
     }
 
@@ -179,7 +180,7 @@ class RevokeSystemCapabilityTest extends TestCase
             'capability' => UserCapability::AUTHORIZATION_MANAGE,
             'is_active' => true,
         ]);
-        
+
         $target = User::factory()->create();
         UserSystemCapabilityGrant::factory()->create([
             'user_id' => $target->id,
@@ -205,7 +206,7 @@ class RevokeSystemCapabilityTest extends TestCase
             'user_id' => $actor->id,
             'capability' => UserCapability::AUTHORIZATION_MANAGE,
         ]);
-        
+
         $target = User::factory()->create();
         UserSystemCapabilityGrant::factory()->create([
             'user_id' => $target->id,
@@ -218,7 +219,7 @@ class RevokeSystemCapabilityTest extends TestCase
         $this->app->instance(AppendAuditLog::class, $mockAudit);
 
         $action = app(RevokeSystemCapability::class);
-        
+
         try {
             $action->execute($actor, $target, UserCapability::ORGANIZATION_VIEW);
         } catch (Exception $e) {
