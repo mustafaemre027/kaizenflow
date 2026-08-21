@@ -132,6 +132,7 @@ class RevokeSystemCapabilityTest extends TestCase
         ]);
 
         $log = AuditLog::first();
+        $this->assertEquals($actor->id, $log->metadata['actor_user_id']);
         $this->assertEquals($target->id, $log->metadata['target_user_id']);
         $this->assertEquals(UserCapability::ORGANIZATION_VIEW->value, $log->metadata['capability']);
         $this->assertEquals('system', $log->metadata['scope']);
@@ -197,6 +198,42 @@ class RevokeSystemCapabilityTest extends TestCase
             'capability' => UserCapability::AUTHORIZATION_MANAGE->value,
             'is_active' => false,
         ]);
+    }
+
+    public function test_it_locks_manager_count_query_to_prevent_concurrent_revoke_invariant_bypass(): void
+    {
+        $actor = User::factory()->create();
+        UserSystemCapabilityGrant::factory()->create([
+            'user_id' => $actor->id,
+            'capability' => UserCapability::AUTHORIZATION_MANAGE,
+            'is_active' => true,
+        ]);
+
+        $target = User::factory()->create();
+        UserSystemCapabilityGrant::factory()->create([
+            'user_id' => $target->id,
+            'capability' => UserCapability::AUTHORIZATION_MANAGE,
+            'is_active' => true,
+        ]);
+
+        \Illuminate\Support\Facades\DB::enableQueryLog();
+        
+        $action = app(RevokeSystemCapability::class);
+        $action->execute($actor, $actor, UserCapability::AUTHORIZATION_MANAGE);
+        
+        $queries = \Illuminate\Support\Facades\DB::getQueryLog();
+        \Illuminate\Support\Facades\DB::disableQueryLog();
+
+        $foundLockingCountQuery = false;
+        foreach ($queries as $query) {
+            $sql = strtolower($query['query']);
+            if (str_contains($sql, 'select count(*)') && str_contains($sql, 'for update')) {
+                $foundLockingCountQuery = true;
+                break;
+            }
+        }
+
+        $this->assertTrue($foundLockingCountQuery, 'The active manager count query must use lockForUpdate() to prevent concurrent transaction invariant bypass under repeatable read isolation.');
     }
 
     public function test_it_rolls_back_revoke_if_audit_fails(): void

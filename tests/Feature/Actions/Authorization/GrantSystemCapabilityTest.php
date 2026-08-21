@@ -117,6 +117,7 @@ class GrantSystemCapabilityTest extends TestCase
         ]);
 
         $log = AuditLog::first();
+        $this->assertEquals($actor->id, $log->metadata['actor_user_id']);
         $this->assertEquals($target->id, $log->metadata['target_user_id']);
         $this->assertEquals(UserCapability::ORGANIZATION_VIEW->value, $log->metadata['capability']);
         $this->assertEquals('system', $log->metadata['scope']);
@@ -149,7 +150,10 @@ class GrantSystemCapabilityTest extends TestCase
         ]);
 
         $log = AuditLog::first();
+        $this->assertEquals($actor->id, $log->metadata['actor_user_id']);
         $this->assertEquals($target->id, $log->metadata['target_user_id']);
+        $this->assertEquals(UserCapability::ORGANIZATION_VIEW->value, $log->metadata['capability']);
+        $this->assertEquals('system', $log->metadata['scope']);
         $this->assertFalse($log->metadata['old_is_active']);
         $this->assertTrue($log->metadata['new_is_active']);
     }
