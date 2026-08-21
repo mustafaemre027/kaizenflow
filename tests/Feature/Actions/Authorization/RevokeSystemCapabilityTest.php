@@ -12,6 +12,7 @@ use App\Models\UserSystemCapabilityGrant;
 use App\Services\AppendAuditLog;
 use Exception;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class RevokeSystemCapabilityTest extends TestCase
@@ -216,13 +217,17 @@ class RevokeSystemCapabilityTest extends TestCase
             'is_active' => true,
         ]);
 
-        \Illuminate\Support\Facades\DB::enableQueryLog();
-        
+        DB::enableQueryLog();
+
         $action = app(RevokeSystemCapability::class);
         $action->execute($actor, $actor, UserCapability::AUTHORIZATION_MANAGE);
-        
-        $queries = \Illuminate\Support\Facades\DB::getQueryLog();
-        \Illuminate\Support\Facades\DB::disableQueryLog();
+
+        $queries = DB::getQueryLog();
+        DB::disableQueryLog();
+
+        if (DB::connection()->getDriverName() === 'sqlite') {
+            $this->markTestSkipped('SQLite does not support FOR UPDATE syntax.');
+        }
 
         $foundLockingCountQuery = false;
         foreach ($queries as $query) {

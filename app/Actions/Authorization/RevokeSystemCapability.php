@@ -76,6 +76,7 @@ class RevokeSystemCapability
                     ->where('user_system_capability_grants.capability', UserCapability::AUTHORIZATION_MANAGE->value)
                     ->where('user_system_capability_grants.is_active', true)
                     ->where('users.is_active', true)
+                    ->lockForUpdate()
                     ->count();
 
                 $targetUser = User::find($target->id);
