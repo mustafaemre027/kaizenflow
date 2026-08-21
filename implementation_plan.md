@@ -1,75 +1,65 @@
-# GÜN 13 / ÇALIŞMA BLOĞU 3.2.3.1 — ARTISAN BOOT ÖNCESİ TEST DB KORUMASI VE KALİTE KAPISI KAPANIŞI
+# GÜN 13 / ÇALIŞMA BLOĞU 3.2 — TOCTOU YETKİLENDİRME YARIŞI VE TRANSACTION İÇİ REVALIDATION
 
-Bu plan, `GÜN 13 / ÇALIŞMA BLOĞU 3.2.3` sırasında `setUpTraits()` içerisine eklenen test DB korumasını (Runtime Guard) bir adım öteye taşıyarak, henüz Laravel application veya service provider'lar boot edilmeden önce devreye giren **üç katmanlı (Defense-in-Depth)** güvenlik yapısını belgelemektedir.
+Bu plan, `GrantSystemCapability` ve `RevokeSystemCapability` action'larındaki Time-Of-Check/Time-Of-Use (TOCTOU) zafiyetlerini gidermeyi amaçlamaktadır. DB'ye bağlı olan tüm güvenlik kontrolleri (aktiflik ve yetki) transaction'ın içine çekilecek ve `lockForUpdate` ile kilitlenmiş, en güncel veriler üzerinde doğrulanacaktır.
 
-## Parent Artisan Boot Riski
-Önceki yapıda `php artisan test --env=testing` çağrıldığında, `.env.testing` dosyası olmadığı için Artisan süreci `kaizenflow` veritabanı ayarlarını barındıran yerel `.env` dosyasına fallback yapıyordu. PHPUnit alt süreci `force="true"` değerleriyle bunu ezse de, parent sürecin tehlikeli bir connection string'e sahip olması bir risk oluşturuyordu. 
+## User Review Required
 
-Bu riski gidermek adına, repository'ye secrets içermeyen ve safe değerleri (`sqlite` + `:memory:`) barındıran bir `.env.testing` dosyası eklenerek, parent Artisan boot süreci ilk adımdan itibaren tam koruma altına alındı. (Katman A)
+> [!WARNING]  
+> Bu plan TOCTOU güvenliği için kritik DB kilit sıralarını (User ID ve Capability ID üzerinden) değiştirmekte veya pekiştirmektedir. Kilit sırasının deterministik olmasına büyük özen gösterilmiştir.
+> Düzeltmeler `test(auth)` ve `fix(auth)` olarak iki ayrı commit halinde uygulanacak ve test yönlendirmeli (TDD) bir yaklaşım izlenecektir.
 
-## PHPUnit Early Bootstrap Guard
-Hem `phpunit.xml` hem de `phpunit.mysql.xml` için ortak ve Laravel application ayağa kalkmadan (yani `vendor/autoload.php` yüklenmeden) önce çalışan `tests/bootstrap.php` dosyası oluşturuldu. 
-Bu dosya raw `$_ENV` / `$_SERVER` / `getenv()` ortam değişkenlerini Laravel framework context'inden tamamen bağımsız kontrol eder. Tehlikeli bir tuple (`mysql` + `kaizenflow` vb.) algıladığında `exit(1)` ve `FATAL ERROR` ile anında durur. (Katman B)
+## Open Questions
 
-## Runtime Guard
-`App\Testing\DatabaseSafetyGuard::verify()` ile Laravel application boot edildikten sonra (config resolution tamamlandığında), runtime değerleri ve aktif MySQL PDO bağlantısının `SELECT DATABASE()` sonucu doğrulanmaya devam etmektedir. (Katman C)
+Herhangi bir açık soru bulunmamaktadır. Testler ve beklentiler yönergelerde eksiksiz tarif edilmiştir.
 
-## İzin Verilen İki Tuple
-Sadece aşağıdaki konfigürasyonlara izin verilir:
-1. `testing` + `sqlite` + `:memory:`
-2. `testing` + `mysql` + `kaizenflow_test`
+## Proposed Changes
 
-Diğer tüm fallback, runtime inject, empty DB durumları strict olarak reddedilir.
+### 1. Testler ve Zafiyet Senaryoları (RED State)
 
-## Subprocess Sıfır-Boot / Sıfır-Connection Kanıtı
-`tests/Feature/EarlyBootstrapSafetyTest.php` ile simüle edilmiş raw PHP Subprocess'ler üzerinden `mysql` + `kaizenflow` tuple'ı denenmiş ve exit code `1` fırlatarak Laravel'in factory callback'lerine (Application / Service Provider / DB / Migration canary) hiçbir şekilde ulaşmadığı testlerle (RED -> GREEN) ispatlanmıştır.
+#### [MODIFY] [`tests/bootstrap.php`](file:///C:/Projects/kaizenflow/tests/bootstrap.php)
+Added an explicit, raw `exit(1)` condition that triggers if the current process is loading the application while `APP_ENV=testing`, `DB_CONNECTION=mysql`, but `DB_DATABASE` is NOT `kaizenflow_test`. This catches fallback connections before the autoloader.
 
-## SQLite ve MySQL Komutları
-- **SQLite:** `php artisan test` (varsayılan)
-- **MySQL:** `composer test:mysql` (Özelleştirilmiş güvenli `tests/mysql-launcher.php` üzerinden `phpunit.mysql.xml` çalıştırılır. Parolalar `.env`'den güvenlice okunup PHPUnit process'ine enjekte edilir, `.env.testing` kirletilmez, credential'lar loga sızmaz).
+#### [MODIFY] [`tests/mysql-launcher.php`](file:///C:/Projects/kaizenflow/tests/mysql-launcher.php)
+Refactored to delegate execution to `MySqlTestLauncher`, which parses `.env` robustly with `Dotenv::parse()`, performs credential preflight, and safely launches PHPUnit via `proc_open` without mutating the parent environment.
 
-## Test Metrikleri
-- Early Bootstrap Guard Testleri: 7 passed (16 assertions) / 3.74s
-- Runtime Guard Testleri: 9 passed / 18 assertions / 0.38s
-- SQLite Tam Süit: 582 passed, 1 skipped (1655 assertions) / 19.27s
-- MySQL Tam Süit: 583 passed (1656 assertions) / 28.30s
-- Pint: PASS (Style format uygulandı)
-- NPM Build: 118 modules, PASS (917ms)
+#### [NEW] [`tests/Support/MySqlTestLauncher.php`](file:///C:/Projects/kaizenflow/tests/Support/MySqlTestLauncher.php)
+Implements process boundary safety, preflight validation of credentials, safe command array generation, explicitly isolated child environment construction, and STDOUT/STDERR secret redaction.
 
-## Geliştirme DB Değişmezliği
-- İşlem başı ve sonu migration status tamamen aynı, `kaizenflow` count değerleri `0`, CREATE_TIME ve server_uuid birebir aynı kalmıştır. Geliştirme DB %100 güvendedir.
+#### [NEW] [`tests/Unit/Testing/MySqlTestLauncherTest.php`](file:///C:/Projects/kaizenflow/tests/Unit/Testing/MySqlTestLauncherTest.php)
+TDD suite to verify safety properties: missing credential rejection, environment isolation, safe command structures, and output redaction.
 
----
+#### [MODIFY] [GrantSystemCapabilityTest.php](file:///c:/Projects/kaizenflow/tests/Feature/Actions/Authorization/GrantSystemCapabilityTest.php)
+#### [MODIFY] [RevokeSystemCapabilityTest.php](file:///c:/Projects/kaizenflow/tests/Feature/Actions/Authorization/RevokeSystemCapabilityTest.php)
+- **Transaction sınırı testleri:** Authorization kuralının `DB::transactionLevel() > 0` şartı ile işlem içinde çalıştığının doğrulanması.
+- **Stale Actor:** Başlangıçta aktif olup mutation anında pasifleşen aktörün reddedilmesi.
+- **Stale Target:** (Grant için) Başlangıçta aktif olup mutation anında pasifleşen hedefin reddedilmesi.
+- **Stale Authorization Grant:** Mutation anında aktörün `authorization.manage` yetkisinin pasifleştiği senaryo.
+- **Stale Exact Capability:** (Grant için) Aktörün devredebileceği capability'nin mutation anında pasifleştiği senaryo.
+- **No-Op Güvenliği:** Target'ın hedef grant'i zaten aktif/pasif (no-op işlemi) dahi olsa yetkisiz aktörün başarısız olması.
 
-# GÜN 13 / ÇALIŞMA BLOĞU 3.2.3 — TEST VERİTABANI İÇİN FAIL-CLOSED İZOLASYON KORUMASI
+### 2. Transaction İçi Revalidation (GREEN Fix)
 
-Bu plan, test süreçlerinin kazara geliştirme veritabanında (kaizenflow) çalışarak veri kaybına yol açmasını (TOCTOU bloklarındaki 0/0/0/0 counts olayı) önlemek amacıyla test ortamına eklenen fail-closed veritabanı güvenlik mekanizmasını belgelemektedir.
+#### [MODIFY] [GrantSystemCapability.php](file:///c:/Projects/kaizenflow/app/Actions/Authorization/GrantSystemCapability.php)
+- Saf input kontrolleri (`ScopeMismatchException`, ID eşitliği) transaction dışında bırakılacak.
+- Transaction içinde:
+  1. Actor ve target ID sırasına göre kilitlenecek.
+  2. Kilitlenmiş güncel verilerden (fresh) `is_active` kontrolü yapılacak.
+  3. Aktörün `authorization.manage` ve devredeceği `exact-capability` yetkileri tek bir sorguda (veya kilit kümesi tekilleştirilip ID sırasıyla) `lockForUpdate()` ile çekilerek doğrulanacak.
+  4. Target grant çekilecek.
+  5. Doğrulamaların ardından No-Op, Create, Reactivate işlemlerine karar verilecek.
 
-## Önceki Test İzolasyonu Olayı
-Gün 13 Blok 3.2'de çalıştırılan `php artisan test --env=testing` komutu, `.env.testing` dosyasının yokluğunda framework'ün fallback yaparak `.env` içerisindeki `DB_CONNECTION=mysql` ve `DB_DATABASE=kaizenflow` ortam değişkenlerini yüklemesiyle sonuçlanmıştır. PHPUnit ayar dosyasındaki SQLite değerleri `force="true"` parametresine sahip olmadığı için işletim sistemi çevre değişkenlerini ezememiş ve `RefreshDatabase` trait'i kaza eseri Geliştirme veritabanı (kaizenflow) üzerinde çalışıp tüm verileri sıfırlamıştır.
+#### [MODIFY] [RevokeSystemCapability.php](file:///c:/Projects/kaizenflow/app/Actions/Authorization/RevokeSystemCapability.php)
+- Saf input kontrolleri dışarıda kalacak.
+- Transaction içinde:
+  1. `userIdsToLock` listesi belirlenip (actor, target, varsa manager'lar) kilitlenecek.
+  2. Güncel (fresh) aktörden `is_active` kontrolü yapılacak.
+  3. Aktörün `authorization.manage` yetkisi, manager ID'leri sorgusunun bir parçası olarak veya ayrıca kilitlenerek doğrulanacak. (Mevcut koda aktörün manager grant'i de dahil edilecek ve `is_active` kontrol edilecek).
+  4. Target grant kilitlenecek ve no-op ile diğer kurallar işletilecek.
 
-## İzin Verilen Bağlantı Matrisi
-Guard yalnızca aşağıdaki iki konfigürasyonu kabul edecek şekilde programlanmıştır:
-1. **Normal SQLite test yolu:** `APP_ENV=testing`, `DB_CONNECTION=sqlite`, `DB_DATABASE=:memory:`
-2. **Açık MySQL integration test yolu:** `APP_ENV=testing`, `DB_CONNECTION=mysql`, `DB_DATABASE=kaizenflow_test`
+## Verification Plan
 
-## Fail-Closed Guard'ın Lifecycle Konumu
-Güvenlik denetimi `App\Testing\DatabaseSafetyGuard::verify()` üzerinden işletilmektedir. Bu guard, `tests/TestCase.php` içindeki `setUpTraits()` metodu ezilerek (override), `parent::setUpTraits()` çağrısından ve dolayısıyla `RefreshDatabase`'in migration çalıştırmasından **Hemen Önce** ancak uygulamanın (config vb.) tam olarak boot edilmesinden **Hemen Sonra** çalışacak şekilde konumlandırılmıştır.
-
-## Güvenli Komutlar
-- **SQLite Güvenli Komutu:** `php artisan test` (Normal `phpunit.xml` kullanır ve `force="true"` değerleriyle SQLite kullanımını güvenceye alır).
-- **MySQL Güvenli Komutu:** `composer test:mysql` (Sadece MySQL test yolu için özelleştirilmiş ve `force="true"` içeren `phpunit.mysql.xml` konfigürasyonunu yükleyen `php artisan test --configuration phpunit.mysql.xml` komutunu çalıştırır).
-
-## Migration Öncesi Reddetme Kanıtı
-`GuardIntegrationTest` isimli simüle edilmiş test sınıfı ile tehlikeli `mysql` / `kaizenflow` yapılandırması runtime sırasında enjekte edilmiş ve `setUpTraits` çağrıldığı anda `DatabaseSafetyGuard`'ın `RuntimeException` fırlatarak migration başlangıcını engellediği ve DB'ye hiçbir mutation (sorgu) gönderilmediği ispatlanmıştır.
-
-## Test Sayıları
-- **Safety Guard (Unit):** 8 assertions / 8 passed
-- **SQLite Hedef Test:** 5 passed / 1.28s
-- **SQLite Tam Süit:** 575 passed, 1 skipped (1639 assertions) / 16.41s
-- **MySQL Hedef Test:** 15 passed (40 assertions) / 3.18s
-- **MySQL Tam Süit:** 576 passed (1640 assertions) / 25.26s
-
-## Geliştirme DB Başlangıç/Bitiş Değişmezlik Kanıtı
-- **Başlangıç:** 0 counts (users, departments, categories, kaizens, grants, audits). Migration batch: 1. CREATE_TIME: `2026-08-21 08:51:12`
-- **Bitiş:** 0 counts. Migration durumu, batch değeri ve tablo CREATE_TIME değerleri tamamen aynı kalmış, hiçbir değişiklik (mutation) veya schema operasyonu tetiklenmemiştir.
+1. Yukarıdaki tüm TOCTOU ve stale data senaryolarını test sınıflarına ekleyerek `test(auth)` RED commit'ini oluşturacağım.
+2. İş mantığını transaction içine kaydırarak `fix(auth)` GREEN commit'i ile testleri başarıyla geçeceğim.
+3. MySQL veritabanında (`kaizenflow_test`), iki ayrı process'in (DB lock ile) eşzamanlı çalıştığı gerçek bir TOCTOU concurrency yarış testi yazıp `Senaryo A` (actor grant'in kaldırılması) ve `Senaryo B` (target pasifleştirilmesi) korumalarını kanıtlayacağım.
+4. Hem SQLite hem de MySQL ortamında kalite kapılarını çalıştıracağım (Tam test süiti, Pint, Composer vb.)
+5. Yapılan tasarımsal düzeltmeleri yönergelerdeki beklentiye uygun şekilde `implementation_plan.md` dosyasına (`docs(plan)`) kaydedeceğim.
