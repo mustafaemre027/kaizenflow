@@ -15,7 +15,6 @@ use Illuminate\Support\Facades\DB;
 class GrantSystemCapability
 {
     public function __construct(
-        private UserCapabilityResolver $resolver,
         private AppendAuditLog $auditLog
     ) {}
 
@@ -29,25 +28,40 @@ class GrantSystemCapability
             throw new Exception('Unauthorized action.');
         }
 
-        if (! $actor->is_active || ! $target->is_active) {
-            throw new Exception('Unauthorized action.');
-        }
-
-        if (! $this->resolver->allowsSystem($actor, UserCapability::AUTHORIZATION_MANAGE)) {
-            throw new Exception('Unauthorized action.');
-        }
-
-        if (! $this->resolver->allowsSystem($actor, $capability)) {
-            throw new Exception('Unauthorized action.');
-        }
-
         DB::transaction(function () use ($actor, $target, $capability) {
             $firstId = min($actor->id, $target->id);
             $secondId = max($actor->id, $target->id);
 
-            User::whereIn('id', [$firstId, $secondId])->orderBy('id')->lockForUpdate()->get();
+            $users = User::whereIn('id', [$firstId, $secondId])->orderBy('id')->lockForUpdate()->get()->keyBy('id');
+            $freshActor = $users->get($actor->id);
+            $freshTarget = $users->get($target->id);
 
-            $grant = UserSystemCapabilityGrant::where('user_id', $target->id)
+            if (! $freshActor || ! $freshActor->is_active) {
+                throw new Exception('Unauthorized action.');
+            }
+
+            if (! $freshTarget || ! $freshTarget->is_active) {
+                throw new Exception('Unauthorized action.');
+            }
+
+            $requiredCapabilities = array_unique([UserCapability::AUTHORIZATION_MANAGE->value, $capability->value]);
+            
+            $actorGrants = UserSystemCapabilityGrant::where('user_id', $freshActor->id)
+                ->whereIn('capability', $requiredCapabilities)
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->get()
+                ->keyBy('capability');
+
+            if (! $actorGrants->has(UserCapability::AUTHORIZATION_MANAGE->value) || ! $actorGrants->get(UserCapability::AUTHORIZATION_MANAGE->value)->is_active) {
+                throw new Exception('Unauthorized action.');
+            }
+
+            if (! $actorGrants->has($capability->value) || ! $actorGrants->get($capability->value)->is_active) {
+                throw new Exception('Unauthorized action.');
+            }
+
+            $grant = UserSystemCapabilityGrant::where('user_id', $freshTarget->id)
                 ->where('capability', $capability->value)
                 ->lockForUpdate()
                 ->first();

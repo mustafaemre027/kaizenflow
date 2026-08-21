@@ -16,7 +16,6 @@ use Illuminate\Support\Facades\DB;
 class RevokeSystemCapability
 {
     public function __construct(
-        private UserCapabilityResolver $resolver,
         private AppendAuditLog $auditLog
     ) {}
 
@@ -24,14 +23,6 @@ class RevokeSystemCapability
     {
         if ($capability->scope() !== CapabilityScope::SYSTEM) {
             throw new ScopeMismatchException("The capability '{$capability->value}' is not a SYSTEM capability.");
-        }
-
-        if (! $actor->is_active) {
-            throw new Exception('Unauthorized action.');
-        }
-
-        if (! $this->resolver->allowsSystem($actor, UserCapability::AUTHORIZATION_MANAGE)) {
-            throw new Exception('Unauthorized action.');
         }
 
         DB::transaction(function () use ($actor, $target, $capability) {
@@ -52,17 +43,30 @@ class RevokeSystemCapability
             $userIdsToLock = array_unique($userIdsToLock);
             sort($userIdsToLock);
 
-            User::whereIn('id', $userIdsToLock)->orderBy('id')->lockForUpdate()->get();
+            $users = User::whereIn('id', $userIdsToLock)->orderBy('id')->lockForUpdate()->get()->keyBy('id');
+            $freshActor = $users->get($actor->id);
+            $freshTarget = $users->get($target->id);
 
-            if ($capability === UserCapability::AUTHORIZATION_MANAGE) {
-                UserSystemCapabilityGrant::whereIn('user_id', $userIdsToLock)
-                    ->where('capability', UserCapability::AUTHORIZATION_MANAGE->value)
-                    ->orderBy('id')
-                    ->lockForUpdate()
-                    ->get();
+            if (! $freshActor || ! $freshActor->is_active) {
+                throw new Exception('Unauthorized action.');
             }
 
-            $grant = UserSystemCapabilityGrant::where('user_id', $target->id)
+            $userIdsForGrantsToLock = $capability === UserCapability::AUTHORIZATION_MANAGE 
+                ? $userIdsToLock 
+                : [$freshActor->id];
+
+            $managerGrants = UserSystemCapabilityGrant::whereIn('user_id', $userIdsForGrantsToLock)
+                ->where('capability', UserCapability::AUTHORIZATION_MANAGE->value)
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->get()
+                ->keyBy('user_id');
+
+            if (! $managerGrants->has($freshActor->id) || ! $managerGrants->get($freshActor->id)->is_active) {
+                throw new Exception('Unauthorized action.');
+            }
+
+            $grant = UserSystemCapabilityGrant::where('user_id', $freshTarget->id)
                 ->where('capability', $capability->value)
                 ->lockForUpdate()
                 ->first();
@@ -79,8 +83,7 @@ class RevokeSystemCapability
                     ->lockForUpdate()
                     ->count();
 
-                $targetUser = User::find($target->id);
-                if ($targetUser->is_active) {
+                if ($freshTarget->is_active) {
                     if ($activeManagersCount <= 1) {
                         throw new LastAuthorizationManagerException;
                     }
