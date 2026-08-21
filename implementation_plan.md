@@ -402,3 +402,19 @@ Blok 3 kapsamında System Capability yönetimi için Action katmanı (Grant/Revo
 - **Kilit Sırası (Deadlock Koruması):** Eşzamanlı işlemlerde önce ilgili tüm kullanıcı satırları ID artan sırasına göre kilitlenir (`lockForUpdate`), ardından ilgili grant satırları kilitlenir. Son yönetici kontrolünde de bu kilit sırası garanti altına alınır.
 - **Concurrency Kanıtı:** Eşzamanlı revoke simülasyonu MySQL ortamında asenkron (background jobs) olarak doğrulanmış, sadece tek bir işlemin commit edildiği ve son yetkilinin korunduğu ispatlanmıştır.
 - **Henüz Yapılmayanlar (HTTP/UI):** Controller, Request validation, Route tanımları, Bootstrap CLI komutu ve Blade UI henüz yapılmamıştır. Sonraki blokların konusudur.
+
+## 17. GÜN 13 BLOK 3.2/3.2.1 UYGULAMA KAYDI (GERÇEKLEŞEN)
+
+Blok 3.2 ve 3.2.1 kapsamında `GrantSystemCapability` ve `RevokeSystemCapability` işlemlerindeki DB bağlantılı Time-of-Check/Time-of-Use (TOCTOU) yarış (race condition) senaryoları kapatılmış ve kilit mekanizmaları MySQL üzerinde izole asenkron testlerle kanıtlanmıştır:
+
+- **Transaction İçi Kilitli Revalidation:** Actor'ün ve Target'ın aktifliği, `authorization.manage` yetkisinin varlığı, grant ve exact-capability gereksinimleri transaction dışında ön kontrolden geçirilmek yerine, doğrudan transaction içinde `lockForUpdate` ile taze (fresh) modeller okunduktan **sonra** denetlenir hale getirilmiştir.
+- **Stale Veri Reddi:** Transaction öncesi aktarılan model durumlarına güvenilmez. Yetki iptal edilirse, hedef pasifleşirse veya işlem sırasında actor pasifleşirse, caller tarafından verilen eski "aktif" modeller üzerinden işlem yapılması engellenmiştir. No-op işlemleri öncesinde de yetki kontrolü yapılarak bilgi sızması önlenmiştir.
+- **Deterministik User/Grant Kilit Sırası:** Çoklu satır kilitlenirken deadlock oluşmaması için, önce kullanıcılar (actor ve target) `id` artan sırasıyla kilitlenmiş, ardından ilgili capability grant satırları kilitlenmiştir.
+- **MySQL Senaryo A (Actor Yetkisinin İşlem Sırasında İptali):** Asenkron PHP process'leriyle test edilmiş, Actor'e ait `authorization.manage` yetkisi işlem ortasında (kilitleme öncesinde) Process 2 tarafından revoke edildiğinde, Process 1'in taze durumu fark edip `Unauthorized action` fırlattığı ve mutation/audit üretmediği kanıtlanmıştır. Deadlock veya timeout oluşmamıştır.
+- **MySQL Senaryo B (Target Kullanıcının İşlem Sırasında Pasifleştirilmesi):** Asenkron PHP process'leriyle test edilmiş, Target işlem ortasında Process 1 tarafından pasifleştirildiğinde, Process 2'nin lock için bekleyip ardından güncel pasif durumu okuyarak `Unauthorized action` fırlattığı ve mutation/audit üretmediği kanıtlanmıştır.
+- **Test ve Regresyon Metrikleri:**
+  - SQLite Hedef ve Tam Süit: 567 passed, 1 skipped (SQLite `FOR UPDATE` desteği eksikliğinden), 1622 assertion. Süre: ~10.8s.
+  - MySQL Hedef Testler (Grant, Revoke, Resolver): 39 passed, 0 skipped, 82 assertion. (SQLite'da atlanan test MySQL'de çalıştırılıp geçmiş ve FOR UPDATE lock davranışı doğrulanmıştır). Süre: ~20.6s.
+  - MySQL Tam Süit: 567 passed, 0 skipped, 1622 assertion. Süre: ~39.8s.
+  - Gün 12 regresyonları (Policy, Assign, Start, Complete, Resolver) ve Audit rollback regresyonları GREEN durumunu korumuştur. Audit metadata (`old_is_active`, `new_is_active`, `scope`, vs.) sağlamlığı doğrulanmıştır.
+- **Kalite Kapıları:** Composer strict validation, Pint code style düzeltmeleri (otomatik lint + ayrı commit), NPM production build, artisan view clear/cache, migration durumları ve `git diff --check` başarıyla tamamlanmış ve çalışma ortamı temiz (CLEAN) bırakılmıştır.
