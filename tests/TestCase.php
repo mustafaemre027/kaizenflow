@@ -14,7 +14,7 @@ abstract class TestCase extends BaseTestCase
      */
     protected function setUpTraits()
     {
-        // Enforce fail-closed database isolation guard before ANY trait 
+        // Enforce fail-closed database isolation guard before ANY trait
         // (including RefreshDatabase) runs.
         DatabaseSafetyGuard::verify();
 

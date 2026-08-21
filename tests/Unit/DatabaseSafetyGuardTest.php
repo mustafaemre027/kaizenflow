@@ -2,9 +2,9 @@
 
 namespace Tests\Unit;
 
+use App\Testing\DatabaseSafetyGuard;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
-use App\Testing\DatabaseSafetyGuard;
 
 class DatabaseSafetyGuardTest extends TestCase
 {
@@ -67,7 +67,7 @@ class DatabaseSafetyGuardTest extends TestCase
             $this->assertStringContainsString('DB: kaizenflow', $msg);
             $this->assertStringContainsString('Host: 127.0.0.1', $msg);
             $this->assertStringContainsString('Port: 3306', $msg);
-            
+
             $this->assertStringNotContainsString('password', strtolower($msg));
         }
     }

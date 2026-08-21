@@ -16,7 +16,7 @@ $_ENV['DB_DATABASE'] = 'kaizenflow_test';
 $_SERVER['DB_DATABASE'] = 'kaizenflow_test';
 
 // 2. Load actual credentials from local .env to avoid committing them
-$envPath = dirname(__DIR__) . '/.env';
+$envPath = dirname(__DIR__).'/.env';
 if (file_exists($envPath)) {
     $lines = file($envPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
     foreach ($lines as $line) {
@@ -41,14 +41,14 @@ if (file_exists($envPath)) {
 }
 
 // 3. Clear config before running tests
-passthru(PHP_BINARY . ' artisan config:clear --ansi', $clearExitCode);
+passthru(PHP_BINARY.' artisan config:clear --ansi', $clearExitCode);
 if ($clearExitCode !== 0) {
     exit($clearExitCode);
 }
 
 // 4. Run phpunit directly with the mysql configuration
 $args = array_slice($argv, 1);
-$command = PHP_BINARY . ' vendor/phpunit/phpunit/phpunit --configuration phpunit.mysql.xml ' . implode(' ', array_map('escapeshellarg', $args));
+$command = PHP_BINARY.' vendor/phpunit/phpunit/phpunit --configuration phpunit.mysql.xml '.implode(' ', array_map('escapeshellarg', $args));
 
 passthru($command, $exitCode);
 exit($exitCode);

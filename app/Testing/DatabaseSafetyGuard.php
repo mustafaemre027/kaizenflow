@@ -44,6 +44,7 @@ class DatabaseSafetyGuard
             if ($database !== ':memory:') {
                 self::abort($env, $connection, $database, $host, $port, 'SQLite must use :memory: database.');
             }
+
             return;
         }
 
@@ -51,6 +52,7 @@ class DatabaseSafetyGuard
             if ($database !== 'kaizenflow_test') {
                 self::abort($env, $connection, $database, $host, $port, 'MySQL must strictly use kaizenflow_test database.');
             }
+
             return;
         }
 
@@ -66,9 +68,9 @@ class DatabaseSafetyGuard
         $connStr = $connection ?: 'null';
 
         throw new RuntimeException(
-            "Test Database Safety Guard Failed: {$reason} " .
-            "[Env: {$envStr}, Driver: {$connStr}, DB: {$dbStr}, Host: {$hostStr}, Port: {$portStr}]. " .
-            "Allowed paths: (sqlite + :memory:) OR (mysql + kaizenflow_test)."
+            "Test Database Safety Guard Failed: {$reason} ".
+            "[Env: {$envStr}, Driver: {$connStr}, DB: {$dbStr}, Host: {$hostStr}, Port: {$portStr}]. ".
+            'Allowed paths: (sqlite + :memory:) OR (mysql + kaizenflow_test).'
         );
     }
 }

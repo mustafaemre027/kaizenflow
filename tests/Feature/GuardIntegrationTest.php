@@ -2,14 +2,14 @@
 
 namespace Tests\Feature;
 
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use RuntimeException;
 use Tests\TestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 
 class GuardIntegrationTest extends TestCase
 {
-    // We don't use RefreshDatabase trait here directly on the class 
+    // We don't use RefreshDatabase trait here directly on the class
     // because if the guard fails, it prevents it. But to prove it,
     // we can use a custom setUpTheTestEnvironment.
 
@@ -28,6 +28,7 @@ class GuardIntegrationTest extends TestCase
             $this->fail('Guard did not throw an exception');
         } catch (RuntimeException $e) {
             $this->assertStringContainsString('Test Database Safety Guard Failed', $e->getMessage());
+
             // Since we caught it and verified it, we can stop the rest of setUpTheTestEnvironment
             // to avoid actually hitting the database.
             return;

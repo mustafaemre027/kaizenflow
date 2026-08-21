@@ -37,4 +37,4 @@ if ($connection === 'sqlite') {
 }
 
 // Proceed to load the normal Composer autoloader
-require dirname(__DIR__) . '/vendor/autoload.php';
+require dirname(__DIR__).'/vendor/autoload.php';

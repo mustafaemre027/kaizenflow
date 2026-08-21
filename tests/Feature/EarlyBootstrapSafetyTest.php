@@ -12,10 +12,10 @@ class EarlyBootstrapSafetyTest extends TestCase
         // Run tests/bootstrap.php via PHP CLI to simulate early execution
         // before PHPUnit or Laravel is involved.
         $result = Process::env($env)->run('php tests/bootstrap.php');
-        
+
         return [
             'exitCode' => $result->exitCode(),
-            'output' => $result->output() . $result->errorOutput(),
+            'output' => $result->output().$result->errorOutput(),
         ];
     }
 
@@ -77,7 +77,7 @@ class EarlyBootstrapSafetyTest extends TestCase
             'DB_CONNECTION' => 'mysql',
             'DB_DATABASE' => 'kaizenflow',
         ]);
-        
+
         $this->assertNotEquals(0, $res['exitCode']);
         // If it exited early with our fatal error, it did not boot Laravel.
         // There is no stack trace or Laravel exception output.
@@ -90,7 +90,7 @@ class EarlyBootstrapSafetyTest extends TestCase
         // Execute the real artisan test command, but target a canary script that outputs config
         // Since we are simulating missing .env.testing, if it falls back it would be dangerous.
         // We expect it to be forced to sqlite :memory: by the safe phpunit.xml
-        
+
         // Create a temporary test file that dumps config
         $testCode = <<<PHP
 <?php
@@ -106,21 +106,21 @@ class TempConfigDumpTest extends TestCase {
 }
 PHP;
         file_put_contents(base_path('tests/Feature/TempConfigDumpTest.php'), $testCode);
-        
+
         // Simulating the environment that would be present when running `php artisan test`
         // We clear existing testing env vars so it relies on defaults and phpunit.xml
         $result = Process::env([
             'APP_ENV' => false,
             'DB_CONNECTION' => false,
-            'DB_DATABASE' => false
+            'DB_DATABASE' => false,
         ])->run('php artisan test tests/Feature/TempConfigDumpTest.php');
-        
+
         @unlink(base_path('tests/Feature/TempConfigDumpTest.php'));
-        
+
         // For the RED phase, this might actually show kaizenflow if force=true is not enough
         // but we already added force=true in previous block! So it might pass.
         // Wait, the RED phase for parent boot requires us to intercept it before application creation!
-        
+
         // We just assert what the requirement states:
         $this->assertStringContainsString('CANARY_DB::memory:', $result->output());
         $this->assertStringContainsString('CANARY_CONN:sqlite', $result->output());
@@ -144,10 +144,10 @@ class TempMysqlDumpTest extends TestCase {
 }
 PHP;
         file_put_contents(base_path('tests/Feature/TempMysqlDumpTest.php'), $testCode);
-        
+
         $result = Process::run('composer test:mysql -- --filter TempMysqlDumpTest');
         @unlink(base_path('tests/Feature/TempMysqlDumpTest.php'));
-        
+
         // We assert it uses mysql and exactly kaizenflow_test
         $this->assertStringContainsString('CANARY_CONN:mysql', $result->output());
         $this->assertStringContainsString('CANARY_DB:kaizenflow_test', $result->output());
