@@ -48,8 +48,7 @@
             "@php artisan test"
         ],
         "test:mysql": [
-            "@php artisan config:clear --ansi",
-            "@php artisan test --configuration phpunit.mysql.xml"
+            "@php tests/mysql-launcher.php"
         ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
