@@ -101,15 +101,15 @@ class MySqlTestLauncherTest extends TestCase
 
     public function test_parent_environment_is_isolated()
     {
-        $this->createEnv("DB_HOST=127.0.0.1\nDB_PORT=3306\nDB_USERNAME=kaizenflow_app\nDB_PASSWORD=secret123");
+        $this->createEnv("DB_HOST=127.0.0.1\nDB_PORT=3306\nDB_USERNAME=kaizenflow_app\nDB_PASSWORD=secret123\nDUMMY_TEST_KEY=unique123");
         $launcher = new MySqlTestLauncher($this->tempEnvPath, []);
         $launcher->loadEnvironment();
         $launcher->buildChildEnvironment();
         
-        // Assert parent env is not mutated
-        $this->assertFalse(getenv('DB_PASSWORD'));
-        $this->assertArrayNotHasKey('DB_PASSWORD', $_ENV);
-        $this->assertArrayNotHasKey('DB_PASSWORD', $_SERVER);
+        // Assert parent env is not mutated by Dotenv::parse
+        $this->assertFalse(getenv('DUMMY_TEST_KEY'));
+        $this->assertArrayNotHasKey('DUMMY_TEST_KEY', $_ENV);
+        $this->assertArrayNotHasKey('DUMMY_TEST_KEY', $_SERVER);
     }
 
     public function test_command_is_array_and_safe()
@@ -120,7 +120,7 @@ class MySqlTestLauncherTest extends TestCase
         $command = $launcher->buildCommandArray();
         
         $this->assertIsArray($command);
-        $this->assertStringEndsWith('php', strtolower($command[0])); // PHP_BINARY
+        $this->assertMatchesRegularExpression('/php(\.exe)?$/i', $command[0]); // PHP_BINARY
         $this->assertStringEndsWith('phpunit', strtolower($command[1])); // PHPUnit
         $this->assertEquals('--configuration', $command[2]);
         $this->assertStringEndsWith('phpunit.mysql.xml', $command[3]);
