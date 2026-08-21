@@ -275,4 +275,77 @@ class RevokeSystemCapabilityTest extends TestCase
             'is_active' => true,
         ]);
     }
+    public function test_authorization_is_validated_inside_transaction(): void
+    {
+        $actor = User::factory()->create();
+        UserSystemCapabilityGrant::factory()->create(['user_id' => $actor->id, 'capability' => UserCapability::AUTHORIZATION_MANAGE]);
+        $target = User::factory()->create();
+        UserSystemCapabilityGrant::factory()->create(['user_id' => $target->id, 'capability' => UserCapability::ORGANIZATION_VIEW]);
+
+        $action = app(RevokeSystemCapability::class);
+
+        $checked = false;
+        \Illuminate\Support\Facades\DB::listen(function ($query) use (&$checked, $actor) {
+            $sql = strtolower($query->sql);
+            if (str_contains($sql, 'user_system_capability_grants') && str_contains($sql, 'select') && in_array($actor->id, $query->bindings)) {
+                $this->assertGreaterThan(1, \Illuminate\Support\Facades\DB::transactionLevel(), 'Authorization check for actor must happen inside a transaction.');
+                $checked = true;
+            }
+        });
+
+        $action->execute($actor, $target, UserCapability::ORGANIZATION_VIEW);
+        $this->assertTrue($checked);
+    }
+
+    public function test_stale_actor_is_rejected(): void
+    {
+        $actor = User::factory()->create(['is_active' => true]);
+        UserSystemCapabilityGrant::factory()->create(['user_id' => $actor->id, 'capability' => UserCapability::AUTHORIZATION_MANAGE]);
+        $target = User::factory()->create();
+        UserSystemCapabilityGrant::factory()->create(['user_id' => $target->id, 'capability' => UserCapability::ORGANIZATION_VIEW]);
+
+        User::where('id', $actor->id)->update(['is_active' => false]);
+
+        $action = app(RevokeSystemCapability::class);
+
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage('Unauthorized action.');
+
+        $action->execute($actor, $target, UserCapability::ORGANIZATION_VIEW);
+    }
+
+    public function test_stale_authorization_grant_is_rejected(): void
+    {
+        $actor = User::factory()->create(['is_active' => true]);
+        UserSystemCapabilityGrant::factory()->create(['user_id' => $actor->id, 'capability' => UserCapability::AUTHORIZATION_MANAGE]);
+        $target = User::factory()->create();
+        UserSystemCapabilityGrant::factory()->create(['user_id' => $target->id, 'capability' => UserCapability::ORGANIZATION_VIEW]);
+
+        UserSystemCapabilityGrant::where('user_id', $actor->id)->where('capability', UserCapability::AUTHORIZATION_MANAGE->value)->update(['is_active' => false]);
+
+        $action = app(RevokeSystemCapability::class);
+
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage('Unauthorized action.');
+
+        $action->execute($actor, $target, UserCapability::ORGANIZATION_VIEW);
+    }
+
+    public function test_unauthorized_actor_cannot_perform_no_op(): void
+    {
+        $actor = User::factory()->create(['is_active' => true]);
+        UserSystemCapabilityGrant::factory()->create(['user_id' => $actor->id, 'capability' => UserCapability::AUTHORIZATION_MANAGE]);
+        $target = User::factory()->create();
+        // Target grant is inactive => no-op
+        UserSystemCapabilityGrant::factory()->create(['user_id' => $target->id, 'capability' => UserCapability::ORGANIZATION_VIEW, 'is_active' => false]);
+
+        UserSystemCapabilityGrant::where('user_id', $actor->id)->where('capability', UserCapability::AUTHORIZATION_MANAGE->value)->update(['is_active' => false]);
+
+        $action = app(RevokeSystemCapability::class);
+
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage('Unauthorized action.');
+
+        $action->execute($actor, $target, UserCapability::ORGANIZATION_VIEW);
+    }
 }
