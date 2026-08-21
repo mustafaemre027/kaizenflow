@@ -8,7 +8,6 @@ use App\Exceptions\ScopeMismatchException;
 use App\Models\User;
 use App\Models\UserSystemCapabilityGrant;
 use App\Services\AppendAuditLog;
-use App\Services\UserCapabilityResolver;
 use Exception;
 use Illuminate\Support\Facades\DB;
 
@@ -45,7 +44,7 @@ class GrantSystemCapability
             }
 
             $requiredCapabilities = array_unique([UserCapability::AUTHORIZATION_MANAGE->value, $capability->value]);
-            
+
             $actorGrants = UserSystemCapabilityGrant::where('user_id', $freshActor->id)
                 ->whereIn('capability', $requiredCapabilities)
                 ->orderBy('id')

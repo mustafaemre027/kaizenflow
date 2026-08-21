@@ -275,6 +275,7 @@ class RevokeSystemCapabilityTest extends TestCase
             'is_active' => true,
         ]);
     }
+
     public function test_authorization_is_validated_inside_transaction(): void
     {
         $actor = User::factory()->create();
@@ -285,10 +286,10 @@ class RevokeSystemCapabilityTest extends TestCase
         $action = app(RevokeSystemCapability::class);
 
         $checked = false;
-        \Illuminate\Support\Facades\DB::listen(function ($query) use (&$checked, $actor) {
+        DB::listen(function ($query) use (&$checked, $actor) {
             $sql = strtolower($query->sql);
             if (str_contains($sql, 'user_system_capability_grants') && str_contains($sql, 'select') && in_array($actor->id, $query->bindings)) {
-                $this->assertGreaterThan(1, \Illuminate\Support\Facades\DB::transactionLevel(), 'Authorization check for actor must happen inside a transaction.');
+                $this->assertGreaterThan(1, DB::transactionLevel(), 'Authorization check for actor must happen inside a transaction.');
                 $checked = true;
             }
         });
