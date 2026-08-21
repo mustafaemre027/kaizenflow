@@ -3,8 +3,8 @@
 namespace Tests\Unit\Testing;
 
 use PHPUnit\Framework\TestCase;
-use Tests\Support\MySqlTestLauncher;
 use RuntimeException;
+use Tests\Support\MySqlTestLauncher;
 
 class MySqlTestLauncherTest extends TestCase
 {
@@ -13,7 +13,7 @@ class MySqlTestLauncherTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->tempEnvPath = sys_get_temp_dir() . '/.env.test.' . uniqid();
+        $this->tempEnvPath = sys_get_temp_dir().'/.env.test.'.uniqid();
     }
 
     protected function tearDown(): void
@@ -33,7 +33,7 @@ class MySqlTestLauncherTest extends TestCase
     {
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Missing or unreadable .env file');
-        
+
         $launcher = new MySqlTestLauncher('/path/that/does/not/exist', []);
         $launcher->validatePreflight();
     }
@@ -87,9 +87,9 @@ class MySqlTestLauncherTest extends TestCase
         $this->createEnv("DB_HOST=127.0.0.1\nDB_PORT=3306\nDB_USERNAME=kaizenflow_app\nDB_PASSWORD=secret123\nDB_DATABASE=dangerous");
         $launcher = new MySqlTestLauncher($this->tempEnvPath, []);
         $launcher->loadEnvironment();
-        
+
         $childEnv = $launcher->buildChildEnvironment();
-        
+
         $this->assertEquals('testing', $childEnv['APP_ENV']);
         $this->assertEquals('mysql', $childEnv['DB_CONNECTION']);
         $this->assertEquals('kaizenflow_test', $childEnv['DB_DATABASE']);
@@ -105,7 +105,7 @@ class MySqlTestLauncherTest extends TestCase
         $launcher = new MySqlTestLauncher($this->tempEnvPath, []);
         $launcher->loadEnvironment();
         $launcher->buildChildEnvironment();
-        
+
         // Assert parent env is not mutated by Dotenv::parse
         $this->assertFalse(getenv('DUMMY_TEST_KEY'));
         $this->assertArrayNotHasKey('DUMMY_TEST_KEY', $_ENV);
@@ -116,9 +116,9 @@ class MySqlTestLauncherTest extends TestCase
     {
         $this->createEnv("DB_HOST=127.0.0.1\nDB_PORT=3306\nDB_USERNAME=kaizenflow_app\nDB_PASSWORD=secret123");
         $launcher = new MySqlTestLauncher($this->tempEnvPath, ['--filter', 'SomeTest']);
-        
+
         $command = $launcher->buildCommandArray();
-        
+
         $this->assertIsArray($command);
         $this->assertMatchesRegularExpression('/php(\.exe)?$/i', $command[0]); // PHP_BINARY
         $this->assertStringEndsWith('phpunit', strtolower($command[1])); // PHPUnit
@@ -126,7 +126,7 @@ class MySqlTestLauncherTest extends TestCase
         $this->assertStringEndsWith('phpunit.mysql.xml', $command[3]);
         $this->assertEquals('--filter', $command[4]);
         $this->assertEquals('SomeTest', $command[5]);
-        
+
         // Ensure password is not in command
         $this->assertNotContains('secret123', $command);
     }
@@ -135,7 +135,7 @@ class MySqlTestLauncherTest extends TestCase
     {
         $this->createEnv("DB_HOST=127.0.0.1\nDB_PORT=3306\nDB_USERNAME=kaizenflow_app\nDB_PASSWORD=secret123");
         $launcher = new MySqlTestLauncher($this->tempEnvPath, ['-c', 'phpunit.xml']);
-        
+
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('CLI argument -c is not allowed');
         $launcher->buildCommandArray();
@@ -145,7 +145,7 @@ class MySqlTestLauncherTest extends TestCase
     {
         $this->createEnv("DB_HOST=127.0.0.1\nDB_PORT=3306\nDB_USERNAME=kaizenflow_app\nDB_PASSWORD=secret123");
         $launcher = new MySqlTestLauncher($this->tempEnvPath, ['--bootstrap=vendor/autoload.php']);
-        
+
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('CLI argument --bootstrap=vendor/autoload.php is not allowed');
         $launcher->buildCommandArray();
@@ -156,10 +156,10 @@ class MySqlTestLauncherTest extends TestCase
         $this->createEnv("DB_HOST=127.0.0.1\nDB_PORT=3306\nDB_USERNAME=kaizenflow_app\nDB_PASSWORD=secret123");
         $launcher = new MySqlTestLauncher($this->tempEnvPath, []);
         $launcher->loadEnvironment();
-        
-        $output = "Exception: Connection failed for user secret123 and test";
+
+        $output = 'Exception: Connection failed for user secret123 and test';
         $redacted = $launcher->redactOutput($output);
-        
-        $this->assertEquals("Exception: Connection failed for user [REDACTED] and test", $redacted);
+
+        $this->assertEquals('Exception: Connection failed for user [REDACTED] and test', $redacted);
     }
 }

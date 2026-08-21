@@ -2,7 +2,7 @@
 
 // tests/mysql-launcher.php
 
-require __DIR__ . '/../vendor/autoload.php';
+require __DIR__.'/../vendor/autoload.php';
 
 use Tests\Support\MySqlTestLauncher;
 
@@ -24,18 +24,18 @@ if (is_resource($clearProcess)) {
 }
 
 // 2. Launch the safe test process
-$envPath = dirname(__DIR__) . '/.env';
+$envPath = dirname(__DIR__).'/.env';
 $cliArgs = array_slice($argv, 1);
 
 try {
     $launcher = new MySqlTestLauncher($envPath, $cliArgs);
     $exitCode = $launcher->run();
     exit($exitCode);
-} catch (\Throwable $e) {
+} catch (Throwable $e) {
     // If it fails during preflight, print safely and exit 1
     // Wait, the redactOutput requires loadEnvironment to have been called.
-    // If it crashed before/during loadEnvironment, it might not be redacted. 
+    // If it crashed before/during loadEnvironment, it might not be redacted.
     // But exception messages from our code only contain the keys, not the values.
-    echo "FATAL ERROR: " . $e->getMessage() . "\n";
+    echo 'FATAL ERROR: '.$e->getMessage()."\n";
     exit(1);
 }
