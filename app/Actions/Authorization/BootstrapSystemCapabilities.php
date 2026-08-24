@@ -23,13 +23,10 @@ class BootstrapSystemCapabilities
     public function execute(User $targetUser): void
     {
         DB::transaction(function () use ($targetUser) {
-            $candidateUserIds = UserSystemCapabilityGrant::where('capability', UserCapability::AUTHORIZATION_MANAGE)
-                ->where('is_active', true)
-                ->pluck('user_id')
-                ->toArray();
-                
-            $candidateUserIds[] = $targetUser->id;
-            $userIdsToLock = array_unique($candidateUserIds);
+            $activeUserIds = User::where('is_active', true)->pluck('id')->toArray();
+            $activeUserIds[] = $targetUser->id;
+            
+            $userIdsToLock = array_unique($activeUserIds);
             sort($userIdsToLock);
 
             // 1. Lock Users
@@ -41,9 +38,10 @@ class BootstrapSystemCapabilities
             }
 
             // 2. Lock Grants
-            $grantIdsToLock = UserSystemCapabilityGrant::whereIn('user_id', $userIdsToLock)->pluck('id')->toArray();
-            sort($grantIdsToLock);
-            $lockedGrants = UserSystemCapabilityGrant::whereIn('id', $grantIdsToLock)->orderBy('id')->lockForUpdate()->get();
+            $lockedGrants = UserSystemCapabilityGrant::whereIn('user_id', $userIdsToLock)
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->get();
 
             // Calculate active managers
             $activeManagerIds = [];
