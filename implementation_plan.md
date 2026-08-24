@@ -36,6 +36,10 @@ Extensive TDD suite verifying the strict `kaizenflow_app` allowlist, blocking al
 > The `MySqlTestLauncher.php` support class was unintentionally left out of the initial `GREEN` commit and was instead committed in the `DOCS` commit. This means the `GREEN` commit was NOT self-contained. 
 > To preserve history and avoid history rewrite (no amend/rebase), this deviation is strictly recorded here. Final code integrity is unaffected and fully secured by the comprehensive tests in the residual bypass tests block.
 
+> [!TIP]
+> **Final Acceptance Audit Note**:
+> During the final acceptance audit, two gaps were identified: the `[['-c', 'evil.xml']]` bypass format was untested, and the parser silently permitted duplicate `DB_` keys (taking the last one). These were closed with a dedicated `RED`/`GREEN` cycle: strict parser scanning now throws a `RuntimeException` instantly if any duplicate definition is found for `DB_HOST`, `DB_PORT`, `DB_USERNAME`, or `DB_PASSWORD`.
+
 #### [MODIFY] [GrantSystemCapabilityTest.php](file:///c:/Projects/kaizenflow/tests/Feature/Actions/Authorization/GrantSystemCapabilityTest.php)
 #### [MODIFY] [RevokeSystemCapabilityTest.php](file:///c:/Projects/kaizenflow/tests/Feature/Actions/Authorization/RevokeSystemCapabilityTest.php)
 - **Transaction sınırı testleri:** Authorization kuralının `DB::transactionLevel() > 0` şartı ile işlem içinde çalıştığının doğrulanması.
