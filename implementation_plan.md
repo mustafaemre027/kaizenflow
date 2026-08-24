@@ -102,3 +102,11 @@ Bu blokla mutasyon altyapısı güvenle tamamlanmış olup, Form Request, Blade/
 - **Güvenlik Mühürü Teyidi:** Dev DB (kaizenflow) testten önce ve sonra fingerprint ile doğrulandı, hiçbir sızıntı ve değişiklik (0 byte data drift) yaşanmadı.
 - **Bütünsel Regresyon:** Tüm SQLite (686 passed) ve MySQL (690 passed) testleri sıfır hata ile tamamlandı. Pint, view cache, JS build gibi kalite kapıları kapandı.
 
+## Blok 6.2.3.2 Race Barrier Cleanup Garantisi (TDD)
+- **Tespit Edilen Cleanup Açığı:** Önceki implementasyonda barrier/temp kalıntıları test fail olduğunda, timeout yaşandığında veya exception fırlatıldığında `tearDown` veya `finally` ile temizlenemiyordu ve `%TEMP%` altında kalıntılar bırakıyordu.
+- **RED Test Kapsamı:** `RaceHarnessCleanupTest.php` sınıfı oluşturularak normal çalışma, idempotent çağrı, exception fırlatılması, timeout yaşanması ve unrelated dosya korumasına dair kırmızı testler kanıtlandı.
+- **Exact-owned Barrier Directory & Random Token:** Tahmin edilebilir `uniqid()` yerine tam `bin2hex(random_bytes(16))` ile izole ve sadece test harness örneğinin sahip olduğu barrier dizinleri garantilendi.
+- **Exception/Timeout Cleanup & Process Reap:** Barrier oluşturulmasından `collectResults` aşamasına kadarki tüm lifecycle yönetimi `RaceHarness` içine kapsüllendi. Child process'ler ve açık olan resource pipe'ları, `try/finally` yapısına uyumlu şekilde, failure anında (timeout, exception vs.) terminate ve reap edildi (proc_close, proc_terminate).
+- **Eski Temp Kalıntıları Korundu & Dev DB Mühürlendi:** Harici bir dizin (`kaizen_race_unrelated_...`) veya eski kalan dizinler, `rmdir` esnasında exact pattern validation ve exact path sahipliği kontrolüyle `%100` korundu. Geliştirme veritabanında hiçbir sızıntı yaşanmadı.
+- **SQLite/MySQL Test Metrikleri:** Tüm Test Süitleri (SQLite 686 test, MySQL 696 test) ve Race A/B/C regresyonları GREEN duruma getirildi. Hard-kill anlarında (OS shutdown, elektrik kesintisi vs.) PHP'nin `finally` bloğu çalışmayacağından, bu tür dış etmen kaynaklı nadir senaryolarda işletim sisteminin %TEMP% politikalarına güvenileceği dürüstçe belirtildi.
+
