@@ -23,10 +23,18 @@ Added an explicit, raw `exit(1)` condition that triggers if the current process 
 Refactored to delegate execution to `MySqlTestLauncher`, which parses `.env` robustly with `Dotenv::parse()`, performs credential preflight, and safely launches PHPUnit via `proc_open` without mutating the parent environment.
 
 #### [NEW] [`tests/Support/MySqlTestLauncher.php`](file:///C:/Projects/kaizenflow/tests/Support/MySqlTestLauncher.php)
-Implements process boundary safety, preflight validation of credentials, safe command array generation, explicitly isolated child environment construction, and STDOUT/STDERR secret redaction.
+Implements process boundary safety, preflight validation of credentials, safe command array generation, explicitly isolated child environment construction, and STDOUT/STDERR secret redaction. Strict allowlisting applied for `DB_USERNAME` (only `kaizenflow_app` allowed).
 
 #### [NEW] [`tests/Unit/Testing/MySqlTestLauncherTest.php`](file:///C:/Projects/kaizenflow/tests/Unit/Testing/MySqlTestLauncherTest.php)
 TDD suite to verify safety properties: missing credential rejection, environment isolation, safe command structures, and output redaction.
+
+#### [NEW] [`tests/Unit/Testing/MySqlTestLauncherResidualBypassTest.php`](file:///C:/Projects/kaizenflow/tests/Unit/Testing/MySqlTestLauncherResidualBypassTest.php)
+Extensive TDD suite verifying the strict `kaizenflow_app` allowlist, blocking all config bypass variants (`--no-configuration`, `-c=evil.xml`, etc.), and exhaustive tests of `Dotenv::parse()` parser edge-cases (CRLF, `#`, `=`, whitespaces, quotes).
+
+> [!WARNING]
+> **Commit Boundary Deviation Record**:
+> The `MySqlTestLauncher.php` support class was unintentionally left out of the initial `GREEN` commit and was instead committed in the `DOCS` commit. This means the `GREEN` commit was NOT self-contained. 
+> To preserve history and avoid history rewrite (no amend/rebase), this deviation is strictly recorded here. Final code integrity is unaffected and fully secured by the comprehensive tests in the residual bypass tests block.
 
 #### [MODIFY] [GrantSystemCapabilityTest.php](file:///c:/Projects/kaizenflow/tests/Feature/Actions/Authorization/GrantSystemCapabilityTest.php)
 #### [MODIFY] [RevokeSystemCapabilityTest.php](file:///c:/Projects/kaizenflow/tests/Feature/Actions/Authorization/RevokeSystemCapabilityTest.php)
