@@ -6,6 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Models\ApprovalWorkflow;
 use App\Queries\ApprovalConfiguration\ListApprovalWorkflows;
 use App\Queries\ApprovalConfiguration\ShowApprovalWorkflow;
+use App\Actions\ApprovalConfiguration\CreateApprovalWorkflowDraft;
+use App\Actions\ApprovalConfiguration\DeactivateApprovalWorkflow;
+use App\Actions\ApprovalConfiguration\PublishApprovalWorkflow;
+use App\Actions\ApprovalConfiguration\SetDefaultApprovalWorkflow;
+use App\Actions\ApprovalConfiguration\UpdateApprovalWorkflowDraft;
+use App\Http\Requests\StoreApprovalWorkflowRequest;
+use App\Http\Requests\UpdateApprovalWorkflowRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Gate;
 
@@ -38,5 +45,70 @@ class ApprovalConfigurationController extends Controller
                 'stages' => $workflow->stages->toArray(),
             ]),
         ]);
+    }
+
+    public function store(StoreApprovalWorkflowRequest $request, CreateApprovalWorkflowDraft $action): JsonResponse
+    {
+        Gate::authorize('create', ApprovalWorkflow::class);
+
+        $workflow = $action->execute(
+            $request->user(),
+            $request->validated('code'),
+            $request->validated('name'),
+            $request->validated('description'),
+            $request->validated('stages')
+        );
+
+        return response()->json(['data' => $workflow], 201);
+    }
+
+    public function update(int $id, UpdateApprovalWorkflowRequest $request, UpdateApprovalWorkflowDraft $action): JsonResponse
+    {
+        Gate::authorize('update', ApprovalWorkflow::class);
+        
+        $workflow = ApprovalWorkflow::findOrFail($id);
+
+        $workflow = $action->execute(
+            $request->user(),
+            $workflow,
+            $request->validated('name'),
+            $request->validated('description'),
+            $request->validated('stages')
+        );
+
+        return response()->json(['data' => $workflow]);
+    }
+
+    public function publish(int $id, PublishApprovalWorkflow $action): JsonResponse
+    {
+        Gate::authorize('publish', ApprovalWorkflow::class);
+        
+        $workflow = ApprovalWorkflow::findOrFail($id);
+
+        $workflow = $action->execute(request()->user(), $workflow);
+
+        return response()->json(['data' => $workflow]);
+    }
+
+    public function setDefault(int $id, SetDefaultApprovalWorkflow $action): JsonResponse
+    {
+        Gate::authorize('setDefault', ApprovalWorkflow::class);
+        
+        $workflow = ApprovalWorkflow::findOrFail($id);
+
+        $workflow = $action->execute(request()->user(), $workflow);
+
+        return response()->json(['data' => $workflow]);
+    }
+
+    public function deactivate(int $id, DeactivateApprovalWorkflow $action): JsonResponse
+    {
+        Gate::authorize('deactivate', ApprovalWorkflow::class);
+        
+        $workflow = ApprovalWorkflow::findOrFail($id);
+
+        $workflow = $action->execute(request()->user(), $workflow);
+
+        return response()->json(['data' => $workflow]);
     }
 }

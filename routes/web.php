@@ -51,6 +51,11 @@ Route::middleware('auth')->group(function () {
 
         Route::get('/approval-configurations', [ApprovalConfigurationController::class, 'index'])->name('approval-configurations.index');
         Route::get('/approval-configurations/{id}', [ApprovalConfigurationController::class, 'show'])->name('approval-configurations.show');
+        Route::post('/approval-configurations', [ApprovalConfigurationController::class, 'store'])->name('approval-configurations.store');
+        Route::patch('/approval-configurations/{id}', [ApprovalConfigurationController::class, 'update'])->name('approval-configurations.update');
+        Route::post('/approval-configurations/{id}/publish', [ApprovalConfigurationController::class, 'publish'])->name('approval-configurations.publish');
+        Route::post('/approval-configurations/{id}/default', [ApprovalConfigurationController::class, 'setDefault'])->name('approval-configurations.set-default');
+        Route::post('/approval-configurations/{id}/deactivate', [ApprovalConfigurationController::class, 'deactivate'])->name('approval-configurations.deactivate');
 
         Route::get('/categories/{category}/edit', [CategoryController::class, 'edit'])->name('categories.edit');
         Route::post('/categories', [CategoryController::class, 'store'])->name('categories.store');

@@ -14,5 +14,10 @@ return Application::configure(basePath: dirname(__DIR__))
         //
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        $exceptions->renderable(function (\App\Exceptions\DomainException $e, \Illuminate\Http\Request $request) {
+            return response()->json([
+                'message' => 'Domain rule violation',
+                'error' => $e->getMessage()
+            ], 422);
+        });
     })->create();

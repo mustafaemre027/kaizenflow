@@ -22,4 +22,29 @@ class ApprovalWorkflowPolicy
     {
         return $this->capabilityResolver->allowsSystem($user, UserCapability::APPROVAL_CONFIGURATION_VIEW);
     }
+
+    public function create(User $user): bool
+    {
+        return $this->capabilityResolver->allowsSystem($user, UserCapability::APPROVAL_CONFIGURATION_MANAGE);
+    }
+
+    public function update(User $user): bool
+    {
+        return $this->capabilityResolver->allowsSystem($user, UserCapability::APPROVAL_CONFIGURATION_MANAGE);
+    }
+
+    public function publish(User $user): bool
+    {
+        return $this->capabilityResolver->allowsSystem($user, UserCapability::APPROVAL_CONFIGURATION_MANAGE);
+    }
+
+    public function setDefault(User $user): bool
+    {
+        return $this->capabilityResolver->allowsSystem($user, UserCapability::APPROVAL_CONFIGURATION_MANAGE);
+    }
+
+    public function deactivate(User $user): bool
+    {
+        return $this->capabilityResolver->allowsSystem($user, UserCapability::APPROVAL_CONFIGURATION_MANAGE);
+    }
 }
