@@ -41,6 +41,7 @@ class DeactivateApprovalWorkflow
                 ->whereNull('cancelled_at')
                 ->orderBy('id', 'asc')
                 ->lockForUpdate()
+                ->get()
                 ->count();
 
             if ($activeInstancesCount > 0) {
