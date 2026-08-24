@@ -28,7 +28,7 @@ Aşağıdaki 6 süit taze olarak çalıştırılmış, her koşumdan önce ve so
 Mevcut durumda tracking upstream bulunmamaktadır ve origin üzerinde aynı isimli remote branch görülmemektedir; bu bulgular geçmişte hiçbir zaman push yapılmadığını tek başına kanıtlamaz.
 
 ## Geliştirme DB (kaizenflow) Değişmezlik Tablosu
-Altı tam suite testi ve komut denetimleri sırasında geliştirme veritabanına hiçbir yıkıcı veya değiştirici müdahale yapılmadığı aşağıdaki "Öncesi/Sonrası" eşleşmesiyle kanıtlanmıştır. 
+Altı tam suite testi ve komut denetimleri sırasında geliştirme veritabanına hiçbir yıkıcı veya değiştirici müdahale yapılmadığı aşağıdaki "Öncesi/Sonrası" eşleşmesiyle kanıtlanmıştır.
 
 | Metrik | Öncesi (Başlangıç) | Sonrası (Bitiş) | Değişim |
 | --- | --- | --- | --- |
@@ -43,3 +43,9 @@ Altı tam suite testi ve komut denetimleri sırasında geliştirme veritabanına
 | Batch Dağılımı | Batch 1: 21 | Batch 1: 21 | YOK |
 | `CREATE_TIME` (users) | 2026-08-21 08:51:09 | 2026-08-21 08:51:09 | YOK |
 | `CREATE_TIME` (migrations)| 2026-08-21 08:51:09 | 2026-08-21 08:51:09 | YOK |
+
+## Migration Status Doğrulaması
+`php artisan migrate:status` kalite kapısı `mysql / kaizenflow` bağlantısında salt-okunur çalıştırıldı ve 21 migration’ın Ran olduğu doğrulandı.
+
+## MySQL Test Bağlantısı Kanıt Düzeyi
+Blok 4.2.4’teki üç MySQL tam süiti aynı canonical `composer test:mysql` launcher’ı üzerinden exit code 0 ile tamamlanmıştır. Launcher ve fail-closed guard, `kaizenflow_test` dışında çalışmayı reddetmektedir. Bununla birlikte her tur için ayrı raw `SELECT DATABASE()` çıktısı arşivlenmediğinden kanıt “launcher/guard enforced” sınıfındadır; “her turda ayrı raw çıktı alındı” iddiası kullanılmayacaktır.
