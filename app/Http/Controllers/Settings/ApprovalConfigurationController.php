@@ -49,8 +49,6 @@ class ApprovalConfigurationController extends Controller
 
     public function store(StoreApprovalWorkflowRequest $request, CreateApprovalWorkflowDraft $action): JsonResponse
     {
-        Gate::authorize('create', ApprovalWorkflow::class);
-
         $workflow = $action->execute(
             $request->user(),
             $request->validated('code'),
@@ -64,8 +62,6 @@ class ApprovalConfigurationController extends Controller
 
     public function update(int $id, UpdateApprovalWorkflowRequest $request, UpdateApprovalWorkflowDraft $action): JsonResponse
     {
-        Gate::authorize('update', ApprovalWorkflow::class);
-        
         $workflow = ApprovalWorkflow::findOrFail($id);
 
         $workflow = $action->execute(

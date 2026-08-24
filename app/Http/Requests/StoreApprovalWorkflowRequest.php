@@ -9,9 +9,7 @@ class StoreApprovalWorkflowRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        // Authorization is done in the Controller using Policy and Domain Action.
-        // Returning true here to avoid double authorization, as per prompt.
-        return true;
+        return $this->user()->can('create', ApprovalWorkflow::class);
     }
 
     public function rules(): array
