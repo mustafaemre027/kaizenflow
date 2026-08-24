@@ -136,11 +136,19 @@ class ApprovalConfigurationMutationHttpTest extends TestCase
     public function test_fake_actor_id_in_body_is_ignored()
     {
         $payload = $this->validPayload();
+        $payload['actor_user_id'] = $this->authorizedUser->id; // invalid prohibited field
 
         $response = $this->actingAs($this->unauthorizedUser)
-             ->postJson('/settings/approval-configurations?actor_user_id=' . $this->authorizedUser->id, $payload);
+             ->postJson('/settings/approval-configurations', $payload);
         
-        $this->assertTrue(in_array($response->status(), [403, 422]));
+        $response->assertForbidden();
+    }
+
+    public function test_unauthorized_user_with_invalid_payload_gets_403()
+    {
+        $this->actingAs($this->unauthorizedUser)
+             ->postJson('/settings/approval-configurations', [])
+             ->assertForbidden();
     }
 
     public function test_department_capability_cannot_bypass_system_manage()
