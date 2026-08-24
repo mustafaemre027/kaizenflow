@@ -21,15 +21,51 @@ class MySqlTestLauncher
 
     public function loadEnvironment(): void
     {
-        if (! file_exists($this->envPath) || ! is_readable($this->envPath)) {
-            return;
+        $content = file_get_contents($this->envPath);
+        if ($content === false) {
+            throw new RuntimeException("Could not read environment file: {$this->envPath}");
         }
 
-        $content = file_get_contents($this->envPath);
+        $this->detectDuplicateKeys($content);
+
         $this->env = Dotenv::parse($content);
     }
 
     public function validatePreflight(): void
+    {
+        $this->validateCredentials();
+    }
+
+    private function detectDuplicateKeys(string $content): void
+    {
+        $lines = explode("\n", str_replace("\r\n", "\n", $content));
+        $seen = [];
+        $criticalKeys = ['DB_HOST', 'DB_PORT', 'DB_USERNAME', 'DB_PASSWORD'];
+
+        foreach ($lines as $line) {
+            $line = trim($line);
+            if (empty($line) || str_starts_with($line, '#')) {
+                continue;
+            }
+
+            $parts = explode('=', $line, 2);
+            if (count($parts) === 2) {
+                $key = trim($parts[0]);
+                if (str_starts_with($key, 'export ')) {
+                    $key = trim(substr($key, 7));
+                }
+
+                if (in_array($key, $criticalKeys, true)) {
+                    if (isset($seen[$key])) {
+                        throw new RuntimeException("Duplicate definition found for {$key}");
+                    }
+                    $seen[$key] = true;
+                }
+            }
+        }
+    }
+
+    private function validateCredentials(): void
     {
         if (empty($this->env)) {
             throw new RuntimeException('Missing or unreadable .env file');
