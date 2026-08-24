@@ -121,4 +121,25 @@ class BootstrapAdminCapabilitiesTest extends TestCase
             ->doesntExpectOutputToContain($target->password)
             ->assertExitCode(1);
     }
+
+    public function test_exception_masking()
+    {
+        $target = User::factory()->create(['is_active' => true]);
+
+        // Mock the action to throw an unexpected exception
+        $mockAction = \Mockery::mock(\App\Actions\Authorization\BootstrapSystemCapabilities::class);
+        $mockAction->shouldReceive('execute')
+            ->andThrow(new \Exception("SQLSTATE[HY000] select * from secret_table password=CLI_EXCEPTION_CANARY token=CLI_TOKEN_CANARY C:\private\project\.env"));
+
+        $this->app->instance(\App\Actions\Authorization\BootstrapSystemCapabilities::class, $mockAction);
+
+        $this->artisan('capability:bootstrap-admin', ['--user-id' => $target->id])
+            ->assertExitCode(1)
+            ->expectsOutputToContain('An unexpected system error occurred')
+            ->doesntExpectOutputToContain('SQLSTATE')
+            ->doesntExpectOutputToContain('CLI_EXCEPTION_CANARY')
+            ->doesntExpectOutputToContain('CLI_TOKEN_CANARY')
+            ->doesntExpectOutputToContain('select * from secret_table')
+            ->doesntExpectOutputToContain('C:\private\project\.env');
+    }
 }
