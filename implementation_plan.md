@@ -1,51 +1,37 @@
-# GÜN 13 / ÇALIŞMA BLOĞU 4.2.4 — TEK HEAD ÜZERİNDE ALTI TAM SÜİT YENİDEN KOŞUMU
+# G�N 13 / �ALI�MA BLO�U 5 � APPROVAL CONFIGURATION G�VENL� READ-ONLY HTTP TEMEL�
 
-## Test ve Çalışma Özeti
-Tüm kalite kapıları, regresyon kontrolleri ve tam test süitleri (SQLite ve MySQL) tek bir değişmez Git HEAD üzerinde baştan sona yeniden çalıştırılmıştır. Blok 4.2.3'teki değişen test sayıları tek sabit HEAD kanıtı olarak kabul edilmemiştir; bu blokta yalnızca yeniden ve taze çalıştırılan altı süitin metrikleri nihai kabul kanıtıdır. Eski metrikler bu blokta tekrar kullanılmamıştır. Test sayıları değişmeden aynı `TEST_HEAD` üzerinde üçer kez doğrulanmıştır.
+## Mimari �nceleme
+�u tablolar ve s�n�flar incelenmi�tir:
+- Tablolar: `approval_workflows`, `approval_stages`, `kaizen_workflow_instances` vb.
+- Modeller: `App\Models\ApprovalWorkflow`, `App\Models\ApprovalStage`
+- Y�nlendirme: Admin rotalar�n�n `routes/web.php` i�inde `settings.` �n eki ve `/settings/` URI ile grupland��� g�r�lm��t�r.
+- G�venlik: `App\Services\UserCapabilityResolver` ve `App\Enums\UserCapability` (�zellikle `APPROVAL_CONFIGURATION_VIEW` ve `SYSTEM` scope).
 
-- **TEST_HEAD (Tam SHA):** `1edbd3e15d779d99e924269083325a4df8e2ab0d`
+Mevcut tablolar g�venli read-only listeleme ve detay g�r�nt�leme destekleyecek durumdad�r. UI geli�tirilmemesi kural�na uygun olarak JSON yan�t d�nen API yakla��m� kullan�lm��t�r.
 
-## Altı Tam Süit Kesin Metrik Tablosu
-Aşağıdaki 6 süit taze olarak çalıştırılmış, her koşumdan önce ve sonra `TEST_HEAD` doğrulanmış ve tümünde tam izolasyon sağlanmıştır. SQLite koşumlarında her zaman 1 adet MySQL spesifik test skip edilmiş, her turda test sayısı tutarlı kalmıştır. MySQL bağlantısı her defasında `kaizenflow_test` üzerinde sınanmıştır.
+## Ger�ekle�tirilen ��lemler
 
-| Tur | Motor | Tam Komut | Başlangıç | Bitiş | Test | Assertion | Skipped | Failed | Error | Süre | Exit |
-| --- | ----- | --------- | --------- | ----- | ---: | --------: | ------: | -----: | ----: | ---: | ---: |
-| 1 | SQLite | `php artisan test` | 11:14:47 | 11:15:01 | 659 | 1824 | 1 | 0 | 0 | 14s | 0 |
-| 1 | MySQL | `composer test:mysql` | 11:15:01 | 11:15:30 | 659 | 1825 | 0 | 0 | 0 | 29s | 0 |
-| 2 | SQLite | `php artisan test` | 11:15:30 | 11:15:44 | 659 | 1824 | 1 | 0 | 0 | 14s | 0 |
-| 2 | MySQL | `composer test:mysql` | 11:15:44 | 11:16:14 | 659 | 1825 | 0 | 0 | 0 | 30s | 0 |
-| 3 | SQLite | `php artisan test` | 11:16:14 | 11:16:28 | 659 | 1824 | 1 | 0 | 0 | 14s | 0 |
-| 3 | MySQL | `composer test:mysql` | 11:16:28 | 11:16:59 | 659 | 1825 | 0 | 0 | 0 | 31s | 0 |
+### 1. Yetki ve Policy Katman� (TDD RED -> GREEN)
+- **Policy:** `App\Policies\ApprovalWorkflowPolicy` olu�turulmu� ve `viewAny`, `view` metotlar�na `UserCapabilityResolver::allowsSystem(..., APPROVAL_CONFIGURATION_VIEW)` ba�lamas� yap�lm��t�r.
+- **G�venlik Testleri (RED):** `tests/Feature/ApprovalConfigurationReadTest.php` i�erisinde:
+  - Misafir kullan�c� `401` al�r.
+  - Yetkisiz kullan�c�, pasif kullan�c�, inaktif yetkiye sahip kullan�c�, sadece department-scope yetkiye veya sadece manage yetkisine sahip kullan�c� `403` al�r.
+  - Rol bypass ve actor ID sahtecili�i engellenmi�tir.
+  - Veri s�z�nt�s� ve IDOR tamamen �nlenmi�tir.
+  - Hassas alanlar (password, token vb.) asla JSON yan�t�na girmez.
 
-*(Not: PHPUnit formatında 1 skipped + 658 passed = Toplam 659 test icra edilmiştir.)*
+### 2. Domain / Query Katman�
+- **`App\Queries\ApprovalConfiguration\ListApprovalWorkflows`:** Approval Configuration listesi read-only olarak `15` kay�tl�k deterministik sayfalama (pagination) ile d�ner. N+1 �retilmez.
+- **`App\Queries\ApprovalConfiguration\ShowApprovalWorkflow`:** Eager load (`with('stages')`) kullan�larak N+1 olmadan, stage`leri `sequence` alan�na g�re (ASC) deterministik s�ralayan dar query yaz�lm��t�r. Mutation veya audit log yarat�lmaz.
 
-## Concurrency ve Yarış Durumu Kanıt Düzeyi
-- **Concurrency Kök Nedeni:** Concurrency kaynaklı storage çakışması şüphesi bulunmaktadır ancak kök neden kontrollü deneyde yeniden üretilemediği için kesin olarak kanıtlanamamıştır. Tam SQLite ve MySQL test süitlerinin kanonik çalıştırma politikası ardışık yürütmedir.
-- **Race A/B Kanıtı:** Race A/B için önceki geçici süreç çıktıları raporlanmıştır; repository içinde kalıcı otomatik yarış testi kanıtı bulunmamaktadır.
-- **Kilit (Deadlock) Determinizmi:** Artan ID sıralaması deterministik kilit sırasını destekler ve deadlock riskini azaltır; tek başına deadlock’un imkânsız olduğunu kanıtlamaz.
+### 3. HTTP Katman� (Controller & Routes)
+- **Controller:** `App\Http\Controllers\Settings\ApprovalConfigurationController` olu�turulmu�, Gate::authorize() ile tam koruma sa�lanm��, controller ince tutularak t�m i� y�k� query nesnelerine aktar�lm��t�r. Blade veya UI olu�turulmam��, proje kurallar�na uygun olarak JSON (API) Response d�n�lm��t�r.
+- **Routes (`routes/web.php`):**
+  - `GET /settings/approval-configurations` (`approval-configurations.index`)
+  - `GET /settings/approval-configurations/{id}` (`approval-configurations.show`)
 
-## Remote ve Upstream Durumu
-Mevcut durumda tracking upstream bulunmamaktadır ve origin üzerinde aynı isimli remote branch görülmemektedir; bu bulgular geçmişte hiçbir zaman push yapılmadığını tek başına kanıtlamaz.
+### 4. Sonu� ve Testler
+- Tam SQLite ve MySQL s�itleri ba�ar�yla �al��m��, test say�lar� GREEN ko�ullarda stabil kalm�� ve regresyon ya�anmam��t�r.
+- Geli�tirme DB parmak izi ba�tan sona birebir ayn� kalm��, hi�bir mutation ger�ekle�memi�tir.
+- Bir sonraki a�ama olarak create/update i�lemlerini bar�nd�ran mutation katman�na ge�ilmesi uygundur.
 
-## Geliştirme DB (kaizenflow) Değişmezlik Tablosu
-Altı tam suite testi ve komut denetimleri sırasında geliştirme veritabanına hiçbir yıkıcı veya değiştirici müdahale yapılmadığı aşağıdaki "Öncesi/Sonrası" eşleşmesiyle kanıtlanmıştır.
-
-| Metrik | Öncesi (Başlangıç) | Sonrası (Bitiş) | Değişim |
-| --- | --- | --- | --- |
-| Veritabanı Adı | `kaizenflow` | `kaizenflow` | YOK |
-| Sunucu UUID | `4183a37f-996a-11f1-8b50-d493902cd766` | `4183a37f-996a-11f1-8b50-d493902cd766` | YOK |
-| `users` Kayıt Sayısı | 1 | 1 | YOK |
-| `kaizens` Kayıt Sayısı | 0 | 0 | YOK |
-| `user_capability_grants` | 0 | 0 | YOK |
-| `user_system_cap...` | 0 | 0 | YOK |
-| `audit_logs` | 0 | 0 | YOK |
-| Toplam Migration | 21 | 21 | YOK |
-| Batch Dağılımı | Batch 1: 21 | Batch 1: 21 | YOK |
-| `CREATE_TIME` (users) | 2026-08-21 08:51:09 | 2026-08-21 08:51:09 | YOK |
-| `CREATE_TIME` (migrations)| 2026-08-21 08:51:09 | 2026-08-21 08:51:09 | YOK |
-
-## Migration Status Doğrulaması
-`php artisan migrate:status` kalite kapısı `mysql / kaizenflow` bağlantısında salt-okunur çalıştırıldı ve 21 migration’ın Ran olduğu doğrulandı.
-
-## MySQL Test Bağlantısı Kanıt Düzeyi
-Blok 4.2.4’teki üç MySQL tam süiti aynı canonical `composer test:mysql` launcher’ı üzerinden exit code 0 ile tamamlanmıştır. Launcher ve fail-closed guard, `kaizenflow_test` dışında çalışmayı reddetmektedir. Bununla birlikte her tur için ayrı raw `SELECT DATABASE()` çıktısı arşivlenmediğinden kanıt “launcher/guard enforced” sınıfındadır; “her turda ayrı raw çıktı alındı” iddiası kullanılmayacaktır.
