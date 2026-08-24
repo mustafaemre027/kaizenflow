@@ -14,7 +14,7 @@ class MySqlTestLauncherResidualBypassTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->tempEnvPath = sys_get_temp_dir() . '/.env.test.' . uniqid();
+        $this->tempEnvPath = sys_get_temp_dir().'/.env.test.'.uniqid();
     }
 
     protected function tearDown(): void
@@ -48,7 +48,7 @@ class MySqlTestLauncherResidualBypassTest extends TestCase
     public function test_fails_if_username_is_not_strictly_allowlisted(string $username)
     {
         $this->createEnv("DB_HOST=127.0.0.1\nDB_PORT=3306\nDB_USERNAME={$username}\nDB_PASSWORD=pass");
-        
+
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('DB_USERNAME must be exactly kaizenflow_app');
 
@@ -80,7 +80,7 @@ class MySqlTestLauncherResidualBypassTest extends TestCase
     {
         $this->createEnv("DB_HOST=127.0.0.1\nDB_PORT=3306\nDB_USERNAME=kaizenflow_app\nDB_PASSWORD=pass");
         $launcher = new MySqlTestLauncher($this->tempEnvPath, $args);
-        
+
         $this->expectException(RuntimeException::class);
         $launcher->buildCommandArray();
     }
@@ -103,9 +103,9 @@ class MySqlTestLauncherResidualBypassTest extends TestCase
     {
         $this->createEnv("DB_HOST=127.0.0.1\nDB_PORT=3306\nDB_USERNAME=kaizenflow_app\nDB_PASSWORD=pass");
         $launcher = new MySqlTestLauncher($this->tempEnvPath, $args);
-        
+
         $command = $launcher->buildCommandArray();
-        
+
         foreach ($args as $arg) {
             $this->assertContains($arg, $command);
         }
@@ -114,20 +114,20 @@ class MySqlTestLauncherResidualBypassTest extends TestCase
     public static function dotenvEdgeCaseProvider(): array
     {
         return [
-            'Boşluk içeren parola' => ["DB_PASSWORD=\"secret word\"", "secret word"],
-            '# içeren parola' => ["DB_PASSWORD=\"secret#123\"", "secret#123"],
-            '= içeren parola' => ["DB_PASSWORD=\"secret=123\"", "secret=123"],
-            'Tek tırnaklı değer' => ["DB_PASSWORD='secret'", "secret"],
-            'Çift tırnaklı değer' => ["DB_PASSWORD=\"secret\"", "secret"],
-            'CRLF satır sonu' => ["DB_PASSWORD=secret\r\nDB_HOST=127.0.0.1", "secret"],
-            'LF satır sonu' => ["DB_PASSWORD=secret\nDB_HOST=127.0.0.1", "secret"],
-            'Unicode/Türkçe karakter' => ["DB_PASSWORD=şifre123", "şifre123"],
-            'Escaped karakter' => ["DB_PASSWORD=\"secret\\\"123\"", "secret\"123"],
-            'Son satırda newline olmaması' => ["DB_PASSWORD=secret", "secret"],
-            'Yorum satırı' => ["# Bu bir yorumdur\nDB_PASSWORD=secret", "secret"],
-            'Boş satır' => ["\n\nDB_PASSWORD=secret\n\n", "secret"],
-            'Başında/sonunda boşluk' => ["DB_PASSWORD=\"  secret  \"", "  secret  "],
-            'Duplicate anahtar davranışı' => ["DB_PASSWORD=first\nDB_PASSWORD=second", "second"],
+            'Boşluk içeren parola' => ['DB_PASSWORD="secret word"', 'secret word'],
+            '# içeren parola' => ['DB_PASSWORD="secret#123"', 'secret#123'],
+            '= içeren parola' => ['DB_PASSWORD="secret=123"', 'secret=123'],
+            'Tek tırnaklı değer' => ["DB_PASSWORD='secret'", 'secret'],
+            'Çift tırnaklı değer' => ['DB_PASSWORD="secret"', 'secret'],
+            'CRLF satır sonu' => ["DB_PASSWORD=secret\r\nDB_HOST=127.0.0.1", 'secret'],
+            'LF satır sonu' => ["DB_PASSWORD=secret\nDB_HOST=127.0.0.1", 'secret'],
+            'Unicode/Türkçe karakter' => ['DB_PASSWORD=şifre123', 'şifre123'],
+            'Escaped karakter' => ['DB_PASSWORD="secret\\"123"', 'secret"123'],
+            'Son satırda newline olmaması' => ['DB_PASSWORD=secret', 'secret'],
+            'Yorum satırı' => ["# Bu bir yorumdur\nDB_PASSWORD=secret", 'secret'],
+            'Boş satır' => ["\n\nDB_PASSWORD=secret\n\n", 'secret'],
+            'Başında/sonunda boşluk' => ['DB_PASSWORD="  secret  "', '  secret  '],
+            'Duplicate anahtar davranışı' => ["DB_PASSWORD=first\nDB_PASSWORD=second", 'second'],
         ];
     }
 
@@ -135,11 +135,11 @@ class MySqlTestLauncherResidualBypassTest extends TestCase
     public function test_parser_handles_edge_cases(string $envContent, string $expectedPassword)
     {
         $base = "DB_HOST=127.0.0.1\nDB_PORT=3306\nDB_USERNAME=kaizenflow_app\n";
-        $this->createEnv($base . $envContent);
-        
+        $this->createEnv($base.$envContent);
+
         $launcher = new MySqlTestLauncher($this->tempEnvPath, []);
         $launcher->loadEnvironment();
-        
+
         $childEnv = $launcher->buildChildEnvironment();
         $this->assertEquals($expectedPassword, $childEnv['DB_PASSWORD']);
     }
