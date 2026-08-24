@@ -135,11 +135,11 @@ class MySqlTestLauncherResidualBypassTest extends TestCase
     public function test_parser_handles_edge_cases(string $envContent, string $expectedPassword)
     {
         $base = "DB_HOST=127.0.0.1\nDB_PORT=3306\nDB_USERNAME=kaizenflow_app\n";
-        $this->createEnv($base . $envContent);
-        
+        $this->createEnv($base.$envContent);
+
         $launcher = new MySqlTestLauncher($this->tempEnvPath, []);
         $launcher->loadEnvironment();
-        
+
         $childEnv = $launcher->buildChildEnvironment();
         $this->assertEquals($expectedPassword, $childEnv['DB_PASSWORD']);
     }
@@ -148,12 +148,12 @@ class MySqlTestLauncherResidualBypassTest extends TestCase
     {
         $base = "DB_HOST=127.0.0.1\nDB_PORT=3306\nDB_USERNAME=kaizenflow_app\nDB_PASSWORD=first\nDB_PASSWORD=second\n";
         $this->createEnv($base);
-        
+
         $launcher = new MySqlTestLauncher($this->tempEnvPath, []);
-        
+
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Duplicate definition found for DB_PASSWORD');
-        
+
         $launcher->loadEnvironment();
     }
 }
