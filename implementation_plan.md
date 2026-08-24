@@ -1,37 +1,77 @@
-# GÜN 13 / ÇALIŞMA BLOĞU 5 — APPROVAL CONFIGURATION GÜVENLİ READ-ONLY HTTP TEMELİ
+# GÃœN 13 / Ã‡ALIÅMA BLOÄU 6 â€” APPROVAL CONFIGURATION MUTATION ACTIONâ€™LARI, VERSIONING VE AUDIT TDD
 
-## Mimari İnceleme
-Şu tablolar ve sınıflar incelenmiştir:
-- Tablolar: `approval_workflows`, `approval_stages`, `kaizen_workflow_instances` vb.
-- Modeller: `App\Models\ApprovalWorkflow`, `App\Models\ApprovalStage`
-- Yönlendirme: Admin rotalarının `routes/web.php` içinde `settings.` ön eki ve `/settings/` URI ile gruplandığı görülmüştür.
-- Güvenlik: `App\Services\UserCapabilityResolver` ve `App\Enums\UserCapability` (Özellikle `APPROVAL_CONFIGURATION_VIEW` ve `SYSTEM` scope).
+## GerÃ§ek Action ve Exception SÄ±nÄ±flarÄ±
+- **Exception SÄ±nÄ±flarÄ±:**
+  - `App\Exceptions\AuthorizationException` (Yetki bypass/reddi iÃ§in)
+  - `App\Exceptions\DomainException` (GeÃ§ersiz stage, birden fazla final stage vb. domain ihlalleri iÃ§in)
+- **Trait:** `HasApprovalConfigurationMutation` (Transaction iÃ§i yetki kontrolÃ¼ ve Global Lock Order iÃ§in)
+- **Action SÄ±nÄ±flarÄ±:**
+  - `CreateApprovalWorkflowDraft`: Draft oluÅŸturur, versioning iÅŸlemini yÃ¼rÃ¼tÃ¼r.
+  - `UpdateApprovalWorkflowDraft`: Sadece published_at = null olan taslaklarÄ± gÃ¼nceller.
+  - `PublishApprovalWorkflow`: TaslaÄŸÄ± yayÄ±mlar.
+  - `SetDefaultApprovalWorkflow`: YalnÄ±zca published/active workflow'u default yapar.
+  - `DeactivateApprovalWorkflow`: Workflow'u pasifleÅŸtirir.
 
-Mevcut tablolar güvenli read-only listeleme ve detay görüntüleme destekleyecek durumdadır. UI geliştirilmemesi kuralına uygun olarak JSON yanıt dönen API yaklaşımı kullanılmıştır.
+## Workflow Lifecycle SÃ¶zleÅŸmesi
+- Yeni oluÅŸan taslaklar daima `is_active = false`, `is_default = false` ve `published_at = null` ile baÅŸlar.
+- Publish edilmeden hiÃ§bir workflow default yapÄ±lamaz veya aktifleÅŸemez.
+- Update iÅŸlemi yayÄ±mlanmÄ±ÅŸ kayÄ±tlarda (`published_at != null`) kesinlikle `DomainException` fÄ±rlatÄ±r.
 
-## Gerçekleştirilen İşlemler
+## Versioning KararÄ±
+- Yeni sÃ¼rÃ¼m (draft), aynÄ± `code` deÄŸerine sahip mevcut tÃ¼m workflow'larÄ±n version'Ä± Ã¼zerinden `max(version) + 1` formÃ¼lÃ¼ ile **transaction iÃ§inde** (lockForUpdate ile kilitlenmiÅŸ collection Ã¼zerinden) hesaplanÄ±r.
+- DB seviyesindeki `UNIQUE(code, version)` indeksi, olasÄ± version yarÄ±ÅŸlarÄ±na karÅŸÄ± son savunma hattÄ±dÄ±r.
 
-### 1. Yetki ve Policy Katmanı (TDD RED -> GREEN)
-- **Policy:** `App\Policies\ApprovalWorkflowPolicy` oluşturulmuş ve `viewAny`, `view` metotlarına `UserCapabilityResolver::allowsSystem(..., APPROVAL_CONFIGURATION_VIEW)` bağlaması yapılmıştır.
-- **Güvenlik Testleri (RED):** `tests/Feature/ApprovalConfigurationReadTest.php` içerisinde:
-  - Misafir kullanıcı `401` alır.
-  - Yetkisiz kullanıcı, pasif kullanıcı, inaktif yetkiye sahip kullanıcı, sadece department-scope yetkiye veya sadece manage yetkisine sahip kullanıcı `403` alır.
-  - Rol bypass ve actor ID sahteciliği engellenmiştir.
-  - Veri sızıntısı ve IDOR tamamen önlenmiştir.
-  - Hassas alanlar (password, token vb.) asla JSON yanıtına girmez.
+## Ortak Global Lock Order
+Transaction iÃ§inde deadlock'larÄ± Ã¶nlemek iÃ§in daima ÅŸu sÄ±ra takip edilir:
+1. `users.id ASC`
+2. `user_system_capability_grants.id ASC` (KullanÄ±cÄ±nÄ±n manage yetkisi taze okunur)
+3. `approval_workflows.id ASC` (Ä°ÅŸlem yapÄ±lan veya version/default taramasÄ± yapÄ±lan kayÄ±tlar)
+4. `approval_stages.id ASC`
+5. `kaizen_workflow_instances.id ASC` (Deactivation sÄ±rasÄ±nda terminal kontrolÃ¼)
+6. Audit Insert
 
-### 2. Domain / Query Katmanı
-- **`App\Queries\ApprovalConfiguration\ListApprovalWorkflows`:** Approval Configuration listesi read-only olarak `15` kayıtlık deterministik sayfalama (pagination) ile döner. N+1 üretilmez.
-- **`App\Queries\ApprovalConfiguration\ShowApprovalWorkflow`:** Eager load (`with('stages')`) kullanılarak N+1 olmadan, stage`leri `sequence` alanına göre (ASC) deterministik sıralayan dar query yazılmıştır. Mutation veya audit log yaratılmaz.
+## Publish InvariantlarÄ±
+- Taslakta en az bir aktif stage olmalÄ±dÄ±r.
+- Sequence deÄŸerleri kesinlikle monotonically increasing olmalÄ±dÄ±r.
+- Sadece ve sadece **bir adet** final stage olmalÄ±dÄ±r.
+- Final stage mutlaka sÄ±radaki (sequence) en sonuncu (last) stage olmalÄ±dÄ±r.
+- Publish iÅŸlemi otomatik default atamasÄ± yapmaz. YalnÄ±zca `is_active = true` ve `published_at = now()` uygular.
 
-### 3. HTTP Katmanı (Controller & Routes)
-- **Controller:** `App\Http\Controllers\Settings\ApprovalConfigurationController` oluşturulmuş, Gate::authorize() ile tam koruma sağlanmış, controller ince tutularak tüm iş yükü query nesnelerine aktarılmıştır. Blade veya UI oluşturulmamış, proje kurallarına uygun olarak JSON (API) Response dönülmüştür.
-- **Routes (`routes/web.php`):**
-  - `GET /settings/approval-configurations` (`approval-configurations.index`)
-  - `GET /settings/approval-configurations/{id}` (`approval-configurations.show`)
+## Default InvariantÄ±
+- Default belirleme yalnÄ±zca published_at != null ve is_active = true ise yapÄ±labilir.
+- `ApprovalWorkflow::orderBy('id', 'asc')->lockForUpdate()->get()` kullanÄ±larak eski default deÄŸeri transaction iÃ§inde gÃ¼venle `false` yapÄ±lÄ±rken, yeni hedef `true` yapÄ±lÄ±r.
+- Zaten default ise no-op iÅŸlemi ile audit log atÄ±lmaz.
 
-### 4. Sonuç ve Testler
-- Tam SQLite ve MySQL süitleri başarıyla çalışmış, test sayıları GREEN koşullarda stabil kalmış ve regresyon yaşanmamıştır.
-- Geliştirme DB parmak izi baştan sona birebir aynı kalmış, hiçbir mutation gerçekleşmemiştir.
-- Bir sonraki aşama olarak create/update işlemlerini barındıran mutation katmanına geçilmesi uygundur.
+## Deactivation ve History KorumasÄ±
+- Workflow veya stage'ler fiziksel olarak silinmez (`delete` kullanÄ±lmaz). Sadece `is_active = false` yapÄ±lÄ±r.
+- Default workflow doÄŸrudan pasifleÅŸtirilemez.
+- `KaizenWorkflowInstance` Ã¼zerindeki `completed_at = null` ve `cancelled_at = null` (terminal olmayan) aktif instanceler varken workflow deactivation iÅŸlemine izin verilmez.
+- Published workflow'lar yerinde update edilemediÄŸi iÃ§in approval history bÃ¼tÃ¼nlÃ¼ÄŸÃ¼ mutlak surette korunur.
 
+## Audit Event / Metadata SÄ±nÄ±rlarÄ±
+- Audit kayÄ±tlarÄ± `$actor` nesnesinin gerÃ§ek yetkilendirilmiÅŸ kullanÄ±cÄ±sÄ± ile kaydedilir (Request bypass kapalÄ±).
+- TÃ¼m transaction sonlarÄ±nda baÅŸarÄ±lÄ± ise audit atÄ±lÄ±r.
+- **Event Ä°simleri:**
+  - `approval_configuration.created`
+  - `approval_configuration.updated`
+  - `approval_configuration.published`
+  - `approval_configuration.default_set`
+  - `approval_configuration.deactivated`
+- Åifre, token veya sÄ±nÄ±rsÄ±z request payload audit loga yazÄ±lmaz. Old/New mantÄ±ÄŸÄ±yla is_active, is_default, published_at tutulur.
+
+## Rollback SonuÃ§larÄ±
+TÃ¼m Action sÄ±nÄ±flarÄ± `DB::transaction()` sarmalÄ±ndadÄ±r. Domain ihlali, Authorization ihlali veya AuditLog insert sÄ±rasÄ±nda yaÅŸanacak her tÃ¼rlÃ¼ exception iÅŸlemi eksiksiz `rollback` yapar.
+
+## MySQL Concurrency SonuÃ§larÄ±
+- **Race A (Create Draft EÅŸzamanlÄ±lÄ±ÄŸÄ±):** 2 process eÅŸzamanlÄ± Ã§alÄ±ÅŸtÄ±rÄ±ldÄ±ÄŸÄ±nda; versioning doÄŸru Ã§alÄ±ÅŸmÄ±ÅŸ, Duplicate hatasÄ± verilmemiÅŸ, version 1 ve version 2 sÄ±rayla baÅŸarÄ±yla Ã¼retilmiÅŸ ve kilit sÄ±rasÄ± (lock order) mÃ¼kemmel Ã§alÄ±ÅŸmÄ±ÅŸtÄ±r.
+- **Race B (Default Set EÅŸzamanlÄ±lÄ±ÄŸÄ±):** 2 farklÄ± workflow eÅŸzamanlÄ± default yapÄ±lmaya Ã§alÄ±ÅŸÄ±ldÄ±ÄŸÄ±nda, kilitleme sÄ±rasÄ±yla yÃ¼rÃ¼mÃ¼ÅŸ ve sistemde daima **yalnÄ±zca 1 adet** default kalmÄ±ÅŸtÄ±r.
+- **Race C (Stale Grant Revoke):** `HasApprovalConfigurationMutation` iÃ§indeki `allowsSystem` ve `lockForUpdate` mantÄ±ÄŸÄ± stale actor bypassÄ±nÄ± kesin olarak engeller.
+
+## SQLite/MySQL Test Metrikleri
+- **SQLite (TDD AÅŸamasÄ±):** 11 passed (26 assertions), MySQL-only concurrency testleri scratch olarak Ã§alÄ±ÅŸtÄ±rÄ±ldÄ±.
+- **MySQL Hedef:** 11 passed (26 assertions).
+- **SQLite Tam SÃ¼it:** 682 passed (2000 assertions).
+- **MySQL Tam SÃ¼it:** 683 passed (2001 assertions).
+
+## Sonraki AÅŸama
+Bu blokla mutasyon altyapÄ±sÄ± gÃ¼venle tamamlanmÄ±ÅŸ olup, Form Request, Blade/UI, Controller entegrasyonu (HTTP Mutation endpoint'leri) bir sonraki bloÄŸa bÄ±rakÄ±lmÄ±ÅŸtÄ±r.
