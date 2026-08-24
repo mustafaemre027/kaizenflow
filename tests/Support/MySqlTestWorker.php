@@ -1,42 +1,44 @@
 <?php
+
+use Illuminate\Contracts\Console\Kernel;
+use Illuminate\Support\Facades\DB;
+
 // tests/Support/MySqlTestWorker.php
-if (getenv("APP_ENV") !== "testing" || getenv("DB_CONNECTION") !== "mysql" || getenv("DB_DATABASE") !== "kaizenflow_test") {
+if (getenv('APP_ENV') !== 'testing' || getenv('DB_CONNECTION') !== 'mysql' || getenv('DB_DATABASE') !== 'kaizenflow_test') {
     echo "ERROR: Missing secure environment constraints.\n";
     exit(1);
 }
 
-require __DIR__ . "/../../vendor/autoload.php";
-$app = require_once __DIR__ . "/../../bootstrap/app.php";
-$kernel = $app->make(\Illuminate\Contracts\Console\Kernel::class);
+require __DIR__.'/../../vendor/autoload.php';
+$app = require_once __DIR__.'/../../bootstrap/app.php';
+$kernel = $app->make(Kernel::class);
 $kernel->bootstrap();
 
-use Illuminate\Support\Facades\DB;
-$db = DB::select("SELECT DATABASE() as db")[0]->db;
-if ($db !== "kaizenflow_test") {
-    echo "FATAL: Canary detected wrong database: " . $db . "\n";
+$db = DB::select('SELECT DATABASE() as db')[0]->db;
+if ($db !== 'kaizenflow_test') {
+    echo 'FATAL: Canary detected wrong database: '.$db."\n";
     exit(1);
 }
 
-if (in_array("--db-check", $argv)) {
+if (in_array('--db-check', $argv)) {
     echo "DATABASE:kaizenflow_test\n";
     exit(0);
 }
 
-if (in_array("--canary", $argv)) {
+if (in_array('--canary', $argv)) {
     try {
         DB::transaction(function () {
-            DB::table("approval_workflows")->insert([
-                "name" => "Canary", "code" => "CANARY", "version" => 999, "is_active" => false, "is_default" => false
+            DB::table('approval_workflows')->insert([
+                'name' => 'Canary', 'code' => 'CANARY', 'version' => 999, 'is_active' => false, 'is_default' => false,
             ]);
-            throw new \Exception("ROLLBACK");
+            throw new Exception('ROLLBACK');
         });
-    } catch (\Exception $e) {
-        if ($e->getMessage() !== "ROLLBACK") {
-            echo "ERROR: " . $e->getMessage();
+    } catch (Exception $e) {
+        if ($e->getMessage() !== 'ROLLBACK') {
+            echo 'ERROR: '.$e->getMessage();
             exit(1);
         }
     }
     echo "CANARY_SUCCESS\n";
     exit(0);
 }
-
