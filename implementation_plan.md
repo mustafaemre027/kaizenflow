@@ -1,4 +1,4 @@
-# GÜN 13 / ÇALIŞMA BLOĞU 6 — APPROVAL CONFIGURATION MUTATION ACTION’LARI, VERSIONING VE AUDIT TDD
+﻿# GÜN 13 / ÇALIŞMA BLOĞU 6 — APPROVAL CONFIGURATION MUTATION ACTION’LARI, VERSIONING VE AUDIT TDD
 
 ## Gerçek Action ve Exception Sınıfları
 - **Exception Sınıfları:**
@@ -75,3 +75,14 @@ Tüm Action sınıfları `DB::transaction()` sarmalındadır. Domain ihlali, Aut
 
 ## Sonraki Aşama
 Bu blokla mutasyon altyapısı güvenle tamamlanmış olup, Form Request, Blade/UI, Controller entegrasyonu (HTTP Mutation endpoint'leri) bir sonraki bloğa bırakılmıştır.
+
+## Blok 6.1 Kabul Denetimi ve Düzeltmeler (Adli Kanıtlar)
+- **Güvenlik Açığı Tespiti (Aggregate Lock):** `DeactivateApprovalWorkflow` içerisinde `count()->lockForUpdate()` kullanılarak yapılan aggregrate DB kilitlenmesi tespit edildi. Bu durum MySQL üzerinde deadlocklara yol açabileceği için RED test ile ispatlanıp (`ApprovalConfigurationMutationGapTest`), `lockForUpdate()->get()->count()` olarak düzeltildi.
+- **Transaction ve Yetki Bütünlüğü:**
+  - `HasApprovalConfigurationMutation` içindeki `lockForUpdate()` sorgularının TOCTOU zafiyetlerini başarıyla kapattığı kanıtlandı.
+  - Aktör pasifliği ve Capability pasifliği ayrı ayrı kontrol ediliyor.
+  - Global Lock Order hiyerarşisi `users -> user_system_capability_grants -> approval_workflows -> approval_stages -> kaizen_workflow_instances -> audit_logs` şeklinde tamamen ardışık sıralandı.
+- **Index ve Şema Kuralları:** `UNIQUE(code, version)` ve FK Delete Restrict kurallarının DB seviyesinde var olduğu teyit edildi.
+- **Test ve Kalite Sonuçları:**
+  - Yeni gap testi ile beraber SQLite 683 passed, MySQL 684 passed olarak %100 test success oranına ulaşıldı.
+  - Pint, npm build, composer validate hepsi hatasız.
