@@ -7,16 +7,16 @@ use App\Models\ApprovalWorkflow;
 use App\Models\User;
 use App\Models\UserSystemCapabilityGrant;
 use Illuminate\Support\Facades\DB;
-use Tests\Support\MySqlTestLauncher;
+use Tests\Support\RaceHarness;
 use Tests\TestCase;
 
 class ApprovalConfigurationConcurrencyTest extends TestCase
 {
-    private string $barrierDir;
-
     private array $createdUserIds = [];
 
     private array $createdWorkflowCodes = [];
+
+    private ?RaceHarness $harness = null;
 
     protected function setUp(): void
     {
@@ -25,14 +25,21 @@ class ApprovalConfigurationConcurrencyTest extends TestCase
             $this->markTestSkipped('Concurrency tests require MySQL.');
         }
 
-        $this->barrierDir = sys_get_temp_dir().'/kaizen_race_'.uniqid();
-        mkdir($this->barrierDir);
+        $this->harness = new RaceHarness;
     }
 
     protected function tearDown(): void
     {
-        // Clean up fixtures explicitly so they are visible to child processes
-        // and we leave the DB clean.
+        if ($this->harness) {
+            $this->harness->cleanup();
+        }
+
+        if (! empty($this->createdWorkflowCodes)) {
+            DB::table('audit_logs')
+                ->where('event', 'like', 'approval_configuration.%')
+                ->delete();
+        }
+
         foreach ($this->createdWorkflowCodes as $code) {
             DB::table('kaizen_workflow_instances')->whereIn('approval_workflow_id', function ($query) use ($code) {
                 $query->select('id')->from('approval_workflows')->where('code', $code);
@@ -49,96 +56,7 @@ class ApprovalConfigurationConcurrencyTest extends TestCase
             DB::table('users')->where('id', $userId)->delete();
         }
 
-        if (isset($this->barrierDir) && is_dir($this->barrierDir)) {
-            $files = glob($this->barrierDir.'/*');
-            foreach ($files as $file) {
-                if (is_file($file)) {
-                    unlink($file);
-                }
-            }
-            rmdir($this->barrierDir);
-        }
         parent::tearDown();
-    }
-
-    private function spawnWorker(string $type, string $workerId, array $payload): array
-    {
-        $payloadJson = json_encode($payload);
-        $args = [
-            '--race-worker',
-            "--race-type={$type}",
-            "--barrier-dir={$this->barrierDir}",
-            "--worker-id={$workerId}",
-            "--payload={$payloadJson}",
-        ];
-
-        $launcher = new MySqlTestLauncher(base_path('.env'), $args);
-        $launcher->loadEnvironment();
-        $launcher->validatePreflight();
-
-        $childEnv = $launcher->buildChildEnvironment();
-        $commandArray = $launcher->buildCommandArray();
-
-        $descriptors = [
-            0 => ['pipe', 'r'],
-            1 => ['pipe', 'w'],
-            2 => ['pipe', 'w'],
-        ];
-
-        $process = proc_open($commandArray, $descriptors, $pipes, null, $childEnv);
-        if (! is_resource($process)) {
-            $this->fail('Could not start child process');
-        }
-
-        fclose($pipes[0]);
-
-        return [
-            'process' => $process,
-            'pipes' => $pipes,
-            'id' => $workerId,
-        ];
-    }
-
-    private function waitForReady(array $workers): void
-    {
-        $waited = 0;
-        foreach ($workers as $worker) {
-            $readyFile = $this->barrierDir.'/'.$worker['id'].'.ready';
-            while (! file_exists($readyFile)) {
-                if ($waited > 50) {
-                    $this->fail('Timeout waiting for worker ready');
-                }
-                usleep(100000);
-                $waited++;
-            }
-        }
-    }
-
-    private function releaseWorkers(): void
-    {
-        file_put_contents($this->barrierDir.'/release.go', 'go');
-    }
-
-    private function collectResults(array $workers): array
-    {
-        $results = [];
-        foreach ($workers as $worker) {
-            $stdout = stream_get_contents($worker['pipes'][1]);
-            fclose($worker['pipes'][1]);
-
-            $stderr = stream_get_contents($worker['pipes'][2]);
-            fclose($worker['pipes'][2]);
-
-            $exitCode = proc_close($worker['process']);
-            $results[] = [
-                'id' => $worker['id'],
-                'exitcode' => $exitCode,
-                'stdout' => $stdout,
-                'stderr' => $stderr,
-            ];
-        }
-
-        return $results;
     }
 
     public function test_race_a_duplicate_draft()
@@ -165,13 +83,13 @@ class ApprovalConfigurationConcurrencyTest extends TestCase
             ],
         ];
 
-        $w1 = $this->spawnWorker('A', 'w1', $payload);
-        $w2 = $this->spawnWorker('A', 'w2', $payload);
+        $w1 = $this->harness->spawnWorker('A', 'w1', $payload);
+        $w2 = $this->harness->spawnWorker('A', 'w2', $payload);
 
-        $this->waitForReady([$w1, $w2]);
-        $this->releaseWorkers();
+        $this->harness->waitForReady([$w1, $w2]);
+        $this->harness->releaseWorkers();
 
-        $results = $this->collectResults([$w1, $w2]);
+        $results = $this->harness->collectResults([$w1, $w2]);
 
         foreach ($results as $res) {
             $this->assertEquals(0, $res['exitcode'], "Worker {$res['id']} failed: ".$res['stdout'].$res['stderr']);
@@ -225,13 +143,13 @@ class ApprovalConfigurationConcurrencyTest extends TestCase
             'published_at' => now(),
         ]);
 
-        $w1 = $this->spawnWorker('B', 'w1', ['user_id' => $user->id, 'workflow_id' => $wf1->id]);
-        $w2 = $this->spawnWorker('B', 'w2', ['user_id' => $user->id, 'workflow_id' => $wf2->id]);
+        $w1 = $this->harness->spawnWorker('B', 'w1', ['user_id' => $user->id, 'workflow_id' => $wf1->id]);
+        $w2 = $this->harness->spawnWorker('B', 'w2', ['user_id' => $user->id, 'workflow_id' => $wf2->id]);
 
-        $this->waitForReady([$w1, $w2]);
-        $this->releaseWorkers();
+        $this->harness->waitForReady([$w1, $w2]);
+        $this->harness->releaseWorkers();
 
-        $results = $this->collectResults([$w1, $w2]);
+        $results = $this->harness->collectResults([$w1, $w2]);
 
         foreach ($results as $res) {
             $this->assertEquals(0, $res['exitcode'], "Worker {$res['id']} failed: ".$res['stdout'].$res['stderr']);
@@ -276,16 +194,16 @@ class ApprovalConfigurationConcurrencyTest extends TestCase
             ],
         ];
 
-        $w1 = $this->spawnWorker('C', 'w1', $payload);
+        $w1 = $this->harness->spawnWorker('C', 'w1', $payload);
 
-        $this->waitForReady([$w1]);
+        $this->harness->waitForReady([$w1]);
 
         // Revoke the capability
         $grant->update(['is_active' => false]);
 
-        $this->releaseWorkers();
+        $this->harness->releaseWorkers();
 
-        $results = $this->collectResults([$w1]);
+        $results = $this->harness->collectResults([$w1]);
         $res = $results[0];
 
         $this->assertEquals(0, $res['exitcode']);
