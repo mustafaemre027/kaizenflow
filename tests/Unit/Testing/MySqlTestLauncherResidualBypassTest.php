@@ -62,6 +62,7 @@ class MySqlTestLauncherResidualBypassTest extends TestCase
         return [
             [['-c']],
             [['-c=evil.xml']],
+            [['-c', 'evil.xml']],
             [['--configuration']],
             [['--configuration', 'evil.xml']],
             [['--configuration=evil.xml']],
@@ -127,7 +128,6 @@ class MySqlTestLauncherResidualBypassTest extends TestCase
             'Yorum satırı' => ["# Bu bir yorumdur\nDB_PASSWORD=secret", 'secret'],
             'Boş satır' => ["\n\nDB_PASSWORD=secret\n\n", 'secret'],
             'Başında/sonunda boşluk' => ['DB_PASSWORD="  secret  "', '  secret  '],
-            'Duplicate anahtar davranışı' => ["DB_PASSWORD=first\nDB_PASSWORD=second", 'second'],
         ];
     }
 
@@ -135,12 +135,25 @@ class MySqlTestLauncherResidualBypassTest extends TestCase
     public function test_parser_handles_edge_cases(string $envContent, string $expectedPassword)
     {
         $base = "DB_HOST=127.0.0.1\nDB_PORT=3306\nDB_USERNAME=kaizenflow_app\n";
-        $this->createEnv($base.$envContent);
-
+        $this->createEnv($base . $envContent);
+        
         $launcher = new MySqlTestLauncher($this->tempEnvPath, []);
         $launcher->loadEnvironment();
-
+        
         $childEnv = $launcher->buildChildEnvironment();
         $this->assertEquals($expectedPassword, $childEnv['DB_PASSWORD']);
+    }
+
+    public function test_rejects_duplicate_database_keys()
+    {
+        $base = "DB_HOST=127.0.0.1\nDB_PORT=3306\nDB_USERNAME=kaizenflow_app\nDB_PASSWORD=first\nDB_PASSWORD=second\n";
+        $this->createEnv($base);
+        
+        $launcher = new MySqlTestLauncher($this->tempEnvPath, []);
+        
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Duplicate definition found for DB_PASSWORD');
+        
+        $launcher->loadEnvironment();
     }
 }
