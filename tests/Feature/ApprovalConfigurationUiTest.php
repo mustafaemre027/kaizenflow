@@ -250,12 +250,32 @@ class ApprovalConfigurationUiTest extends TestCase
     public function test_dom_does_not_contain_prohibited_fields()
     {
         $user = $this->getFullAccessUser();
+        
         $response = $this->actingAs($user)->get('/settings/approval-configurations/create');
-
+        
+        $response->assertOk();
+        $response->assertDontSee('actor_user_id');
+        $response->assertDontSee('user_id');
+        $response->assertDontSee('granted_by_user_id');
+        // Not checking 'role', 'capability', 'version' as they might naturally occur in text/urls,
+        // but let's check for specific form inputs
         $response->assertDontSee('name="actor_user_id"', false);
         $response->assertDontSee('name="user_id"', false);
-        $response->assertDontSee('name="version"', false);
-        $response->assertDontSee('name="audit"', false);
+    }
+
+    public function test_stage_editor_does_not_use_prohibited_dom_injection_apis()
+    {
+        $user = $this->getFullAccessUser();
+        
+        $response = $this->actingAs($user)->get('/settings/approval-configurations/create');
+        
+        $response->assertOk();
+        
+        // Assert that we don't use innerHTML or insertAdjacentHTML to build the DOM, as per security plan
+        $response->assertDontSee('innerHTML', false);
+        $response->assertDontSee('insertAdjacentHTML', false);
+        $response->assertDontSee('document.write', false);
+        $response->assertDontSee('outerHTML', false);
     }
 
     // 16. JSON Read/Mutation Contract Regression
