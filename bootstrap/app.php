@@ -15,9 +15,11 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->renderable(function (\App\Exceptions\DomainException $e, \Illuminate\Http\Request $request) {
-            return response()->json([
-                'message' => 'Domain rule violation',
-                'error' => $e->getMessage()
-            ], 422);
+            if ($request->is('settings/approval-configurations') || $request->is('settings/approval-configurations/*')) {
+                return response()->json([
+                    'message' => 'Domain rule violation',
+                    'error' => 'The action cannot be completed due to domain rules.'
+                ], 422);
+            }
         });
     })->create();
