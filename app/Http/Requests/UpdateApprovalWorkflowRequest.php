@@ -2,13 +2,14 @@
 
 namespace App\Http\Requests;
 
+use App\Models\ApprovalWorkflow;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateApprovalWorkflowRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('update', \App\Models\ApprovalWorkflow::class);
+        return $this->user()->can('update', ApprovalWorkflow::class);
     }
 
     public function rules(): array

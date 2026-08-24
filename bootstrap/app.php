@@ -1,8 +1,10 @@
 <?php
 
+use App\Exceptions\DomainException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -14,11 +16,11 @@ return Application::configure(basePath: dirname(__DIR__))
         //
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        $exceptions->renderable(function (\App\Exceptions\DomainException $e, \Illuminate\Http\Request $request) {
+        $exceptions->renderable(function (DomainException $e, Request $request) {
             if ($request->is('settings/approval-configurations') || $request->is('settings/approval-configurations/*')) {
                 return response()->json([
                     'message' => 'Domain rule violation',
-                    'error' => 'The action cannot be completed due to domain rules.'
+                    'error' => 'The action cannot be completed due to domain rules.',
                 ], 422);
             }
         });

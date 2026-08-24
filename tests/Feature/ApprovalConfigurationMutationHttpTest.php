@@ -10,18 +10,22 @@ use App\Models\User;
 use App\Models\UserSystemCapabilityGrant;
 use App\Services\AppendAuditLog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
+use Illuminate\Support\Facades\DB;
 use Mockery\MockInterface;
-use App\Exceptions\DomainException;
+use Tests\TestCase;
 
 class ApprovalConfigurationMutationHttpTest extends TestCase
 {
     use RefreshDatabase;
 
     private User $authorizedUser;
+
     private User $unauthorizedUser;
+
     private User $viewOnlyUser;
+
     private User $inactiveUser;
+
     private ApprovalWorkflow $workflow;
 
     protected function setUp(): void
@@ -58,7 +62,7 @@ class ApprovalConfigurationMutationHttpTest extends TestCase
             'is_active' => false,
             'published_at' => null,
         ]);
-        
+
         ApprovalStage::factory()->create([
             'approval_workflow_id' => $this->workflow->id,
             'code' => 'STG_1',
@@ -94,23 +98,23 @@ class ApprovalConfigurationMutationHttpTest extends TestCase
     public function test_view_only_user_cannot_mutate()
     {
         $this->actingAs($this->viewOnlyUser)
-             ->postJson('/settings/approval-configurations', $this->validPayload())
-             ->assertForbidden();
+            ->postJson('/settings/approval-configurations', $this->validPayload())
+            ->assertForbidden();
     }
 
     public function test_role_admin_without_grant_cannot_mutate()
     {
         $admin = User::factory()->create(['is_active' => true]); // role might be implicit
         $this->actingAs($admin)
-             ->postJson('/settings/approval-configurations', $this->validPayload())
-             ->assertForbidden();
+            ->postJson('/settings/approval-configurations', $this->validPayload())
+            ->assertForbidden();
     }
 
     public function test_inactive_user_cannot_mutate()
     {
         $this->actingAs($this->inactiveUser)
-             ->postJson('/settings/approval-configurations', $this->validPayload())
-             ->assertForbidden();
+            ->postJson('/settings/approval-configurations', $this->validPayload())
+            ->assertForbidden();
     }
 
     public function test_inactive_manage_grant_cannot_mutate()
@@ -122,15 +126,15 @@ class ApprovalConfigurationMutationHttpTest extends TestCase
             'is_active' => false,
         ]);
         $this->actingAs($user)
-             ->postJson('/settings/approval-configurations', $this->validPayload())
-             ->assertForbidden();
+            ->postJson('/settings/approval-configurations', $this->validPayload())
+            ->assertForbidden();
     }
 
     public function test_active_manage_grant_can_mutate()
     {
         $this->actingAs($this->authorizedUser)
-             ->postJson('/settings/approval-configurations', $this->validPayload())
-             ->assertCreated();
+            ->postJson('/settings/approval-configurations', $this->validPayload())
+            ->assertCreated();
     }
 
     public function test_fake_actor_id_in_body_is_ignored()
@@ -139,16 +143,16 @@ class ApprovalConfigurationMutationHttpTest extends TestCase
         $payload['actor_user_id'] = $this->authorizedUser->id; // invalid prohibited field
 
         $response = $this->actingAs($this->unauthorizedUser)
-             ->postJson('/settings/approval-configurations', $payload);
-        
+            ->postJson('/settings/approval-configurations', $payload);
+
         $response->assertForbidden();
     }
 
     public function test_unauthorized_user_with_invalid_payload_gets_403()
     {
         $this->actingAs($this->unauthorizedUser)
-             ->postJson('/settings/approval-configurations', [])
-             ->assertForbidden();
+            ->postJson('/settings/approval-configurations', [])
+            ->assertForbidden();
     }
 
     public function test_department_capability_cannot_bypass_system_manage()
@@ -161,38 +165,38 @@ class ApprovalConfigurationMutationHttpTest extends TestCase
         ]);
 
         $this->actingAs($user)
-             ->postJson('/settings/approval-configurations', $this->validPayload())
-             ->assertForbidden();
+            ->postJson('/settings/approval-configurations', $this->validPayload())
+            ->assertForbidden();
     }
 
     // 9-11 IDOR
     public function test_unauthorized_user_gets_403_for_existing_id()
     {
         $this->actingAs($this->unauthorizedUser)
-             ->patchJson("/settings/approval-configurations/{$this->workflow->id}", $this->validPayload())
-             ->assertForbidden();
+            ->patchJson("/settings/approval-configurations/{$this->workflow->id}", $this->validPayload())
+            ->assertForbidden();
     }
 
     public function test_unauthorized_user_gets_403_for_non_existing_id()
     {
         $this->actingAs($this->unauthorizedUser)
-             ->patchJson("/settings/approval-configurations/99999", $this->validPayload())
-             ->assertForbidden();
+            ->patchJson('/settings/approval-configurations/99999', $this->validPayload())
+            ->assertForbidden();
     }
 
     public function test_authorized_user_gets_404_for_non_existing_id()
     {
         $this->actingAs($this->authorizedUser)
-             ->patchJson("/settings/approval-configurations/99999", $this->validPayload())
-             ->assertNotFound();
+            ->patchJson('/settings/approval-configurations/99999', $this->validPayload())
+            ->assertNotFound();
     }
 
     // 12-16 Validation
     public function test_missing_or_invalid_fields_yield_422()
     {
         $this->actingAs($this->authorizedUser)
-             ->postJson('/settings/approval-configurations', [])
-             ->assertUnprocessable();
+            ->postJson('/settings/approval-configurations', [])
+            ->assertUnprocessable();
     }
 
     public function test_nested_stages_payload_limit()
@@ -201,8 +205,8 @@ class ApprovalConfigurationMutationHttpTest extends TestCase
         $payload['stages'] = array_fill(0, 51, $payload['stages'][0]); // Exceed max size (assume 50 max)
 
         $this->actingAs($this->authorizedUser)
-             ->postJson('/settings/approval-configurations', $payload)
-             ->assertUnprocessable();
+            ->postJson('/settings/approval-configurations', $payload)
+            ->assertUnprocessable();
     }
 
     public function test_duplicate_stage_sequence_rejected()
@@ -215,10 +219,10 @@ class ApprovalConfigurationMutationHttpTest extends TestCase
             'is_final' => false,
         ];
 
-        // 422 structurally 
+        // 422 structurally
         $response = $this->actingAs($this->authorizedUser)
-             ->postJson('/settings/approval-configurations', $payload);
-             
+            ->postJson('/settings/approval-configurations', $payload);
+
         $this->assertEquals(422, $response->status());
     }
 
@@ -227,17 +231,17 @@ class ApprovalConfigurationMutationHttpTest extends TestCase
         $payload = $this->validPayload();
         $payload['published_at'] = '2025-01-01';
         $payload['is_active'] = true;
-        
+
         $this->actingAs($this->authorizedUser)
-             ->postJson('/settings/approval-configurations', $payload)
-             ->assertUnprocessable();
+            ->postJson('/settings/approval-configurations', $payload)
+            ->assertUnprocessable();
     }
 
     public function test_validation_failure_creates_no_garbage()
     {
         $countBefore = ApprovalWorkflow::count();
         $this->actingAs($this->authorizedUser)
-             ->postJson('/settings/approval-configurations', ['code' => '']);
+            ->postJson('/settings/approval-configurations', ['code' => '']);
         $this->assertEquals($countBefore, ApprovalWorkflow::count());
     }
 
@@ -245,8 +249,8 @@ class ApprovalConfigurationMutationHttpTest extends TestCase
     public function test_create_draft_endpoint()
     {
         $response = $this->actingAs($this->authorizedUser)
-             ->postJson('/settings/approval-configurations', $this->validPayload());
-        
+            ->postJson('/settings/approval-configurations', $this->validPayload());
+
         $response->assertCreated();
         $this->assertDatabaseHas('approval_workflows', ['code' => 'WF_NEW', 'version' => 1]);
     }
@@ -265,13 +269,13 @@ class ApprovalConfigurationMutationHttpTest extends TestCase
                     'description' => null,
                     'sequence' => 1,
                     'is_final' => true,
-                ]
-            ]
+                ],
+            ],
         ];
-        
+
         $response = $this->actingAs($this->authorizedUser)
-             ->patchJson("/settings/approval-configurations/{$this->workflow->id}", $payload);
-             
+            ->patchJson("/settings/approval-configurations/{$this->workflow->id}", $payload);
+
         $response->assertOk();
         $this->assertDatabaseHas('approval_workflows', ['id' => $this->workflow->id, 'name' => 'Updated Name']);
     }
@@ -279,8 +283,8 @@ class ApprovalConfigurationMutationHttpTest extends TestCase
     public function test_publish_endpoint()
     {
         $response = $this->actingAs($this->authorizedUser)
-             ->postJson("/settings/approval-configurations/{$this->workflow->id}/publish");
-             
+            ->postJson("/settings/approval-configurations/{$this->workflow->id}/publish");
+
         $response->assertOk();
         $this->assertTrue(ApprovalWorkflow::find($this->workflow->id)->is_active);
     }
@@ -288,10 +292,10 @@ class ApprovalConfigurationMutationHttpTest extends TestCase
     public function test_set_default_endpoint()
     {
         $this->workflow->update(['is_active' => true, 'published_at' => now()]);
-        
+
         $response = $this->actingAs($this->authorizedUser)
-             ->postJson("/settings/approval-configurations/{$this->workflow->id}/default");
-             
+            ->postJson("/settings/approval-configurations/{$this->workflow->id}/default");
+
         $response->assertOk();
         $this->assertTrue(ApprovalWorkflow::find($this->workflow->id)->is_default);
     }
@@ -299,10 +303,10 @@ class ApprovalConfigurationMutationHttpTest extends TestCase
     public function test_deactivate_endpoint()
     {
         $this->workflow->update(['is_active' => true, 'published_at' => now()]);
-        
+
         $response = $this->actingAs($this->authorizedUser)
-             ->postJson("/settings/approval-configurations/{$this->workflow->id}/deactivate");
-             
+            ->postJson("/settings/approval-configurations/{$this->workflow->id}/deactivate");
+
         $response->assertOk();
         $this->assertFalse(ApprovalWorkflow::find($this->workflow->id)->is_active);
     }
@@ -322,21 +326,21 @@ class ApprovalConfigurationMutationHttpTest extends TestCase
                     'description' => $stage->description,
                     'sequence' => $stage->sequence,
                     'is_final' => $stage->is_final,
-                ]
-            ]
+                ],
+            ],
         ];
 
-        $auditCount = \Illuminate\Support\Facades\DB::table('audit_logs')->count();
+        $auditCount = DB::table('audit_logs')->count();
 
-        $auditCount = \Illuminate\Support\Facades\DB::table('audit_logs')->count();
+        $auditCount = DB::table('audit_logs')->count();
 
         $this->actingAs($this->authorizedUser)
-             ->patchJson("/settings/approval-configurations/{$this->workflow->id}", $payload)
-             ->assertOk();
+            ->patchJson("/settings/approval-configurations/{$this->workflow->id}", $payload)
+            ->assertOk();
 
-        $this->assertEquals($auditCount, \Illuminate\Support\Facades\DB::table('audit_logs')->count());
+        $this->assertEquals($auditCount, DB::table('audit_logs')->count());
     }
-    
+
     public function test_domain_rejection_causes_no_mutation()
     {
         $workflow2 = ApprovalWorkflow::factory()->create([
@@ -346,13 +350,13 @@ class ApprovalConfigurationMutationHttpTest extends TestCase
             'is_active' => false,
             'published_at' => null,
         ]);
-        
+
         $response = $this->actingAs($this->authorizedUser)
-             ->postJson("/settings/approval-configurations/{$workflow2->id}/publish");
-             
+            ->postJson("/settings/approval-configurations/{$workflow2->id}/publish");
+
         $response->assertStatus(422)
-                 ->assertJsonPath('message', 'Domain rule violation')
-                 ->assertJsonMissing(['error' => 'Cannot publish workflow without any active stages.']); // Raw message should not leak
+            ->assertJsonPath('message', 'Domain rule violation')
+            ->assertJsonMissing(['error' => 'Cannot publish workflow without any active stages.']); // Raw message should not leak
     }
 
     public function test_audit_failure_rolls_back_mutation()
@@ -362,8 +366,8 @@ class ApprovalConfigurationMutationHttpTest extends TestCase
         });
 
         $response = $this->actingAs($this->authorizedUser)
-             ->postJson('/settings/approval-configurations', $this->validPayload());
-             
+            ->postJson('/settings/approval-configurations', $this->validPayload());
+
         $response->assertStatus(500);
         $this->assertDatabaseMissing('approval_workflows', ['code' => 'WF_NEW']);
     }
@@ -372,18 +376,18 @@ class ApprovalConfigurationMutationHttpTest extends TestCase
     public function test_wrong_http_method_yields_405()
     {
         $this->actingAs($this->authorizedUser)
-             ->putJson("/settings/approval-configurations/{$this->workflow->id}", [])
-             ->assertStatus(405);
+            ->putJson("/settings/approval-configurations/{$this->workflow->id}", [])
+            ->assertStatus(405);
     }
 
     public function test_response_does_not_leak_sql_state_or_path()
     {
         $payload = $this->validPayload();
         $payload['code'] = str_repeat('A', 500); // Too long
-        
+
         $response = $this->actingAs($this->authorizedUser)
-             ->postJson('/settings/approval-configurations', $payload);
-             
+            ->postJson('/settings/approval-configurations', $payload);
+
         $content = $response->getContent();
         $this->assertStringNotContainsString('SQLSTATE', $content);
         $this->assertStringNotContainsString('.env', $content);

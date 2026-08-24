@@ -2,17 +2,17 @@
 
 namespace App\Http\Controllers\Settings;
 
-use App\Http\Controllers\Controller;
-use App\Models\ApprovalWorkflow;
-use App\Queries\ApprovalConfiguration\ListApprovalWorkflows;
-use App\Queries\ApprovalConfiguration\ShowApprovalWorkflow;
 use App\Actions\ApprovalConfiguration\CreateApprovalWorkflowDraft;
 use App\Actions\ApprovalConfiguration\DeactivateApprovalWorkflow;
 use App\Actions\ApprovalConfiguration\PublishApprovalWorkflow;
 use App\Actions\ApprovalConfiguration\SetDefaultApprovalWorkflow;
 use App\Actions\ApprovalConfiguration\UpdateApprovalWorkflowDraft;
+use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreApprovalWorkflowRequest;
 use App\Http\Requests\UpdateApprovalWorkflowRequest;
+use App\Models\ApprovalWorkflow;
+use App\Queries\ApprovalConfiguration\ListApprovalWorkflows;
+use App\Queries\ApprovalConfiguration\ShowApprovalWorkflow;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Gate;
 
@@ -78,7 +78,7 @@ class ApprovalConfigurationController extends Controller
     public function publish(int $id, PublishApprovalWorkflow $action): JsonResponse
     {
         Gate::authorize('publish', ApprovalWorkflow::class);
-        
+
         $workflow = ApprovalWorkflow::findOrFail($id);
 
         $workflow = $action->execute(request()->user(), $workflow);
@@ -89,7 +89,7 @@ class ApprovalConfigurationController extends Controller
     public function setDefault(int $id, SetDefaultApprovalWorkflow $action): JsonResponse
     {
         Gate::authorize('setDefault', ApprovalWorkflow::class);
-        
+
         $workflow = ApprovalWorkflow::findOrFail($id);
 
         $workflow = $action->execute(request()->user(), $workflow);
@@ -100,7 +100,7 @@ class ApprovalConfigurationController extends Controller
     public function deactivate(int $id, DeactivateApprovalWorkflow $action): JsonResponse
     {
         Gate::authorize('deactivate', ApprovalWorkflow::class);
-        
+
         $workflow = ApprovalWorkflow::findOrFail($id);
 
         $workflow = $action->execute(request()->user(), $workflow);
