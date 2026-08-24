@@ -102,11 +102,13 @@ class BootstrapAdminCapabilities extends Command
             } else {
                 $this->info('Successfully bootstrapped system capabilities for user.');
             }
-
             return 0;
-
-        } catch (Throwable $e) {
+        } catch (\RuntimeException $e) {
             $this->error($e->getMessage());
+
+            return 1;
+        } catch (Throwable $e) {
+            $this->error('An unexpected system error occurred.');
 
             return 1;
         }
