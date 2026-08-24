@@ -110,3 +110,18 @@ Bu blokla mutasyon altyapısı güvenle tamamlanmış olup, Form Request, Blade/
 - **Eski Temp Kalıntıları Korundu & Dev DB Mühürlendi:** Harici bir dizin (`kaizen_race_unrelated_...`) veya eski kalan dizinler, `rmdir` esnasında exact pattern validation ve exact path sahipliği kontrolüyle `%100` korundu. Geliştirme veritabanında hiçbir sızıntı yaşanmadı.
 - **SQLite/MySQL Test Metrikleri:** Tüm Test Süitleri (SQLite 686 test, MySQL 696 test) ve Race A/B/C regresyonları GREEN duruma getirildi. Hard-kill anlarında (OS shutdown, elektrik kesintisi vs.) PHP'nin `finally` bloğu çalışmayacağından, bu tür dış etmen kaynaklı nadir senaryolarda işletim sisteminin %TEMP% politikalarına güvenileceği dürüstçe belirtildi.
 
+## Block 7.1 Acceptance
+
+Bütün HTTP Mutation geliştirme fazı adli testlerle doğrulanmış ve kalite kapıları kapanmıştır:
+- **Commit atomikliği**: Testler ayrı RED commit olarak, model düzeltmeleri ayrı FIX olarak ve feature implementation GREEN olarak ayrılmıştır. `style` değişiklikleri de kendi atomik commitindedir.
+- **Authorization-before-validation sonucu**: Form Request doğrulamasından önce yetki kontrolünün yapılması zorunluluğu tespit edilmiş, yetkisiz isteklere verilen 422 hatası, Form Request içindeki `authorize()` metodu güncellenerek 403'e dönüştürülmüştür (`bcdca5e`).
+- **IDOR sırası**: ID tabanlı rota modelleri doğrulandı. Yetkili kullanıcı için 404, yetkisiz kullanıcı için varlık sızıntısı olmadan 403 döndürüldüğü kanıtlandı.
+- **DomainException kapsamı**: Uygulama genelinde `DomainException` yönetiminin dar bir kapsama indirilmesi sağlandı (`bootstrap/app.php` güncellendi, sadece `/settings/approval-configurations/*` boundary'si 422 json döndürüyor). Hata raw message maskelendi.
+- **Sequence cast düzeltmesinin kanıtı**: `ApprovalStage` içerisindeki `sequence` değeri için eksik integer cast tespiti `1f34ecc` numaralı düzeltmeyle kalıcılaştırıldı, NOOP testlerin adli olarak 0 audit oluşturduğu doğrulandı.
+- **Route/request/controller matrisi**: 5 POST/PATCH endpoint Controller methodlarına yönlendirilmiş, Store/Update form request'leriyle validation ayrımı yapılandırılmış ve kısıtlı system/internal alanlar `prohibited` edilmiştir.
+- **Dev DB değişmezliği**: `fingerprint_dev_v2.php` ile doğrulanmıştır. Herhangi bir dev datası veya instance bozulmamış, auto_increment = 3 olarak kalmıştır.
+- **Bulunan gerçek açıklar**: 
+    1) "Sequence String vs Int Drift" (No-op testinde saptandı, `ApprovalStage` modelinde fixlendi).
+    2) "Authorization-before-validation gap" (Form request'lerde yetkisiz kullanıcıya 422 dönmesi 403'e düzeltildi).
+    3) "DomainException Global Mapping Gap" (Global 422 mapping, `/settings/approval-configurations/*` endpoint'iyle kısıtlanıp raw data maskelendi).
+- Bütün SQLite (713/713) ve MySQL (723/723) regresyon testleri GREEN'dir. Composer, Pint ve npm build kapıları başarıyla geçildi.
