@@ -48,6 +48,9 @@ Route::middleware('auth')->group(function () {
     Route::prefix('settings')->name('settings.')->group(function () {
         Route::get('/reference-data', [ReferenceDataController::class, 'index'])->name('reference-data.index');
 
+        Route::get('/approval-configurations', [\App\Http\Controllers\Settings\ApprovalConfigurationController::class, 'index'])->name('approval-configurations.index');
+        Route::get('/approval-configurations/{id}', [\App\Http\Controllers\Settings\ApprovalConfigurationController::class, 'show'])->name('approval-configurations.show');
+
         Route::get('/categories/{category}/edit', [CategoryController::class, 'edit'])->name('categories.edit');
         Route::post('/categories', [CategoryController::class, 'store'])->name('categories.store');
         Route::patch('/categories/{category}', [CategoryController::class, 'update'])->name('categories.update');
