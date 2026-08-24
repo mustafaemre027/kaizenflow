@@ -125,3 +125,11 @@ Bütün HTTP Mutation geliştirme fazı adli testlerle doğrulanmış ve kalite 
     2) "Authorization-before-validation gap" (Form request'lerde yetkisiz kullanıcıya 422 dönmesi 403'e düzeltildi).
     3) "DomainException Global Mapping Gap" (Global 422 mapping, `/settings/approval-configurations/*` endpoint'iyle kısıtlanıp raw data maskelendi).
 - Bütün SQLite (713/713) ve MySQL (723/723) regresyon testleri GREEN'dir. Composer, Pint ve npm build kapıları başarıyla geçildi.
+
+## Blok 8: Approval Configuration Blade Yönetim Arayüzü
+- **Güvenli Arayüz (RED -> GREEN):** Güvenli read/mutation endpoint'leri (index, show, create, edit) Bootstrap ve KaizenFlow CSS standartlarına sadık kalınarak oluşturuldu.
+- **Content Negotiation:** Tüm okuma ve mutasyon işlemleri `$request->wantsJson()` kullanılarak HTTP API ve UI Blade sayfaları ile uyumlu hale getirildi. Hata fırlatmaları (DomainException), HTML formları için flash mesaja dönüştürülerek `$exception->getMessage()` gibi raw hata sızıntıları önlendi.
+- **Erişilebilirlik ve DOM Koruması:** Stage listelerinde innerHTML JS kurguları tamamen escape edildi ve JS kapalıyken çalışabilecek temel fallback sağlandı. actor_id, user_id gibi form dışı alanlar DOM'a dahil edilmedi. Sayfalarda WAI-ARIA (aria-invalid, aria-describedby vb.) attributeları zorunlu tutuldu.
+- **Strict Authorization ve Lifecycle Testleri:** `ApprovalConfigurationUiTest` ile tam kapsayıcı TDD (19 adet GREEN test, 67 assertion) gerçekleştirildi. Guest, view-only, passive user, yetkisiz payload, IDOR sıralaması ve no-op (idempotent) mutasyon davranışları uçtan uca kanıtlandı.
+- **Veritabanı Değişmezliği:** Dev DB (kaizenflow) üzerinde manuel mutasyon / UI fixture testleri yürütülmedi ve Blok başı ile sonu fingerprint 0 byte diff ile korundu.
+- **Kalite Kapıları:** SQLite (742 passed) ve MySQL (742 passed, 2139 assertions) regresyonları test suite üzerinden hiçbir fire verilmeden tamamlandı.
