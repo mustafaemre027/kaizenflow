@@ -26,11 +26,48 @@
     </div>
 </div>
 
+<template id="stageRowTemplate">
+    <div class="kf-panel kf-panel-body d-flex flex-column flex-md-row gap-3 align-items-md-start stage-row">
+        <input type="hidden" class="stage-seq-input">
+        
+        <div class="d-flex flex-md-column flex-row gap-2 align-items-center" style="min-width: 40px;">
+            <span class="fw-bold text-muted text-center py-2 px-3 bg-light rounded stage-seq-text" aria-hidden="true"></span>
+            <button type="button" class="kf-btn kf-btn-secondary kf-btn-sm btn-move-up" style="padding: 0.25rem 0.5rem;">↑</button>
+            <button type="button" class="kf-btn kf-btn-secondary kf-btn-sm btn-move-down" style="padding: 0.25rem 0.5rem;">↓</button>
+        </div>
+
+        <div class="flex-grow-1" style="min-width: 0;">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="kf-form-label stage-code-label">Kod <span class="text-danger">*</span></label>
+                    <input type="text" class="kf-form-control stage-code-input" required aria-required="true">
+                </div>
+                <div class="col-md-8">
+                    <label class="kf-form-label stage-name-label">Ad <span class="text-danger">*</span></label>
+                    <input type="text" class="kf-form-control stage-name-input" required aria-required="true">
+                </div>
+                <div class="col-md-12">
+                    <label class="kf-form-label stage-desc-label">Açıklama</label>
+                    <input type="text" class="kf-form-control stage-desc-input">
+                </div>
+            </div>
+            <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center mt-3 gap-3">
+                <div class="form-check">
+                    <input type="checkbox" value="1" class="form-check-input final-checkbox">
+                    <label class="form-check-label stage-final-label">Final Aşaması (Yalnızca 1 tane olabilir)</label>
+                </div>
+                <button type="button" class="kf-btn kf-btn-danger kf-btn-sm btn-remove">Sil</button>
+            </div>
+        </div>
+    </div>
+</template>
+
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const container = document.getElementById('stagesContainer');
     const btnAdd = document.getElementById('btnAddStage');
+    const template = document.getElementById('stageRowTemplate');
     
     // Inject old input or existing workflow stages
     let initialStages = @json(old('stages', isset($workflow) ? $workflow->stages->toArray() : []));
@@ -43,64 +80,73 @@ document.addEventListener('DOMContentLoaded', function() {
     initialStages.sort((a, b) => (a.sequence || 0) - (b.sequence || 0));
 
     function renderStages() {
-        container.innerHTML = '';
+        container.textContent = ''; // safe clear
         initialStages.forEach((stage, index) => {
             const sequence = index + 1;
-            const isFinalChecked = (stage.is_final == 1 || stage.is_final === true) ? 'checked' : '';
-            const stageIdInput = stage.id ? `<input type="hidden" name="stages[${index}][id]" value="${stage.id}">` : '';
             
-            // Build the string via concatenation to avoid innerHTML injections of user data.
-            // Wait, we DO use innerHTML for DOM, but we MUST escape all user data.
-            const escCode = escapeHtml(stage.code || '');
-            const escName = escapeHtml(stage.name || '');
-            const escDesc = escapeHtml(stage.description || '');
-
-            const html = `
-                <div class="kf-panel kf-panel-body d-flex flex-column flex-md-row gap-3 align-items-md-start stage-row" data-index="${index}">
-                    ${stageIdInput}
-                    <input type="hidden" name="stages[${index}][sequence]" value="${sequence}">
-                    
-                    <div class="d-flex flex-md-column flex-row gap-2 align-items-center" style="min-width: 40px;">
-                        <span class="fw-bold text-muted text-center py-2 px-3 bg-light rounded" aria-hidden="true">${sequence}</span>
-                        <button type="button" class="kf-btn kf-btn-secondary kf-btn-sm btn-move-up" data-index="${index}" ${index === 0 ? 'disabled' : ''} aria-label="${sequence}. aşamayı yukarı taşı" style="padding: 0.25rem 0.5rem;">↑</button>
-                        <button type="button" class="kf-btn kf-btn-secondary kf-btn-sm btn-move-down" data-index="${index}" ${index === initialStages.length - 1 ? 'disabled' : ''} aria-label="${sequence}. aşamayı aşağı taşı" style="padding: 0.25rem 0.5rem;">↓</button>
-                    </div>
-
-                    <div class="flex-grow-1" style="min-width: 0;">
-                        <div class="row g-3">
-                            <div class="col-md-4">
-                                <label for="stage_${index}_code" class="kf-form-label">Kod <span class="text-danger">*</span></label>
-                                <input type="text" id="stage_${index}_code" name="stages[${index}][code]" class="kf-form-control" value="${escCode}" required aria-required="true">
-                            </div>
-                            <div class="col-md-8">
-                                <label for="stage_${index}_name" class="kf-form-label">Ad <span class="text-danger">*</span></label>
-                                <input type="text" id="stage_${index}_name" name="stages[${index}][name]" class="kf-form-control" value="${escName}" required aria-required="true">
-                            </div>
-                            <div class="col-md-12">
-                                <label for="stage_${index}_description" class="kf-form-label">Açıklama</label>
-                                <input type="text" id="stage_${index}_description" name="stages[${index}][description]" class="kf-form-control" value="${escDesc}">
-                            </div>
-                        </div>
-                        <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center mt-3 gap-3">
-                            <div class="form-check">
-                                <input type="checkbox" id="stage_${index}_is_final" name="stages[${index}][is_final]" value="1" class="form-check-input final-checkbox" data-index="${index}" ${isFinalChecked}>
-                                <label class="form-check-label" for="stage_${index}_is_final">Final Aşaması (Yalnızca 1 tane olabilir)</label>
-                            </div>
-                            <button type="button" class="kf-btn kf-btn-danger kf-btn-sm btn-remove" data-index="${index}" ${initialStages.length === 1 ? 'disabled' : ''} aria-label="${sequence}. aşamayı sil">Sil</button>
-                        </div>
-                    </div>
-                </div>
-            `;
-            container.insertAdjacentHTML('beforeend', html);
+            const clone = template.content.cloneNode(true);
+            const row = clone.querySelector('.stage-row');
+            
+            row.setAttribute('data-index', index);
+            
+            if (stage.id) {
+                const idInput = document.createElement('input');
+                idInput.type = 'hidden';
+                idInput.name = `stages[${index}][id]`;
+                idInput.value = stage.id;
+                row.prepend(idInput);
+            }
+            
+            const seqInput = row.querySelector('.stage-seq-input');
+            seqInput.name = `stages[${index}][sequence]`;
+            seqInput.value = sequence;
+            
+            row.querySelector('.stage-seq-text').textContent = sequence;
+            
+            const btnUp = row.querySelector('.btn-move-up');
+            btnUp.setAttribute('data-index', index);
+            btnUp.setAttribute('aria-label', `${sequence}. aşamayı yukarı taşı`);
+            if (index === 0) btnUp.disabled = true;
+            
+            const btnDown = row.querySelector('.btn-move-down');
+            btnDown.setAttribute('data-index', index);
+            btnDown.setAttribute('aria-label', `${sequence}. aşamayı aşağı taşı`);
+            if (index === initialStages.length - 1) btnDown.disabled = true;
+            
+            const codeInput = row.querySelector('.stage-code-input');
+            codeInput.id = `stage_${index}_code`;
+            codeInput.name = `stages[${index}][code]`;
+            codeInput.value = stage.code || '';
+            row.querySelector('.stage-code-label').setAttribute('for', codeInput.id);
+            
+            const nameInput = row.querySelector('.stage-name-input');
+            nameInput.id = `stage_${index}_name`;
+            nameInput.name = `stages[${index}][name]`;
+            nameInput.value = stage.name || '';
+            row.querySelector('.stage-name-label').setAttribute('for', nameInput.id);
+            
+            const descInput = row.querySelector('.stage-desc-input');
+            descInput.id = `stage_${index}_description`;
+            descInput.name = `stages[${index}][description]`;
+            descInput.value = stage.description || '';
+            row.querySelector('.stage-desc-label').setAttribute('for', descInput.id);
+            
+            const finalInput = row.querySelector('.final-checkbox');
+            finalInput.id = `stage_${index}_is_final`;
+            finalInput.name = `stages[${index}][is_final]`;
+            finalInput.checked = (stage.is_final == 1 || stage.is_final === true);
+            finalInput.setAttribute('data-index', index);
+            row.querySelector('.stage-final-label').setAttribute('for', finalInput.id);
+            
+            const btnRemove = row.querySelector('.btn-remove');
+            btnRemove.setAttribute('data-index', index);
+            btnRemove.setAttribute('aria-label', `${sequence}. aşamayı sil`);
+            if (initialStages.length === 1) btnRemove.disabled = true;
+            
+            container.appendChild(clone);
         });
 
         attachListeners();
-    }
-
-    function escapeHtml(text) {
-        if (!text) return '';
-        const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
-        return text.toString().replace(/[&<>"']/g, function(m) { return map[m]; });
     }
 
     function attachListeners() {
@@ -149,7 +195,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function saveState() {
-        // Read current DOM values into initialStages array before re-rendering
         container.querySelectorAll('.stage-row').forEach(row => {
             const idx = parseInt(row.getAttribute('data-index'));
             const codeInput = row.querySelector(`[name="stages[${idx}][code]"]`);
