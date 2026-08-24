@@ -3,7 +3,6 @@
 namespace App\Queries\ApprovalConfiguration;
 
 use App\Models\ApprovalWorkflow;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class ShowApprovalWorkflow
 {
@@ -35,4 +34,3 @@ class ShowApprovalWorkflow
             ->findOrFail($id);
     }
 }
-

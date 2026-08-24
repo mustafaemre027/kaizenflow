@@ -2,10 +2,10 @@
 
 namespace Tests\Feature;
 
-use App\Enums\CapabilityScope;
 use App\Enums\UserCapability;
 use App\Models\ApprovalStage;
 use App\Models\ApprovalWorkflow;
+use App\Models\Department;
 use App\Models\User;
 use App\Models\UserSystemCapabilityGrant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -16,9 +16,13 @@ class ApprovalConfigurationReadTest extends TestCase
     use RefreshDatabase;
 
     private User $authorizedUser;
+
     private User $unauthorizedUser;
+
     private User $manageOnlyUser;
+
     private User $inactiveUser;
+
     private ApprovalWorkflow $workflow;
 
     protected function setUp(): void
@@ -119,7 +123,7 @@ class ApprovalConfigurationReadTest extends TestCase
         $user = User::factory()->create(['is_active' => true]);
         $user->capabilityGrants()->create([
             'capability' => UserCapability::KAIZEN_IMPLEMENTATION_ASSIGN,
-            'department_id' => \App\Models\Department::factory()->create()->id,
+            'department_id' => Department::factory()->create()->id,
             'is_active' => true,
         ]);
 
@@ -129,7 +133,7 @@ class ApprovalConfigurationReadTest extends TestCase
 
     public function test_fake_actor_id_in_request_is_ignored()
     {
-        $response = $this->actingAs($this->unauthorizedUser)->getJson('/settings/approval-configurations?actor_user_id=' . $this->authorizedUser->id);
+        $response = $this->actingAs($this->unauthorizedUser)->getJson('/settings/approval-configurations?actor_user_id='.$this->authorizedUser->id);
         $response->assertForbidden();
     }
 
@@ -151,18 +155,18 @@ class ApprovalConfigurationReadTest extends TestCase
 
         $response = $this->actingAs($this->authorizedUser)->getJson('/settings/approval-configurations');
         $response->assertOk();
-        
+
         $response->assertJsonStructure([
             'data' => [
-                '*' => ['id', 'code', 'name', 'description', 'version', 'is_active', 'is_default', 'published_at']
+                '*' => ['id', 'code', 'name', 'description', 'version', 'is_active', 'is_default', 'published_at'],
             ],
             'meta' => [
                 'current_page',
                 'last_page',
-                'total'
-            ]
+                'total',
+            ],
         ]);
-        
+
         $this->assertCount(15, $response->json('data'));
     }
 
@@ -170,12 +174,12 @@ class ApprovalConfigurationReadTest extends TestCase
     {
         $response = $this->actingAs($this->authorizedUser)->getJson("/settings/approval-configurations/{$this->workflow->id}");
         $response->assertOk();
-        
+
         $data = $response->json('data');
-        
+
         $this->assertEquals($this->workflow->id, $data['id']);
         $this->assertCount(2, $data['stages']);
-        
+
         $this->assertEquals(1, $data['stages'][0]['sequence']);
         $this->assertEquals('STG_1', $data['stages'][0]['code']);
         $this->assertEquals(2, $data['stages'][1]['sequence']);
@@ -186,9 +190,9 @@ class ApprovalConfigurationReadTest extends TestCase
     {
         $response = $this->actingAs($this->authorizedUser)->getJson("/settings/approval-configurations/{$this->workflow->id}");
         $response->assertOk();
-        
+
         $data = $response->json('data');
-        
+
         $this->assertArrayNotHasKey('password', $data);
         $this->assertArrayNotHasKey('remember_token', $data);
     }

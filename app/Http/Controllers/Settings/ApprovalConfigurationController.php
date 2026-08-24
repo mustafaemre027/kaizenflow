@@ -23,7 +23,7 @@ class ApprovalConfigurationController extends Controller
                 'current_page' => $workflows->currentPage(),
                 'last_page' => $workflows->lastPage(),
                 'total' => $workflows->total(),
-            ]
+            ],
         ]);
     }
 
@@ -35,9 +35,8 @@ class ApprovalConfigurationController extends Controller
 
         return response()->json([
             'data' => array_merge($workflow->toArray(), [
-                'stages' => $workflow->stages->toArray()
-            ])
+                'stages' => $workflow->stages->toArray(),
+            ]),
         ]);
     }
 }
-

@@ -24,4 +24,3 @@ class ListApprovalWorkflows
             ->paginate(15);
     }
 }
-

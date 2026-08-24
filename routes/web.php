@@ -7,6 +7,7 @@ use App\Http\Controllers\KaizenApprovalActionController;
 use App\Http\Controllers\KaizenAttachmentController;
 use App\Http\Controllers\KaizenController;
 use App\Http\Controllers\KaizenImplementationController;
+use App\Http\Controllers\Settings\ApprovalConfigurationController;
 use App\Http\Controllers\Settings\CategoryController;
 use App\Http\Controllers\Settings\DepartmentController;
 use App\Http\Controllers\Settings\ReferenceDataController;
@@ -48,8 +49,8 @@ Route::middleware('auth')->group(function () {
     Route::prefix('settings')->name('settings.')->group(function () {
         Route::get('/reference-data', [ReferenceDataController::class, 'index'])->name('reference-data.index');
 
-        Route::get('/approval-configurations', [\App\Http\Controllers\Settings\ApprovalConfigurationController::class, 'index'])->name('approval-configurations.index');
-        Route::get('/approval-configurations/{id}', [\App\Http\Controllers\Settings\ApprovalConfigurationController::class, 'show'])->name('approval-configurations.show');
+        Route::get('/approval-configurations', [ApprovalConfigurationController::class, 'index'])->name('approval-configurations.index');
+        Route::get('/approval-configurations/{id}', [ApprovalConfigurationController::class, 'show'])->name('approval-configurations.show');
 
         Route::get('/categories/{category}/edit', [CategoryController::class, 'edit'])->name('categories.edit');
         Route::post('/categories', [CategoryController::class, 'store'])->name('categories.store');

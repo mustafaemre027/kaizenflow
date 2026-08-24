@@ -11,9 +11,7 @@ class ApprovalWorkflowPolicy
 {
     use HandlesAuthorization;
 
-    public function __construct(private UserCapabilityResolver $capabilityResolver)
-    {
-    }
+    public function __construct(private UserCapabilityResolver $capabilityResolver) {}
 
     public function viewAny(User $user): bool
     {
@@ -25,4 +23,3 @@ class ApprovalWorkflowPolicy
         return $this->capabilityResolver->allowsSystem($user, UserCapability::APPROVAL_CONFIGURATION_VIEW);
     }
 }
-
