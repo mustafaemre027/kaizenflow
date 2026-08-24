@@ -106,7 +106,7 @@ class BootstrapAdminCapabilities extends Command
 
             return 0;
         } catch (BootstrapRejectedException $e) {
-            $this->error($e->getMessage());
+            $this->error('bootstrap rejected');
 
             return 1;
         } catch (Throwable $e) {
