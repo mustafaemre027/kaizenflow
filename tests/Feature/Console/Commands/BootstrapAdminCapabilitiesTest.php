@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Console\Commands;
 
+use App\Actions\Authorization\BootstrapSystemCapabilities;
 use App\Enums\UserCapability;
 use App\Models\AuditLog;
 use App\Models\User;
@@ -127,11 +128,11 @@ class BootstrapAdminCapabilitiesTest extends TestCase
         $target = User::factory()->create(['is_active' => true]);
 
         // Mock the action to throw an unexpected exception
-        $mockAction = \Mockery::mock(\App\Actions\Authorization\BootstrapSystemCapabilities::class);
+        $mockAction = \Mockery::mock(BootstrapSystemCapabilities::class);
         $mockAction->shouldReceive('execute')
             ->andThrow(new \Exception("SQLSTATE[HY000] select * from secret_table password=CLI_EXCEPTION_CANARY token=CLI_TOKEN_CANARY C:\private\project\.env"));
 
-        $this->app->instance(\App\Actions\Authorization\BootstrapSystemCapabilities::class, $mockAction);
+        $this->app->instance(BootstrapSystemCapabilities::class, $mockAction);
 
         $this->artisan('capability:bootstrap-admin', ['--user-id' => $target->id])
             ->assertExitCode(1)
