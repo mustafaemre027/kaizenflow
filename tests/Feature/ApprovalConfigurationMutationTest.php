@@ -95,7 +95,7 @@ class ApprovalConfigurationMutationTest extends TestCase
         $action = $this->app->make(UpdateApprovalWorkflowDraft::class);
         
         $action->execute($this->authorizedUser, $workflow, 'Updated Name', 'Desc', [
-            ['id' => clone $stage1->id, 'code' => 'S1', 'name' => 'Updated S1', 'sequence' => 1, 'is_final' => false],
+            ['id' => $stage1->id, 'code' => 'S1', 'name' => 'Updated S1', 'sequence' => 1, 'is_final' => false],
             ['code' => 'S2', 'name' => 'New S2', 'sequence' => 2, 'is_final' => true],
         ]);
 
