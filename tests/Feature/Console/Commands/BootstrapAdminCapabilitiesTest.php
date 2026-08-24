@@ -173,4 +173,36 @@ class BootstrapAdminCapabilitiesTest extends TestCase
             ->doesntExpectOutputToContain('C:\Projects\kaizenflow\.env')
             ->doesntExpectOutputToContain('INTERNAL_PATH_CANARY');
     }
+    public function test_error_is_masked()
+    {
+        $target = User::factory()->create(['is_active' => true]);
+
+        $mockAction = \Mockery::mock(BootstrapSystemCapabilities::class);
+        $mockAction->shouldReceive('execute')
+            ->andThrow(new \Error("APP_KEY=CLI_ERROR_CANARY"));
+
+        $this->app->instance(BootstrapSystemCapabilities::class, $mockAction);
+
+        $this->artisan('capability:bootstrap-admin', ['--user-id' => $target->id])
+            ->assertExitCode(1)
+            ->expectsOutputToContain('An unexpected system error occurred')
+            ->doesntExpectOutputToContain('APP_KEY')
+            ->doesntExpectOutputToContain('CLI_ERROR_CANARY');
+    }
+
+    public function test_domain_exception_does_not_leak_dynamic_message()
+    {
+        $target = User::factory()->create(['is_active' => true]);
+
+        $mockAction = \Mockery::mock(BootstrapSystemCapabilities::class);
+        $mockAction->shouldReceive('execute')
+            ->andThrow(new \App\Exceptions\BootstrapRejectedException("bootstrap rejected password=CLI_DOMAIN_CANARY"));
+
+        $this->app->instance(BootstrapSystemCapabilities::class, $mockAction);
+
+        $this->artisan('capability:bootstrap-admin', ['--user-id' => $target->id])
+            ->assertExitCode(1)
+            ->doesntExpectOutputToContain('password')
+            ->doesntExpectOutputToContain('CLI_DOMAIN_CANARY');
+    }
 }
