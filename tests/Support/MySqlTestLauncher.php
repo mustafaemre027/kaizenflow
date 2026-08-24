@@ -144,7 +144,7 @@ class MySqlTestLauncher
                     throw new RuntimeException("CLI argument {$arg} is not allowed");
                 }
             }
-            if ($arg === '--db-check' || $arg === '--canary') {
+            if ($arg === '--db-check' || $arg === '--canary' || $arg === '--race-worker') {
                 $isWorker = true;
             }
             $safeArgs[] = $arg;
