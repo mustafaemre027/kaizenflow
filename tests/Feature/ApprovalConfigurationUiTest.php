@@ -15,9 +15,13 @@ class ApprovalConfigurationUiTest extends TestCase
     use RefreshDatabase;
 
     private User $authorizedUser;
+
     private User $unauthorizedUser;
+
     private User $viewOnlyUser;
+
     private User $inactiveUser;
+
     private ApprovalWorkflow $workflow;
 
     protected function setUp(): void
@@ -169,6 +173,7 @@ class ApprovalConfigurationUiTest extends TestCase
             'capability' => UserCapability::APPROVAL_CONFIGURATION_VIEW,
             'is_active' => true,
         ]);
+
         return $user;
     }
 
@@ -202,14 +207,14 @@ class ApprovalConfigurationUiTest extends TestCase
         $user = $this->getFullAccessUser();
 
         // 404 for authorized user but non-existing ID
-        $this->actingAs($user)->get("/settings/approval-configurations/99999/edit")->assertNotFound();
+        $this->actingAs($user)->get('/settings/approval-configurations/99999/edit')->assertNotFound();
 
         // 403 for unauthorized user and existing ID
         $this->actingAs($this->unauthorizedUser)->get("/settings/approval-configurations/{$this->workflow->id}/edit")->assertForbidden();
 
         // 403 for unauthorized user and non-existing ID
-        $this->actingAs($this->unauthorizedUser)->get("/settings/approval-configurations/99999/edit")->assertForbidden();
-        
+        $this->actingAs($this->unauthorizedUser)->get('/settings/approval-configurations/99999/edit')->assertForbidden();
+
         // Ensure /create does not conflict with /{id}
         $this->actingAs($user)->get('/settings/approval-configurations/create')->assertOk();
     }
@@ -246,7 +251,7 @@ class ApprovalConfigurationUiTest extends TestCase
     {
         $user = $this->getFullAccessUser();
         $response = $this->actingAs($user)->get('/settings/approval-configurations/create');
-        
+
         $response->assertDontSee('name="actor_user_id"', false);
         $response->assertDontSee('name="user_id"', false);
         $response->assertDontSee('name="version"', false);
@@ -257,7 +262,7 @@ class ApprovalConfigurationUiTest extends TestCase
     public function test_json_requests_still_return_json()
     {
         $user = $this->getFullAccessUser();
-        
+
         $this->actingAs($user)
             ->getJson('/settings/approval-configurations')
             ->assertJsonStructure(['data', 'meta']);
@@ -272,7 +277,7 @@ class ApprovalConfigurationUiTest extends TestCase
     public function test_validation_failure_returns_to_form_with_errors()
     {
         $user = $this->getFullAccessUser();
-        
+
         $response = $this->actingAs($user)
             ->from('/settings/approval-configurations/create')
             ->post('/settings/approval-configurations', ['code' => '']); // Invalid
@@ -285,13 +290,13 @@ class ApprovalConfigurationUiTest extends TestCase
     public function test_successful_create_redirects_to_show_with_flash()
     {
         $user = $this->getFullAccessUser();
-        
+
         $response = $this->actingAs($user)
             ->post('/settings/approval-configurations', $this->validPayload());
 
         $workflow = ApprovalWorkflow::where('code', 'WF_NEW_UI')->first();
         $this->assertNotNull($workflow);
-        
+
         $response->assertRedirect("/settings/approval-configurations/{$workflow->id}");
         $response->assertSessionHas('success');
     }
@@ -299,7 +304,7 @@ class ApprovalConfigurationUiTest extends TestCase
     public function test_successful_update_redirects_with_flash()
     {
         $user = $this->getFullAccessUser();
-        
+
         $payload = $this->validUpdatePayload();
 
         $response = $this->actingAs($user)
@@ -312,7 +317,7 @@ class ApprovalConfigurationUiTest extends TestCase
     public function test_successful_publish_redirects_with_flash()
     {
         $user = $this->getFullAccessUser();
-        
+
         $response = $this->actingAs($user)
             ->post("/settings/approval-configurations/{$this->workflow->id}/publish");
 
@@ -324,7 +329,7 @@ class ApprovalConfigurationUiTest extends TestCase
     {
         $user = $this->getFullAccessUser();
         $this->workflow->update(['published_at' => now(), 'is_active' => true]);
-        
+
         $response = $this->actingAs($user)
             ->post("/settings/approval-configurations/{$this->workflow->id}/default");
 
@@ -335,11 +340,11 @@ class ApprovalConfigurationUiTest extends TestCase
     public function test_successful_deactivate_redirects_with_flash()
     {
         $user = $this->getFullAccessUser();
-        
+
         $response = $this->actingAs($user)
             ->post("/settings/approval-configurations/{$this->workflow->id}/deactivate");
 
-        $response->assertRedirect("/settings/approval-configurations");
+        $response->assertRedirect('/settings/approval-configurations');
         $response->assertSessionHas('success');
     }
 
@@ -347,10 +352,10 @@ class ApprovalConfigurationUiTest extends TestCase
     public function test_domain_exception_caught_safely_for_html()
     {
         $user = $this->getFullAccessUser();
-        
+
         // Attempt to publish a workflow without any stages (throws DomainException)
         ApprovalStage::where('approval_workflow_id', $this->workflow->id)->delete();
-        
+
         $response = $this->actingAs($user)
             ->from("/settings/approval-configurations/{$this->workflow->id}")
             ->post("/settings/approval-configurations/{$this->workflow->id}/publish");

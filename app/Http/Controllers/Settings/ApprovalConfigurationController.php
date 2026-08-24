@@ -100,6 +100,7 @@ class ApprovalConfigurationController extends Controller
             if ($request->wantsJson()) {
                 throw $e;
             }
+
             return back()->withInput()->with('error', 'İşlem kurallara uymuyor.');
         }
     }
@@ -127,6 +128,7 @@ class ApprovalConfigurationController extends Controller
             if ($request->wantsJson()) {
                 throw $e;
             }
+
             return back()->withInput()->with('error', 'İşlem kurallara uymuyor.');
         }
     }
@@ -134,7 +136,7 @@ class ApprovalConfigurationController extends Controller
     public function publish(Request $request, int $id, PublishApprovalWorkflow $action): JsonResponse|RedirectResponse
     {
         Gate::authorize('publish', ApprovalWorkflow::class);
-        
+
         try {
             $workflow = ApprovalWorkflow::findOrFail($id);
             $workflow = $action->execute($request->user(), $workflow);
@@ -149,6 +151,7 @@ class ApprovalConfigurationController extends Controller
             if ($request->wantsJson()) {
                 throw $e;
             }
+
             return back()->with('error', 'İşlem kurallara uymuyor.');
         }
     }
@@ -156,7 +159,7 @@ class ApprovalConfigurationController extends Controller
     public function setDefault(Request $request, int $id, SetDefaultApprovalWorkflow $action): JsonResponse|RedirectResponse
     {
         Gate::authorize('setDefault', ApprovalWorkflow::class);
-        
+
         try {
             $workflow = ApprovalWorkflow::findOrFail($id);
             $workflow = $action->execute($request->user(), $workflow);
@@ -171,6 +174,7 @@ class ApprovalConfigurationController extends Controller
             if ($request->wantsJson()) {
                 throw $e;
             }
+
             return back()->with('error', 'İşlem kurallara uymuyor.');
         }
     }
@@ -178,7 +182,7 @@ class ApprovalConfigurationController extends Controller
     public function deactivate(Request $request, int $id, DeactivateApprovalWorkflow $action): JsonResponse|RedirectResponse
     {
         Gate::authorize('deactivate', ApprovalWorkflow::class);
-        
+
         try {
             $workflow = ApprovalWorkflow::findOrFail($id);
             $workflow = $action->execute($request->user(), $workflow);
@@ -193,6 +197,7 @@ class ApprovalConfigurationController extends Controller
             if ($request->wantsJson()) {
                 throw $e;
             }
+
             return back()->with('error', 'İşlem kurallara uymuyor.');
         }
     }
