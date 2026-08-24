@@ -123,14 +123,13 @@ class BootstrapAdminCapabilitiesTest extends TestCase
             ->assertExitCode(1);
     }
 
-    public function test_exception_masking()
+    public function test_generic_runtime_exception_is_masked()
     {
         $target = User::factory()->create(['is_active' => true]);
 
-        // Mock the action to throw an unexpected exception
         $mockAction = \Mockery::mock(BootstrapSystemCapabilities::class);
         $mockAction->shouldReceive('execute')
-            ->andThrow(new \Exception("SQLSTATE[HY000] select * from secret_table password=CLI_EXCEPTION_CANARY token=CLI_TOKEN_CANARY C:\private\project\.env"));
+            ->andThrow(new \RuntimeException("SQLSTATE[HY000] password=CLI_EXCEPTION_CANARY"));
 
         $this->app->instance(BootstrapSystemCapabilities::class, $mockAction);
 
@@ -138,9 +137,40 @@ class BootstrapAdminCapabilitiesTest extends TestCase
             ->assertExitCode(1)
             ->expectsOutputToContain('An unexpected system error occurred')
             ->doesntExpectOutputToContain('SQLSTATE')
-            ->doesntExpectOutputToContain('CLI_EXCEPTION_CANARY')
-            ->doesntExpectOutputToContain('CLI_TOKEN_CANARY')
-            ->doesntExpectOutputToContain('select * from secret_table')
-            ->doesntExpectOutputToContain('C:\private\project\.env');
+            ->doesntExpectOutputToContain('CLI_EXCEPTION_CANARY');
+    }
+
+    public function test_pdo_exception_is_masked()
+    {
+        $target = User::factory()->create(['is_active' => true]);
+
+        $mockAction = \Mockery::mock(BootstrapSystemCapabilities::class);
+        $mockAction->shouldReceive('execute')
+            ->andThrow(new \PDOException("select * from users token=CLI_TOKEN_CANARY"));
+
+        $this->app->instance(BootstrapSystemCapabilities::class, $mockAction);
+
+        $this->artisan('capability:bootstrap-admin', ['--user-id' => $target->id])
+            ->assertExitCode(1)
+            ->expectsOutputToContain('An unexpected system error occurred')
+            ->doesntExpectOutputToContain('select * from users')
+            ->doesntExpectOutputToContain('CLI_TOKEN_CANARY');
+    }
+
+    public function test_logic_exception_is_masked()
+    {
+        $target = User::factory()->create(['is_active' => true]);
+
+        $mockAction = \Mockery::mock(BootstrapSystemCapabilities::class);
+        $mockAction->shouldReceive('execute')
+            ->andThrow(new \LogicException("C:\Projects\kaizenflow\.env INTERNAL_PATH_CANARY"));
+
+        $this->app->instance(BootstrapSystemCapabilities::class, $mockAction);
+
+        $this->artisan('capability:bootstrap-admin', ['--user-id' => $target->id])
+            ->assertExitCode(1)
+            ->expectsOutputToContain('An unexpected system error occurred')
+            ->doesntExpectOutputToContain('C:\Projects\kaizenflow\.env')
+            ->doesntExpectOutputToContain('INTERNAL_PATH_CANARY');
     }
 }
