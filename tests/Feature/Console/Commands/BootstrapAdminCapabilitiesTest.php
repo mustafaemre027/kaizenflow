@@ -7,7 +7,6 @@ use App\Models\AuditLog;
 use App\Models\User;
 use App\Models\UserSystemCapabilityGrant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Artisan;
 use Tests\TestCase;
 
 class BootstrapAdminCapabilitiesTest extends TestCase
@@ -35,7 +34,7 @@ class BootstrapAdminCapabilitiesTest extends TestCase
     {
         $this->artisan('capability:bootstrap-admin', ['--user-id' => '  '])
             ->assertExitCode(1);
-        
+
         $this->artisan('capability:bootstrap-admin', ['--email' => '  '])
             ->assertExitCode(1);
     }
@@ -58,7 +57,7 @@ class BootstrapAdminCapabilitiesTest extends TestCase
     public function test_it_bootstraps_user_by_id_successfully()
     {
         $target = User::factory()->create(['is_active' => true]);
-        
+
         $this->artisan('capability:bootstrap-admin', ['--user-id' => $target->id])
             ->expectsOutputToContain('Successfully bootstrapped system capabilities for user')
             ->assertExitCode(0);
@@ -69,7 +68,7 @@ class BootstrapAdminCapabilitiesTest extends TestCase
     public function test_it_bootstraps_user_by_email_successfully()
     {
         $target = User::factory()->create(['is_active' => true, 'email' => 'admin@example.com']);
-        
+
         $this->artisan('capability:bootstrap-admin', ['--email' => 'admin@example.com'])
             ->expectsOutputToContain('Successfully bootstrapped system capabilities for user')
             ->assertExitCode(0);
@@ -81,13 +80,13 @@ class BootstrapAdminCapabilitiesTest extends TestCase
     {
         $target = User::factory()->create(['is_active' => true]);
         $this->artisan('capability:bootstrap-admin', ['--user-id' => $target->id])->assertExitCode(0);
-        
+
         $auditCount = AuditLog::count();
 
         $this->artisan('capability:bootstrap-admin', ['--user-id' => $target->id])
             ->expectsOutputToContain('Package is already complete and active. No changes made.')
             ->assertExitCode(0);
-            
+
         $this->assertEquals($auditCount, AuditLog::count());
     }
 
@@ -97,11 +96,11 @@ class BootstrapAdminCapabilitiesTest extends TestCase
         app()->detectEnvironment(fn () => 'production');
 
         $target = User::factory()->create(['is_active' => true]);
-        
+
         $this->artisan('capability:bootstrap-admin', ['--user-id' => $target->id])
             ->expectsOutputToContain('Application is in production!')
             ->assertExitCode(1);
-            
+
         // With force it should work
         $this->artisan('capability:bootstrap-admin', ['--user-id' => $target->id, '--force' => true])
             ->assertExitCode(0);

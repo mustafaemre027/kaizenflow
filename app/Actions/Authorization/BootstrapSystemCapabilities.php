@@ -25,7 +25,7 @@ class BootstrapSystemCapabilities
         DB::transaction(function () use ($targetUser) {
             $activeUserIds = User::where('is_active', true)->pluck('id')->toArray();
             $activeUserIds[] = $targetUser->id;
-            
+
             $userIdsToLock = array_unique($activeUserIds);
             sort($userIdsToLock);
 
@@ -34,7 +34,7 @@ class BootstrapSystemCapabilities
             $freshTarget = $lockedUsers->firstWhere('id', $targetUser->id);
 
             if (! $freshTarget || ! $freshTarget->is_active) {
-                throw new InvalidArgumentException("Target user must be active.");
+                throw new InvalidArgumentException('Target user must be active.');
             }
 
             // 2. Lock Grants
@@ -57,29 +57,29 @@ class BootstrapSystemCapabilities
 
             // Invariant check
             if (count($activeManagerIds) > 1) {
-                throw new RuntimeException("bootstrap rejected: Multiple active managers exist.");
+                throw new RuntimeException('bootstrap rejected: Multiple active managers exist.');
             }
             if (count($activeManagerIds) === 1 && $activeManagerIds[0] !== $freshTarget->id) {
-                throw new RuntimeException("bootstrap rejected: Another active manager exists.");
+                throw new RuntimeException('bootstrap rejected: Another active manager exists.');
             }
 
             // Perform Package Grants for the Target
             $targetGrants = $lockedGrants->where('user_id', $freshTarget->id);
-            
+
             $createdCount = 0;
             $reactivatedCount = 0;
             $unchangedCount = 0;
-            
+
             $oldStates = [];
             $newStates = [];
-            
+
             // Sort capabilities to be deterministic
             $sortedPackage = self::PACKAGE;
-            usort($sortedPackage, fn($a, $b) => strcmp($a->value, $b->value));
+            usort($sortedPackage, fn ($a, $b) => strcmp($a->value, $b->value));
 
             foreach ($sortedPackage as $capability) {
                 $existingGrant = $targetGrants->firstWhere('capability', $capability);
-                
+
                 if (! $existingGrant) {
                     UserSystemCapabilityGrant::create([
                         'user_id' => $freshTarget->id,
@@ -112,7 +112,7 @@ class BootstrapSystemCapabilities
                     'scope' => 'system',
                     'source' => 'artisan',
                     'command' => 'capability:bootstrap-admin',
-                    'capabilities' => array_map(fn($c) => $c->value, $sortedPackage),
+                    'capabilities' => array_map(fn ($c) => $c->value, $sortedPackage),
                     'old_states' => $oldStates,
                     'new_states' => $newStates,
                     'created_count' => $createdCount,
@@ -124,7 +124,7 @@ class BootstrapSystemCapabilities
             }
         });
     }
-    
+
     protected function writeAudit(User $target, array $metadata): void
     {
         $audit = new AuditLog([
@@ -134,7 +134,7 @@ class BootstrapSystemCapabilities
             'event' => 'authorization.system_capabilities.bootstrapped',
             'metadata' => $metadata,
         ]);
-        
+
         $audit->save();
     }
 }

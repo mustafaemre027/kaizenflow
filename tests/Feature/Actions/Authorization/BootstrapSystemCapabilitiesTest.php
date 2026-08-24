@@ -67,9 +67,9 @@ class BootstrapSystemCapabilitiesTest extends TestCase
         $target = User::factory()->create(['is_active' => true]);
 
         $this->action->execute($target);
-        
+
         $auditCount = AuditLog::count();
-        
+
         $this->action->execute($target);
 
         $this->assertEquals($auditCount, AuditLog::count()); // No new audit
@@ -124,7 +124,7 @@ class BootstrapSystemCapabilitiesTest extends TestCase
         $this->expectExceptionMessage('bootstrap rejected');
         $this->action->execute($target);
     }
-    
+
     public function test_it_rejects_if_multiple_managers_exist()
     {
         $target = User::factory()->create(['is_active' => true]);
@@ -146,14 +146,16 @@ class BootstrapSystemCapabilitiesTest extends TestCase
         $this->expectExceptionMessage('bootstrap rejected');
         $this->action->execute($target);
     }
-    
+
     public function test_transaction_rollback_on_audit_failure()
     {
         $target = User::factory()->create(['is_active' => true]);
-        
-        $action = new class extends BootstrapSystemCapabilities {
-            protected function writeAudit(User $target, array $changes): void {
-                throw new RuntimeException("Audit failed");
+
+        $action = new class extends BootstrapSystemCapabilities
+        {
+            protected function writeAudit(User $target, array $changes): void
+            {
+                throw new RuntimeException('Audit failed');
             }
         };
 
@@ -164,7 +166,7 @@ class BootstrapSystemCapabilitiesTest extends TestCase
 
         $this->assertCount(0, UserSystemCapabilityGrant::where('user_id', $target->id)->get());
     }
-    
+
     public function test_transaction_lock_order_is_correct()
     {
         // This test ensures that DB::transaction uses lockForUpdate properly.
