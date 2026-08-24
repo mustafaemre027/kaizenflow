@@ -4,6 +4,7 @@ namespace Tests\Feature\Console\Commands;
 
 use App\Actions\Authorization\BootstrapSystemCapabilities;
 use App\Enums\UserCapability;
+use App\Exceptions\BootstrapRejectedException;
 use App\Models\AuditLog;
 use App\Models\User;
 use App\Models\UserSystemCapabilityGrant;
@@ -129,7 +130,7 @@ class BootstrapAdminCapabilitiesTest extends TestCase
 
         $mockAction = \Mockery::mock(BootstrapSystemCapabilities::class);
         $mockAction->shouldReceive('execute')
-            ->andThrow(new \RuntimeException("SQLSTATE[HY000] password=CLI_EXCEPTION_CANARY"));
+            ->andThrow(new \RuntimeException('SQLSTATE[HY000] password=CLI_EXCEPTION_CANARY'));
 
         $this->app->instance(BootstrapSystemCapabilities::class, $mockAction);
 
@@ -146,7 +147,7 @@ class BootstrapAdminCapabilitiesTest extends TestCase
 
         $mockAction = \Mockery::mock(BootstrapSystemCapabilities::class);
         $mockAction->shouldReceive('execute')
-            ->andThrow(new \PDOException("select * from users token=CLI_TOKEN_CANARY"));
+            ->andThrow(new \PDOException('select * from users token=CLI_TOKEN_CANARY'));
 
         $this->app->instance(BootstrapSystemCapabilities::class, $mockAction);
 
@@ -173,13 +174,14 @@ class BootstrapAdminCapabilitiesTest extends TestCase
             ->doesntExpectOutputToContain('C:\Projects\kaizenflow\.env')
             ->doesntExpectOutputToContain('INTERNAL_PATH_CANARY');
     }
+
     public function test_error_is_masked()
     {
         $target = User::factory()->create(['is_active' => true]);
 
         $mockAction = \Mockery::mock(BootstrapSystemCapabilities::class);
         $mockAction->shouldReceive('execute')
-            ->andThrow(new \Error("APP_KEY=CLI_ERROR_CANARY"));
+            ->andThrow(new \Error('APP_KEY=CLI_ERROR_CANARY'));
 
         $this->app->instance(BootstrapSystemCapabilities::class, $mockAction);
 
@@ -196,7 +198,7 @@ class BootstrapAdminCapabilitiesTest extends TestCase
 
         $mockAction = \Mockery::mock(BootstrapSystemCapabilities::class);
         $mockAction->shouldReceive('execute')
-            ->andThrow(new \App\Exceptions\BootstrapRejectedException("bootstrap rejected password=CLI_DOMAIN_CANARY"));
+            ->andThrow(new BootstrapRejectedException('bootstrap rejected password=CLI_DOMAIN_CANARY'));
 
         $this->app->instance(BootstrapSystemCapabilities::class, $mockAction);
 
