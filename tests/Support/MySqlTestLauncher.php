@@ -136,6 +136,7 @@ class MySqlTestLauncher
         ];
 
         $safeArgs = [];
+        $isWorker = false;
 
         foreach ($this->cliArgs as $arg) {
             foreach ($disallowedPrefixes as $prefix) {
@@ -143,15 +144,25 @@ class MySqlTestLauncher
                     throw new RuntimeException("CLI argument {$arg} is not allowed");
                 }
             }
+            if ($arg === '--db-check' || $arg === '--canary') {
+                $isWorker = true;
+            }
             $safeArgs[] = $arg;
         }
 
-        $command = [
-            PHP_BINARY,
-            dirname(__DIR__, 2).'/vendor/phpunit/phpunit/phpunit',
-            '--configuration',
-            dirname(__DIR__, 2).'/phpunit.mysql.xml',
-        ];
+        if ($isWorker) {
+            $command = [
+                PHP_BINARY,
+                dirname(__DIR__, 2).'/tests/Support/MySqlTestWorker.php',
+            ];
+        } else {
+            $command = [
+                PHP_BINARY,
+                dirname(__DIR__, 2).'/vendor/phpunit/phpunit/phpunit',
+                '--configuration',
+                dirname(__DIR__, 2).'/phpunit.mysql.xml',
+            ];
+        }
 
         return array_merge($command, $safeArgs);
     }
