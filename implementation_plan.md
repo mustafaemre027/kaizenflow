@@ -86,3 +86,14 @@ Bu blokla mutasyon altyapısı güvenle tamamlanmış olup, Form Request, Blade/
 - **Test ve Kalite Sonuçları:**
   - Yeni gap testi ile beraber SQLite 683 passed, MySQL 684 passed olarak %100 test success oranına ulaşıldı.
   - Pint, npm build, composer validate hepsi hatasız.
+
+## Blok 6.2.1 Concurrency Worker Veritabanı Mühürlemesi
+- **DB Sızıntısının Kök Nedeni:** Blok 6 scratch testlerindeki `race_master.php`, kendi içerisinde `Config::set` ile veritabanını değiştirse de, `Artisan::call` ve child worker process'lere (`proc_open` ile) `DB_DATABASE=kaizenflow_test` environment override'ını geçirmemiştir. Child process'ler ve console kernel boot sırasında doğrudan `.env` okuduğu için işlemler `kaizenflow` veritabanına sıçramıştır (Senaryo C tespiti).
+- **Kirlenmiş Kayıtlar:** Blok 6.1 ve Blok 6.2.1 sırasında bu kayıtların silinmesi yasak olduğu için oldukları gibi bırakılmıştır (Onaylı bir sonraki cleanup bloğu bekleniyor).
+- **Güvenli Test Harness (mysql-launcher):**
+  - **Parent Process Allowlist:** Credential'ların (DB_USERNAME, DB_PASSWORD vb.) worker'lara sadece güvenli `$_SERVER` ve explicit override ile aktarılması sağlandı.
+  - **Child Process Tuple:** `APP_ENV=testing`, `DB_CONNECTION=mysql`, `DB_DATABASE=kaizenflow_test` zorunlu kılındı.
+  - **Canlı SELECT DATABASE():** Her worker Laravel boot olduktan sonra işlemi `SELECT DATABASE() as db` ile teyit etmeden hiçbir mutationa izin vermeyecek biçimde (hard-fail) mühürlendi.
+  - **Test Metrikleri:** Bu fail-closed kilit sistemi `ConcurrencyDatabaseSafetyTest` ile kırmızı-yeşil test döngüsüyle güvenceye alınmıştır.
+- **Kalıcı Concurrency Testleri:** Güvenlik katmanı mühürlendiğinden dolayı Race A/B/C testlerinin kalıcı Laravel `Feature` testlerine dönüştürülmesi bir sonraki bloğa devredildi.
+
