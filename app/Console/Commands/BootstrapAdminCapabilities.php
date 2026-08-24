@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Actions\Authorization\BootstrapSystemCapabilities;
+use App\Exceptions\BootstrapRejectedException;
 use App\Models\User;
 use App\Models\UserSystemCapabilityGrant;
 use Illuminate\Console\Command;
@@ -104,7 +105,7 @@ class BootstrapAdminCapabilities extends Command
             }
 
             return 0;
-        } catch (\RuntimeException $e) {
+        } catch (BootstrapRejectedException $e) {
             $this->error($e->getMessage());
 
             return 1;

@@ -3,12 +3,12 @@
 namespace App\Actions\Authorization;
 
 use App\Enums\UserCapability;
+use App\Exceptions\BootstrapRejectedException;
 use App\Models\AuditLog;
 use App\Models\User;
 use App\Models\UserSystemCapabilityGrant;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
-use RuntimeException;
 
 class BootstrapSystemCapabilities
 {
@@ -57,10 +57,10 @@ class BootstrapSystemCapabilities
 
             // Invariant check
             if (count($activeManagerIds) > 1) {
-                throw new RuntimeException('bootstrap rejected: Multiple active managers exist.');
+                throw new BootstrapRejectedException('bootstrap rejected: Multiple active managers exist.');
             }
             if (count($activeManagerIds) === 1 && $activeManagerIds[0] !== $freshTarget->id) {
-                throw new RuntimeException('bootstrap rejected: Another active manager exists.');
+                throw new BootstrapRejectedException('bootstrap rejected: Another active manager exists.');
             }
 
             // Perform Package Grants for the Target
