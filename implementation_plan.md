@@ -1,4 +1,4 @@
-﻿# GÜN 13 / ÇALIŞMA BLOĞU 6 — APPROVAL CONFIGURATION MUTATION ACTION’LARI, VERSIONING VE AUDIT TDD
+# GÜN 13 / ÇALIŞMA BLOĞU 6 — APPROVAL CONFIGURATION MUTATION ACTION’LARI, VERSIONING VE AUDIT TDD
 
 ## Gerçek Action ve Exception Sınıfları
 - **Exception Sınıfları:**
@@ -96,4 +96,9 @@ Bu blokla mutasyon altyapısı güvenle tamamlanmış olup, Form Request, Blade/
   - **Canlı SELECT DATABASE():** Her worker Laravel boot olduktan sonra işlemi `SELECT DATABASE() as db` ile teyit etmeden hiçbir mutationa izin vermeyecek biçimde (hard-fail) mühürlendi.
   - **Test Metrikleri:** Bu fail-closed kilit sistemi `ConcurrencyDatabaseSafetyTest` ile kırmızı-yeşil test döngüsüyle güvenceye alınmıştır.
 - **Kalıcı Concurrency Testleri:** Güvenlik katmanı mühürlendiğinden dolayı Race A/B/C testlerinin kalıcı Laravel `Feature` testlerine dönüştürülmesi bir sonraki bloğa devredildi.
+
+## Blok 6.2.3 Kalıcı MySQL Race A/B/C Regresyon Testleri
+- **Senaryo A (Doğrudan Test Başarısı):** Güvenli isolation (MySqlTestLauncher) üzerinden `ApprovalConfigurationConcurrencyTest.php` yazılarak Race A (Duplicate taslak), Race B (Eşzamanlı Default) ve Race C (Stale Capability) testleri koşuldu. Tüm yarış senaryoları `hasApprovalConfigurationMutation` içindeki `lockForUpdate` mantığı sayesinde %100 başarıyla (GREEN) çalıştı ve production kodunda herhangi bir güvenlik açığı bulunamadı.
+- **Güvenlik Mühürü Teyidi:** Dev DB (kaizenflow) testten önce ve sonra fingerprint ile doğrulandı, hiçbir sızıntı ve değişiklik (0 byte data drift) yaşanmadı.
+- **Bütünsel Regresyon:** Tüm SQLite (686 passed) ve MySQL (690 passed) testleri sıfır hata ile tamamlandı. Pint, view cache, JS build gibi kalite kapıları kapandı.
 
