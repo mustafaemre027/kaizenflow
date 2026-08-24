@@ -7,7 +7,6 @@ use App\Actions\ApprovalConfiguration\DeactivateApprovalWorkflow;
 use App\Actions\ApprovalConfiguration\PublishApprovalWorkflow;
 use App\Actions\ApprovalConfiguration\SetDefaultApprovalWorkflow;
 use App\Actions\ApprovalConfiguration\UpdateApprovalWorkflowDraft;
-use App\Enums\CapabilityScope;
 use App\Enums\UserCapability;
 use App\Exceptions\AuthorizationException;
 use App\Exceptions\DomainException;
@@ -17,10 +16,7 @@ use App\Models\AuditLog;
 use App\Models\KaizenWorkflowInstance;
 use App\Models\User;
 use App\Models\UserSystemCapabilityGrant;
-use App\Services\AppendAuditLog;
-use App\Services\UserCapabilityResolver;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class ApprovalConfigurationMutationTest extends TestCase
@@ -28,7 +24,9 @@ class ApprovalConfigurationMutationTest extends TestCase
     use RefreshDatabase;
 
     private User $authorizedUser;
+
     private User $unauthorizedUser;
+
     private User $inactiveUser;
 
     protected function setUp(): void
@@ -93,7 +91,7 @@ class ApprovalConfigurationMutationTest extends TestCase
         $stage1 = ApprovalStage::factory()->create(['approval_workflow_id' => $workflow->id, 'code' => 'S1', 'sequence' => 1]);
 
         $action = $this->app->make(UpdateApprovalWorkflowDraft::class);
-        
+
         $action->execute($this->authorizedUser, $workflow, 'Updated Name', 'Desc', [
             ['id' => $stage1->id, 'code' => 'S1', 'name' => 'Updated S1', 'sequence' => 1, 'is_final' => false],
             ['code' => 'S2', 'name' => 'New S2', 'sequence' => 2, 'is_final' => true],
@@ -102,7 +100,7 @@ class ApprovalConfigurationMutationTest extends TestCase
         $workflow->refresh();
         $this->assertEquals('Updated Name', $workflow->name);
         $this->assertCount(2, $workflow->stages()->where('is_active', true)->get());
-        
+
         $audit = AuditLog::where('event', 'approval_configuration.updated')->first();
         $this->assertNotNull($audit);
     }
@@ -112,7 +110,7 @@ class ApprovalConfigurationMutationTest extends TestCase
         $workflow = ApprovalWorkflow::factory()->create(['code' => 'PUB', 'version' => 1, 'published_at' => now(), 'is_active' => true]);
 
         $action = $this->app->make(UpdateApprovalWorkflowDraft::class);
-        
+
         $this->expectException(DomainException::class);
         $action->execute($this->authorizedUser, $workflow, 'Name', null, []);
     }
@@ -128,7 +126,7 @@ class ApprovalConfigurationMutationTest extends TestCase
         $workflow->refresh();
         $this->assertNotNull($workflow->published_at);
         $this->assertTrue($workflow->is_active);
-        
+
         $audit = AuditLog::where('event', 'approval_configuration.published')->first();
         $this->assertNotNull($audit);
     }

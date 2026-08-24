@@ -4,7 +4,4 @@ namespace App\Exceptions;
 
 use Exception;
 
-class AuthorizationException extends Exception
-{
-}
-
+class AuthorizationException extends Exception {}

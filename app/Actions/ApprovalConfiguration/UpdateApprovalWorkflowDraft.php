@@ -40,7 +40,7 @@ class UpdateApprovalWorkflowDraft
             }
 
             $hasStageChanges = $this->updateStages($workflow, $stages);
-            
+
             if ($hasChanges || $hasStageChanges) {
                 $this->audit->execute($actor, $workflow, 'approval_configuration.updated', [
                     'actor_user_id' => $actor->id,
@@ -64,7 +64,7 @@ class UpdateApprovalWorkflowDraft
     {
         $hasChanges = false;
         $existingStages = ApprovalStage::where('approval_workflow_id', $workflow->id)->orderBy('id', 'asc')->lockForUpdate()->get();
-        
+
         $stageCodes = [];
         $stageSequences = [];
         $finalCount = 0;
@@ -72,7 +72,7 @@ class UpdateApprovalWorkflowDraft
         $newIds = collect($stages)->pluck('id')->filter()->toArray();
 
         foreach ($existingStages as $existingStage) {
-            if (!in_array($existingStage->id, $newIds)) {
+            if (! in_array($existingStage->id, $newIds)) {
                 if ($existingStage->is_active) {
                     $existingStage->update(['is_active' => false]);
                     $hasChanges = true;
@@ -98,14 +98,26 @@ class UpdateApprovalWorkflowDraft
                 $stage = $existingStages->where('id', $stageData['id'])->first();
                 if ($stage) {
                     $stageChanges = [];
-                    if ($stage->code !== $stageData['code']) $stageChanges['code'] = $stageData['code'];
-                    if ($stage->name !== $stageData['name']) $stageChanges['name'] = $stageData['name'];
-                    if ($stage->description !== ($stageData['description'] ?? null)) $stageChanges['description'] = $stageData['description'] ?? null;
-                    if ($stage->sequence !== $stageData['sequence']) $stageChanges['sequence'] = $stageData['sequence'];
-                    if ($stage->is_final !== ($stageData['is_final'] ?? false)) $stageChanges['is_final'] = $stageData['is_final'] ?? false;
-                    if (!$stage->is_active) $stageChanges['is_active'] = true;
+                    if ($stage->code !== $stageData['code']) {
+                        $stageChanges['code'] = $stageData['code'];
+                    }
+                    if ($stage->name !== $stageData['name']) {
+                        $stageChanges['name'] = $stageData['name'];
+                    }
+                    if ($stage->description !== ($stageData['description'] ?? null)) {
+                        $stageChanges['description'] = $stageData['description'] ?? null;
+                    }
+                    if ($stage->sequence !== $stageData['sequence']) {
+                        $stageChanges['sequence'] = $stageData['sequence'];
+                    }
+                    if ($stage->is_final !== ($stageData['is_final'] ?? false)) {
+                        $stageChanges['is_final'] = $stageData['is_final'] ?? false;
+                    }
+                    if (! $stage->is_active) {
+                        $stageChanges['is_active'] = true;
+                    }
 
-                    if (!empty($stageChanges)) {
+                    if (! empty($stageChanges)) {
                         $stage->update($stageChanges);
                         $hasChanges = true;
                     }

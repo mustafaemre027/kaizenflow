@@ -27,7 +27,7 @@ class SetDefaultApprovalWorkflow
             $allWorkflows = ApprovalWorkflow::orderBy('id', 'asc')->lockForUpdate()->get();
             $workflow = $allWorkflows->where('id', $targetWorkflow->id)->first();
 
-            if (!$workflow || $workflow->published_at === null || !$workflow->is_active) {
+            if (! $workflow || $workflow->published_at === null || ! $workflow->is_active) {
                 throw new DomainException('Only published and active workflows can be set as default.');
             }
 

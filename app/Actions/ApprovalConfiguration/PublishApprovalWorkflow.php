@@ -59,7 +59,7 @@ class PublishApprovalWorkflow
             if ($finalCount > 1) {
                 throw new DomainException('Cannot publish workflow with multiple final stages.');
             }
-            if (!$stages->last()->is_final) {
+            if (! $stages->last()->is_final) {
                 throw new DomainException('The final stage must be the last stage in sequence.');
             }
 

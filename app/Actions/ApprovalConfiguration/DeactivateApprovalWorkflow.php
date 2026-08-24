@@ -26,7 +26,7 @@ class DeactivateApprovalWorkflow
 
             $workflow = ApprovalWorkflow::where('id', $workflow->id)->lockForUpdate()->firstOrFail();
 
-            if (!$workflow->is_active) {
+            if (! $workflow->is_active) {
                 return $workflow; // No-op
             }
 
