@@ -47,8 +47,8 @@ class MySqlTestLauncher
             throw new RuntimeException('DB_USERNAME is required and cannot be empty');
         }
 
-        if ($this->env['DB_USERNAME'] === 'root') {
-            throw new RuntimeException('DB_USERNAME cannot be root');
+        if ($this->env['DB_USERNAME'] !== 'kaizenflow_app') {
+            throw new RuntimeException('DB_USERNAME must be exactly kaizenflow_app');
         }
 
         if (empty($this->env['DB_PASSWORD'])) {

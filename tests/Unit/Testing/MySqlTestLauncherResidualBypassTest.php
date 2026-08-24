@@ -38,8 +38,8 @@ class MySqlTestLauncherResidualBypassTest extends TestCase
             ['mysql'],
             ['test_admin'],
             ['kaizenflow_app2'],
-            [' kaizenflow_app'],
-            ['kaizenflow_app '],
+            ['" kaizenflow_app"'],
+            ['"kaizenflow_app "'],
             ['KAIZENFLOW_APP'],
         ];
     }

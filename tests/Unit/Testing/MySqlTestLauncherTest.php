@@ -64,7 +64,7 @@ class MySqlTestLauncherTest extends TestCase
     {
         $this->createEnv("DB_HOST=127.0.0.1\nDB_PORT=3306\nDB_USERNAME=root\nDB_PASSWORD=pass");
         $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('DB_USERNAME cannot be root');
+        $this->expectExceptionMessage('DB_USERNAME must be exactly kaizenflow_app');
 
         $launcher = new MySqlTestLauncher($this->tempEnvPath, []);
         $launcher->loadEnvironment();
