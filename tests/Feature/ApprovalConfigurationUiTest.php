@@ -74,6 +74,24 @@ class ApprovalConfigurationUiTest extends TestCase
                 [
                     'code' => 'ST1',
                     'name' => 'Stage 1',
+                    'sequence' => 2,
+                    'is_final' => true,
+                ],
+            ],
+        ];
+    }
+
+    private function validUpdatePayload(): array
+    {
+        return [
+            'code' => 'WF_UI_TEST',
+            'name' => 'UI Test Workflow Updated',
+            'description' => 'Desc',
+            'stages' => [
+                [
+                    'id' => 1,
+                    'code' => 'STG_UI_1',
+                    'name' => 'Stage 1 Updated',
                     'sequence' => 1,
                     'is_final' => true,
                 ],
@@ -282,8 +300,7 @@ class ApprovalConfigurationUiTest extends TestCase
     {
         $user = $this->getFullAccessUser();
         
-        $payload = $this->validPayload();
-        $payload['code'] = 'WF_UI_TEST'; // Code immutable, must be same
+        $payload = $this->validUpdatePayload();
 
         $response = $this->actingAs($user)
             ->patch("/settings/approval-configurations/{$this->workflow->id}", $payload);
@@ -331,8 +348,8 @@ class ApprovalConfigurationUiTest extends TestCase
     {
         $user = $this->getFullAccessUser();
         
-        // Attempt to publish an already published workflow (throws DomainException)
-        $this->workflow->update(['published_at' => now(), 'is_active' => true]);
+        // Attempt to publish a workflow without any stages (throws DomainException)
+        ApprovalStage::where('approval_workflow_id', $this->workflow->id)->delete();
         
         $response = $this->actingAs($user)
             ->from("/settings/approval-configurations/{$this->workflow->id}")
@@ -340,7 +357,7 @@ class ApprovalConfigurationUiTest extends TestCase
 
         $response->assertRedirect("/settings/approval-configurations/{$this->workflow->id}");
         $response->assertSessionHas('error');
-        // Ensure raw message is NOT leaked. The domain exception message might be "Cannot publish an already published workflow"
-        $this->assertStringNotContainsString('already published', session('error'));
+        // Ensure raw message is NOT leaked. The domain exception message might be "Cannot publish workflow without any active stages."
+        $this->assertStringNotContainsString('active stages', session('error'));
     }
 }
