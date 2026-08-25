@@ -58,6 +58,9 @@ Route::middleware('auth')->group(function () {
         Route::post('/approval-configurations/{id}/publish', [ApprovalConfigurationController::class, 'publish'])->name('approval-configurations.publish');
         Route::post('/approval-configurations/{id}/default', [ApprovalConfigurationController::class, 'setDefault'])->name('approval-configurations.set-default');
         Route::post('/approval-configurations/{id}/deactivate', [ApprovalConfigurationController::class, 'deactivate'])->name('approval-configurations.deactivate');
+        Route::patch('/approval-configurations/{workflowId}/stages/{stageId}/approver-rule', [ApprovalConfigurationController::class, 'mutateApproverRule'])
+            ->name('approval-configurations.stages.approver-rule')
+            ->where(['workflowId' => '[0-9]+', 'stageId' => '[0-9]+']);
 
         Route::get('/categories/{category}/edit', [CategoryController::class, 'edit'])->name('categories.edit');
         Route::post('/categories', [CategoryController::class, 'store'])->name('categories.store');

@@ -63,7 +63,7 @@
                 <h2 class="kf-panel-title">Onay Aşamaları</h2>
             </div>
             <div class="kf-panel-body p-0">
-                <div class="table-responsive">
+                <div class="table-responsive d-none d-md-block">
                     <table class="table mb-0 align-middle">
                         <thead>
                             <tr>
@@ -97,8 +97,92 @@
                         </tbody>
                     </table>
                 </div>
+
+                <div class="d-block d-md-none">
+                    <ul class="list-group list-group-flush">
+                        @foreach($workflow->stages->sortBy('sequence') as $stage)
+                        <li class="list-group-item px-3 py-3 border-bottom">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-secondary rounded-pill">{{ $stage->sequence }}</span>
+                                    <span class="fw-bold text-dark">{{ $stage->code }}</span>
+                                </div>
+                                <div>
+                                    @if($stage->is_final)
+                                        <span class="kf-badge kf-badge-priority" style="font-size: 0.7rem;">Final</span>
+                                    @endif
+                                    @if(!$stage->is_active)
+                                        <span class="kf-badge kf-badge-neutral" style="font-size: 0.7rem;">Pasif</span>
+                                    @endif
+                                </div>
+                            </div>
+                            <div class="mb-1 text-dark fw-medium">{{ $stage->name }}</div>
+                            @if($stage->description)
+                                <div class="text-muted small">{{ $stage->description }}</div>
+                            @endif
+                        </li>
+                        @endforeach
+                    </ul>
+                </div>
             </div>
         </div>
+        </div>
+
+        @if($workflow->approver_resolution_mode === \App\Enums\ApproverResolutionMode::CAPABILITY_RULE)
+        <div class="kf-panel mt-4">
+            <div class="kf-panel-header">
+                <h2 class="kf-panel-title">Onaylayıcı Kuralları</h2>
+            </div>
+            <div class="kf-panel-body">
+                @foreach($workflow->stages->sortBy('sequence')->where('is_active', true) as $stage)
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <h5 class="card-title">Aşama {{ $stage->sequence }}: {{ $stage->name }}</h5>
+                            
+                            @if($workflow->published_at === null && Gate::check('update', \App\Models\ApprovalWorkflow::class))
+                                <form action="{{ route('settings.approval-configurations.stages.approver-rule', [$workflow->id, $stage->id]) }}" method="POST">
+                                    @csrf
+                                    @method('PATCH')
+                                    <div class="mb-3">
+                                        <label for="capability_{{ $stage->id }}" class="form-label">Onaylayıcı Yetkisi</label>
+                                        <select name="capability" id="capability_{{ $stage->id }}" class="form-select @error('capability') is-invalid @enderror" aria-invalid="{{ $errors->has('capability') ? 'true' : 'false' }}">
+                                            <option value="">Seçiniz</option>
+                                            <option value="kaizen.opex_review" {{ optional($stage->approverRule)->capability?->value === 'kaizen.opex_review' ? 'selected' : '' }}>OPEX Ön Değerlendirmesi (kaizen.opex_review)</option>
+                                            <option value="kaizen.department_approve" {{ optional($stage->approverRule)->capability?->value === 'kaizen.department_approve' ? 'selected' : '' }}>Departman Yöneticisi Onayı (kaizen.department_approve)</option>
+                                            <option value="kaizen.board_approve" {{ optional($stage->approverRule)->capability?->value === 'kaizen.board_approve' ? 'selected' : '' }}>Kaizen Kurulu Onayı (kaizen.board_approve)</option>
+                                        </select>
+                                        @error('capability')
+                                            <div class="invalid-feedback">{{ $message }}</div>
+                                        @enderror
+                                    </div>
+                                    <div class="mb-3 form-check">
+                                        <input type="checkbox" name="is_active" id="is_active_{{ $stage->id }}" class="form-check-input" value="1" {{ optional($stage->approverRule)->is_active !== false ? 'checked' : '' }}>
+                                        <label class="form-check-label" for="is_active_{{ $stage->id }}">Kural Aktif</label>
+                                    </div>
+                                    <button type="submit" class="kf-btn kf-btn-primary">Kaydet</button>
+                                </form>
+                            @else
+                                <div class="mb-2">
+                                    <strong>Yetki:</strong> 
+                                    @if(optional($stage->approverRule)->capability?->value === 'kaizen.opex_review') OPEX Ön Değerlendirmesi
+                                    @elseif(optional($stage->approverRule)->capability?->value === 'kaizen.department_approve') Departman Yöneticisi Onayı
+                                    @elseif(optional($stage->approverRule)->capability?->value === 'kaizen.board_approve') Kaizen Kurulu Onayı
+                                    @else Belirlenmedi @endif
+                                </div>
+                                <div class="mb-2">
+                                    <strong>Kapsam:</strong>
+                                    {{ optional($stage->approverRule)->scope_source ? optional($stage->approverRule)->scope_source->name : '-' }}
+                                </div>
+                                <div>
+                                    <strong>Durum:</strong> {{ optional($stage->approverRule)->is_active ? 'Aktif' : 'Pasif' }}
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+        @endif
     </div>
 
     <div class="kf-detail-sidebar">
@@ -108,6 +192,16 @@
             </div>
             <div class="kf-panel-body">
                 <ul class="kf-meta-list">
+                    <li class="kf-meta-item">
+                        <span class="kf-meta-label">Çözümleme Modu</span>
+                        <span class="kf-meta-value">
+                            @if($workflow->approver_resolution_mode === \App\Enums\ApproverResolutionMode::LEGACY_GROUP)
+                                Eski Grup Sistemi
+                            @else
+                                Dinamik Kural
+                            @endif
+                        </span>
+                    </li>
                     <li class="kf-meta-item">
                         <span class="kf-meta-label">Aktiflik</span>
                         <span class="kf-meta-value">{{ $workflow->is_active ? 'Aktif' : 'Pasif' }}</span>

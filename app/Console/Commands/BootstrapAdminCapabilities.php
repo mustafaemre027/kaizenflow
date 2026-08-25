@@ -98,7 +98,7 @@ class BootstrapAdminCapabilities extends Command
                 ->whereIn('capability', BootstrapSystemCapabilities::PACKAGE)
                 ->where('is_active', true)->count();
 
-            if ($beforeGrantsCount === 5 && $afterGrantsCount === 5) {
+            if ($beforeGrantsCount === count(BootstrapSystemCapabilities::PACKAGE) && $afterGrantsCount === count(BootstrapSystemCapabilities::PACKAGE)) {
                 $this->info('Package is already complete and active. No changes made.');
             } else {
                 $this->info('Successfully bootstrapped system capabilities for user.');

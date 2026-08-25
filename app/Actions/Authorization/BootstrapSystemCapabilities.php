@@ -18,6 +18,8 @@ class BootstrapSystemCapabilities
         UserCapability::ORGANIZATION_MANAGE,
         UserCapability::APPROVAL_CONFIGURATION_VIEW,
         UserCapability::APPROVAL_CONFIGURATION_MANAGE,
+        UserCapability::KAIZEN_OPEX_REVIEW,
+        UserCapability::KAIZEN_BOARD_APPROVE,
     ];
 
     public function execute(User $targetUser): void

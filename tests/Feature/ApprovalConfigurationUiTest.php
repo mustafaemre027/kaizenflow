@@ -385,4 +385,20 @@ class ApprovalConfigurationUiTest extends TestCase
         // Ensure raw message is NOT leaked. The domain exception message might be "Cannot publish workflow without any active stages."
         $this->assertStringNotContainsString('active stages', session('error'));
     }
+
+    public function test_workflow_show_page_renders_responsive_approval_stages_layout(): void
+    {
+        $response = $this->actingAs($this->viewOnlyUser)->get(route('settings.approval-configurations.show', $this->workflow));
+
+        $response->assertStatus(200);
+
+        // Assert the desktop table is hidden on mobile
+        $response->assertSee('<div class="table-responsive d-none d-md-block">', false);
+
+        // Assert the mobile card layout is visible on mobile only
+        $response->assertSee('<div class="d-block d-md-none">', false);
+        $response->assertSee('STG_UI_1'); // Code
+        $stage = $this->workflow->stages()->first();
+        $response->assertSee($stage->name); // Name
+    }
 }

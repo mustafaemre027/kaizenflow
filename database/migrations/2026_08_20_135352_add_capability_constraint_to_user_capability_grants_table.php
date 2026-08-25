@@ -30,7 +30,8 @@ return new class extends Migration
                     CONSTRAINT chk_user_department_capability_scope CHECK (capability IN (
                         'kaizen.implementation.assign',
                         'kaizen.implementation.start',
-                        'kaizen.implementation.complete'
+                        'kaizen.implementation.complete',
+                        'kaizen.department_approve'
                     ))
                 )
             ");

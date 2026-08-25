@@ -30,6 +30,12 @@ class ApprovalConfigurationConcurrencyTest extends TestCase
 
     protected function tearDown(): void
     {
+        if (\config('database.default') !== 'mysql') {
+            parent::tearDown();
+
+            return;
+        }
+
         if ($this->harness) {
             $this->harness->cleanup();
         }

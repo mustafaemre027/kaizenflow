@@ -8,10 +8,10 @@ use PHPUnit\Framework\TestCase;
 
 class UserCapabilityTest extends TestCase
 {
-    public function test_it_contains_exactly_eight_capabilities(): void
+    public function test_it_contains_exactly_eleven_capabilities(): void
     {
         $cases = UserCapability::cases();
-        $this->assertCount(8, $cases);
+        $this->assertCount(11, $cases);
 
         $expectedValues = [
             'kaizen.implementation.assign',
@@ -22,6 +22,9 @@ class UserCapabilityTest extends TestCase
             'approval_configuration.view',
             'approval_configuration.manage',
             'authorization.manage',
+            'kaizen.opex_review',
+            'kaizen.department_approve',
+            'kaizen.board_approve',
         ];
 
         $actualValues = array_map(fn ($case) => $case->value, $cases);

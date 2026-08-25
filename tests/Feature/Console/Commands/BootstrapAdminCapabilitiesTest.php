@@ -64,7 +64,7 @@ class BootstrapAdminCapabilitiesTest extends TestCase
             ->expectsOutputToContain('Successfully bootstrapped system capabilities for user')
             ->assertExitCode(0);
 
-        $this->assertCount(5, UserSystemCapabilityGrant::where('user_id', $target->id)->get());
+        $this->assertCount(count(BootstrapSystemCapabilities::PACKAGE), UserSystemCapabilityGrant::where('user_id', $target->id)->get());
     }
 
     public function test_it_bootstraps_user_by_email_successfully()
@@ -75,7 +75,7 @@ class BootstrapAdminCapabilitiesTest extends TestCase
             ->expectsOutputToContain('Successfully bootstrapped system capabilities for user')
             ->assertExitCode(0);
 
-        $this->assertCount(5, UserSystemCapabilityGrant::where('user_id', $target->id)->get());
+        $this->assertCount(count(BootstrapSystemCapabilities::PACKAGE), UserSystemCapabilityGrant::where('user_id', $target->id)->get());
     }
 
     public function test_no_op_returns_success_and_no_audit()

@@ -32,7 +32,9 @@ return new class extends Migration
                         'organization.manage',
                         'approval_configuration.view',
                         'approval_configuration.manage',
-                        'authorization.manage'
+                        'authorization.manage',
+                        'kaizen.opex_review',
+                        'kaizen.board_approve'
                     ))
                 )
             ");

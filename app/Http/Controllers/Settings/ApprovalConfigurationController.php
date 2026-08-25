@@ -4,11 +4,17 @@ namespace App\Http\Controllers\Settings;
 
 use App\Actions\ApprovalConfiguration\CreateApprovalWorkflowDraft;
 use App\Actions\ApprovalConfiguration\DeactivateApprovalWorkflow;
+use App\Actions\ApprovalConfiguration\MutateApprovalStageApproverRule;
 use App\Actions\ApprovalConfiguration\PublishApprovalWorkflow;
 use App\Actions\ApprovalConfiguration\SetDefaultApprovalWorkflow;
 use App\Actions\ApprovalConfiguration\UpdateApprovalWorkflowDraft;
+use App\Enums\ApprovalApproverScopeSource;
+use App\Enums\ApproverResolutionMode;
+use App\Enums\CapabilityScope;
+use App\Enums\UserCapability;
 use App\Exceptions\DomainException;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\MutateApprovalStageApproverRuleRequest;
 use App\Http\Requests\StoreApprovalWorkflowRequest;
 use App\Http\Requests\UpdateApprovalWorkflowRequest;
 use App\Models\ApprovalWorkflow;
@@ -193,6 +199,60 @@ class ApprovalConfigurationController extends Controller
 
             return redirect()->route('settings.approval-configurations.index')
                 ->with('success', 'Onay yapılandırması başarıyla pasifleştirildi.');
+        } catch (DomainException $e) {
+            if ($request->wantsJson()) {
+                throw $e;
+            }
+
+            return back()->with('error', 'İşlem kurallara uymuyor.');
+        }
+    }
+
+    public function mutateApproverRule(
+        int $workflowId,
+        int $stageId,
+        MutateApprovalStageApproverRuleRequest $request,
+        MutateApprovalStageApproverRule $action
+    ): JsonResponse|RedirectResponse {
+        try {
+            $workflow = ApprovalWorkflow::findOrFail($workflowId);
+            $stage = $workflow->stages()->findOrFail($stageId);
+
+            if ($workflow->published_at !== null) {
+                if ($request->wantsJson()) {
+                    return response()->json(['message' => 'Cannot mutate a published workflow.'], 422);
+                }
+
+                return back()->with('error', 'İşlem kurallara uymuyor.');
+            }
+
+            if ($workflow->approver_resolution_mode === ApproverResolutionMode::LEGACY_GROUP) {
+                if ($request->wantsJson()) {
+                    return response()->json(['message' => 'Cannot assign capability rules to a legacy group workflow.'], 422);
+                }
+
+                return back()->with('error', 'İşlem kurallara uymuyor.');
+            }
+
+            $capability = UserCapability::from($request->validated('capability'));
+            $scopeSource = $capability->scope() === CapabilityScope::DEPARTMENT
+                ? ApprovalApproverScopeSource::KAIZEN_DEPARTMENT
+                : ApprovalApproverScopeSource::SYSTEM;
+
+            $action->execute(
+                $request->user(),
+                $stage,
+                $capability,
+                $scopeSource,
+                $request->validated('is_active') ?? true
+            );
+
+            if ($request->wantsJson()) {
+                return response()->json(['message' => 'Rule successfully mutated.']);
+            }
+
+            return redirect()->route('settings.approval-configurations.show', $workflow->id)
+                ->with('success', 'Onaylayıcı kuralı başarıyla güncellendi.');
         } catch (DomainException $e) {
             if ($request->wantsJson()) {
                 throw $e;

@@ -157,3 +157,43 @@ PROCEDURAL DEVIATION — THE INITIAL COLLISION CHARACTERIZATION TEST EXPECTED QUER
 - Yeni test commit’i düzeltmenin başarılı DB sonucunu kalıcı olarak doğrulamaktadır.
 - History rewrite yapılmamıştır.
 
+
+## 9. Blok 2 Gerçekleştirme Sonuçları
+
+Blok 2 hedefleri kapsamında;
+- Enum ve Model yapıları (ApproverResolutionMode, ApprovalApproverScopeSource, ApprovalStageApproverRule) oluşturulmuştur.
+- DB Constraint migrationları eksiksiz uygulanmış ve MySQL/SQLite platformlarında RefreshDatabase uyumluluğu TDD ile doğrulanmıştır.
+- MutateApprovalStageApproverRule Domain Action'ı deterministik lock order ile (User -> Grant -> Workflow -> Stage -> Rule) uygulanmış, "high" düzeyli lock açığı kapatılmıştır.
+- CapabilityApprovalStageApproverResolver ile **self-approval prevention** aktif edilmiş, pasif rule/grant/actor kombinasyonları ve departman eşleşmezlikleri için tamamen fail-closed izole bir yapı kurulmuştur.
+- Bootstrap PACKAGE güncellenmiş ve yetkilerin exact-delegation'a uygun olarak Admin'e verilmesi sağlanmıştır.
+- Yüksek kapsama sahip testler yazılmış, kod RED -> GREEN -> STYLE hattıyla commit edilmiştir. TDD ve izole test aşaması başarıyla tamamlanmıştır.
+
+## 10. Blok 3 Gerçekleştirme Sonuçları (Runtime Entegrasyonu)
+
+Blok 3 hedefleri doğrultusunda;
+- ApprovalStageApproverResolver içerisine CapabilityApprovalStageApproverResolver bağımlılığı enjekte edilmiş ve ApproverResolutionMode::CAPABILITY_RULE ile ApproverResolutionMode::LEGACY_GROUP arası ayrım (hiçbir fallback olmaksızın) sağlanmıştır.
+- Tüm modlarda Self-Approval kesin red kuralı en tepeye yerleştirilmiş ve yetkisizlik durumunda instance, stage ve audit ilerlemesi durdurularak tam ACID rollback doğrulanmıştır.
+- ProgressKaizenWorkflow mutation Action'ı içerisine resolver yetkilendirme katmanı eklenerek güvenlik açığı giderilmiş ve testlerde izole yetkilendirme doğrulaması yapılmıştır.
+- CreateApprovalWorkflowDraft Action'ında yeni taslakların ApproverResolutionMode::CAPABILITY_RULE ile oluşması açıkça zorlanmıştır.
+- PublishApprovalWorkflow Action'ına CAPABILITY_RULE workflow'ları için "her aktif stage için tam bir aktif rule bulunması" invariantı (yayınlama engeli) eklenmiştir.
+- SQLite (773 Passed) ve MySQL canlı test (773 Passed, 2208 Assertions) TDD döngüsünde 0 hata ile çalıştırılmış ve Development DB bütünüyle izole edilerek değişmezliği korunmuştur.
+
+## 11. Blok 4 Gerçekleştirme Sonuçları (Yönetim UI/HTTP)
+
+Blok 4 hedefleri doğrultusunda;
+- 30 maddelik katı test senaryolarını içeren ApprovalConfigurationRuleMutationTest geliştirilmiştir (RED/GREEN).
+- MutateApprovalStageApproverRuleRequest ile Gate::allows ve is_active denetimleri Authorization aşamasına alınmış, Form Request'te prohibited alanlarla (scope_source, user_id vb.) IDOR engellenmiştir.
+- ApprovalConfigurationController'da içerik anlaşmasına (JSON / HTML) tam uyumlu, exception maskeleyen, güvenli domain action çağrısı uygulanmıştır.
+- show.blade.php'de Blade entegrasyonu tamamlanmıştır. Çözümleme modları (Eski Grup / Dinamik Kural) ve draft aşamasındaki kural düzenleme formları (PATCH method, CSRF, enum valueları) DOM testleriyle (N+1 engellenerek) doğrulanmıştır.
+- MySQL ve SQLite motorlarında 800+ test başarıyla 0 hata (GREEN) dönmüş, kaizenflow_test DB kanıtlanmış ve geliştirme DB dokunulmamış durumda kalmıştır.
+
+- Pint aracı tarafından saptanan import sırası ve fully qualified class formatlama bulguları Blok 4.1.1 kapsamında semantik değişiklik yaratmadan başarıyla formatlanarak kapatılmıştır.
+
+## 12. Blok 5.2 GerÃ§ekleÅŸtirme SonuÃ§larÄ± (Final QA Acceptance)
+
+- **Manuel QA ve Responsive:** KullanÄ±cÄ± tarafÄ±ndan Chrome Ã¼zerinden tÃ¼m manual testler, yetki kontrolleri (IDOR, role-bypass blokajÄ±) ve kural-bazlÄ± iÅŸ akÄ±ÅŸÄ± test edilip onaylanmÄ±ÅŸtÄ±r. 360px Ã§Ã¶zÃ¼nÃ¼rlÃ¼k iÃ§in tasarlanan responsive mobil gÃ¶rÃ¼nÃ¼m testleri baÅŸarÄ±yla (PASS) geÃ§miÅŸtir.
+- **ProsedÃ¼rel Sapma KaydÄ±:** 360px responsive dÃ¼zeltmesi iÃ§in RED (test) ve GREEN (implementasyon) commitleri tek bir atomik adÄ±mda yapÄ±lmÄ±ÅŸtÄ±r. RED iÃ§in ayrÄ± bir commit atÄ±lmamÄ±ÅŸ olup, history rewrite kuralÄ±na sadÄ±k kalÄ±narak dÃ¼rÃ¼stÃ§e raporlanmÄ±ÅŸtÄ±r. 2b169794 (fix) ve 72ec0351 (style) SHA'larÄ± ile kayÄ±tlÄ±dÄ±r.
+- **Kalite KapÄ±larÄ±:** composer validate --strict, endor/bin/pint --test, ve 
+pm.cmd run build kapÄ±larÄ± sÄ±fÄ±r uyarÄ±yla (GREEN) geÃ§ilmiÅŸtir. 
+- **Dev DB DeÄŸiÅŸmezliÄŸi & Veri TemizliÄŸi:** kaizenflow Dev DB baÅŸlangÄ±Ã§ ile aynÄ± durumda olup (3 Pending migration), kaizenflow_test QA fixture ve scratch artifactlarÄ± gÃ¼venli ÅŸekilde silinerek temizlenmiÅŸtir. Ã‡alÄ±ÅŸma ortamÄ± (working tree) tamamen temizdir (CLEAN).
+- **Blocker / High / Medium / Low:** 0 / 0 / 0 / 0. GeliÅŸtirme sÃ¼reci hiÃ§bir aÃ§Ä±k kalmadan bitirilmiÅŸtir.

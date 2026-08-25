@@ -2,6 +2,7 @@
 
 namespace App\Actions\ApprovalConfiguration;
 
+use App\Enums\ApproverResolutionMode;
 use App\Exceptions\DomainException;
 use App\Models\ApprovalStage;
 use App\Models\ApprovalWorkflow;
@@ -37,6 +38,7 @@ class CreateApprovalWorkflowDraft
                 'is_active' => false,
                 'is_default' => false,
                 'published_at' => null,
+                'approver_resolution_mode' => ApproverResolutionMode::CAPABILITY_RULE,
             ]);
 
             $this->validateAndCreateStages($workflow, $stages);
