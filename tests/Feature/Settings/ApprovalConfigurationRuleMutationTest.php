@@ -4,13 +4,15 @@ namespace Tests\Feature\Settings;
 
 use App\Enums\ApprovalApproverScopeSource;
 use App\Enums\ApproverResolutionMode;
-
 use App\Enums\UserCapability;
 use App\Enums\UserRole;
 use App\Models\ApprovalStage;
 use App\Models\ApprovalStageApproverRule;
 use App\Models\ApprovalWorkflow;
+use App\Models\AuditLog;
 use App\Models\User;
+use App\Models\UserSystemCapabilityGrant;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -19,21 +21,23 @@ class ApprovalConfigurationRuleMutationTest extends TestCase
     use RefreshDatabase;
 
     private User $admin;
+
     private User $viewer;
+
     private User $employee;
 
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         $this->admin = User::factory()->create(['role' => UserRole::ADMIN, 'is_active' => true]);
         // Manage capability
-        \App\Models\UserSystemCapabilityGrant::create([
+        UserSystemCapabilityGrant::create([
             'user_id' => $this->admin->id,
             'capability' => UserCapability::APPROVAL_CONFIGURATION_MANAGE,
             'is_active' => true,
         ]);
-        \App\Models\UserSystemCapabilityGrant::create([
+        UserSystemCapabilityGrant::create([
             'user_id' => $this->admin->id,
             'capability' => UserCapability::APPROVAL_CONFIGURATION_VIEW,
             'is_active' => true,
@@ -41,7 +45,7 @@ class ApprovalConfigurationRuleMutationTest extends TestCase
 
         $this->viewer = User::factory()->create(['role' => UserRole::ADMIN, 'is_active' => true]);
         // View-only capability
-        \App\Models\UserSystemCapabilityGrant::create([
+        UserSystemCapabilityGrant::create([
             'user_id' => $this->viewer->id,
             'capability' => UserCapability::APPROVAL_CONFIGURATION_VIEW,
             'is_active' => true,
@@ -57,11 +61,11 @@ class ApprovalConfigurationRuleMutationTest extends TestCase
             'is_active' => false,
             'published_at' => null,
         ]);
-        
+
         $stage = ApprovalStage::factory()->create([
             'approval_workflow_id' => $workflow->id,
         ]);
-        
+
         return [$workflow, $stage];
     }
 
@@ -72,11 +76,11 @@ class ApprovalConfigurationRuleMutationTest extends TestCase
             'is_active' => true,
             'published_at' => now(),
         ]);
-        
+
         $stage = ApprovalStage::factory()->create([
             'approval_workflow_id' => $workflow->id,
         ]);
-        
+
         if ($mode === ApproverResolutionMode::CAPABILITY_RULE) {
             ApprovalStageApproverRule::create([
                 'approval_stage_id' => $stage->id,
@@ -85,7 +89,7 @@ class ApprovalConfigurationRuleMutationTest extends TestCase
                 'is_active' => true,
             ]);
         }
-        
+
         return [$workflow, $stage];
     }
 
@@ -109,14 +113,14 @@ class ApprovalConfigurationRuleMutationTest extends TestCase
     public function test_3_manage_only_user_is_not_automatically_viewer_but_can_manage()
     {
         $manageOnlyUser = User::factory()->create(['role' => UserRole::ADMIN, 'is_active' => true]);
-        \App\Models\UserSystemCapabilityGrant::create([
+        UserSystemCapabilityGrant::create([
             'user_id' => $manageOnlyUser->id,
             'capability' => UserCapability::APPROVAL_CONFIGURATION_MANAGE,
             'is_active' => true,
         ]);
 
         [$workflow, $stage] = $this->createDraftWorkflow();
-        // Since mutation requires MANAGE, it works. View requires VIEW. 
+        // Since mutation requires MANAGE, it works. View requires VIEW.
         $this->actingAs($manageOnlyUser)->patchJson($this->routeName($workflow->id, $stage->id), ['capability' => UserCapability::KAIZEN_DEPARTMENT_APPROVE->value])->assertStatus(200);
         $this->actingAs($manageOnlyUser)->get(route('settings.approval-configurations.show', $workflow->id))->assertStatus(403);
     }
@@ -133,7 +137,7 @@ class ApprovalConfigurationRuleMutationTest extends TestCase
         $this->admin->forceFill(['is_active' => false])->save();
         [$workflow, $stage] = $this->createDraftWorkflow();
         $this->actingAs($this->admin->fresh());
-        
+
         $this->patchJson($this->routeName($workflow->id, $stage->id), ['capability' => UserCapability::KAIZEN_DEPARTMENT_APPROVE->value])->assertStatus(403);
     }
 
@@ -201,7 +205,7 @@ class ApprovalConfigurationRuleMutationTest extends TestCase
             'capability' => UserCapability::KAIZEN_OPEX_REVIEW->value,
             'scope_source' => ApprovalApproverScopeSource::SYSTEM->value,
         ]);
-        
+
         $this->actingAs($this->admin)->patchJson($this->routeName($workflow->id, $stage->id), [
             'capability' => UserCapability::KAIZEN_DEPARTMENT_APPROVE->value,
         ])->assertStatus(200);
@@ -234,14 +238,14 @@ class ApprovalConfigurationRuleMutationTest extends TestCase
         $this->actingAs($this->admin)->patchJson($this->routeName($workflow->id, $stage->id), [
             'capability' => UserCapability::KAIZEN_BOARD_APPROVE->value,
         ]);
-        
-        $auditCount = \App\Models\AuditLog::count();
+
+        $auditCount = AuditLog::count();
 
         $this->actingAs($this->admin)->patchJson($this->routeName($workflow->id, $stage->id), [
             'capability' => UserCapability::KAIZEN_BOARD_APPROVE->value,
         ]);
 
-        $this->assertEquals($auditCount, \App\Models\AuditLog::count());
+        $this->assertEquals($auditCount, AuditLog::count());
     }
 
     public function test_16_published_workflow_mutation_returns_safe_error()
@@ -271,7 +275,7 @@ class ApprovalConfigurationRuleMutationTest extends TestCase
         $response = $this->actingAs($this->admin)->patch($this->routeName($workflow->id, $stage->id), [
             'capability' => UserCapability::KAIZEN_BOARD_APPROVE->value,
         ]);
-        
+
         $response->assertRedirect()->assertSessionHas('error', 'İşlem kurallara uymuyor.');
     }
 
@@ -327,7 +331,7 @@ class ApprovalConfigurationRuleMutationTest extends TestCase
         [$workflow, $stage1] = $this->createDraftWorkflow();
         $stage2 = ApprovalStage::factory()->create(['approval_workflow_id' => $workflow->id, 'sequence' => 10]);
         $stage1->update(['sequence' => 20]);
-        
+
         $response = $this->actingAs($this->admin)->getJson(route('settings.approval-configurations.show', $workflow->id));
         $data = $response->json('data.stages');
         $this->assertEquals($stage2->id, $data[0]['id']);
@@ -338,12 +342,12 @@ class ApprovalConfigurationRuleMutationTest extends TestCase
     {
         [$workflow, $stage] = $this->createDraftWorkflow();
         ApprovalStageApproverRule::create(['approval_stage_id' => $stage->id, 'capability' => UserCapability::KAIZEN_DEPARTMENT_APPROVE, 'scope_source' => ApprovalApproverScopeSource::KAIZEN_DEPARTMENT, 'is_active' => true]);
-        
+
         // Disable lazy loading
-        \Illuminate\Database\Eloquent\Model::preventLazyLoading(true);
+        Model::preventLazyLoading(true);
         $response = $this->actingAs($this->admin)->get(route('settings.approval-configurations.show', $workflow->id));
         $response->assertStatus(200);
-        \Illuminate\Database\Eloquent\Model::preventLazyLoading(false);
+        Model::preventLazyLoading(false);
     }
 
     public function test_28_missing_rule_publish_fails_securely()
@@ -358,7 +362,7 @@ class ApprovalConfigurationRuleMutationTest extends TestCase
         [$workflow, $stage] = $this->createDraftWorkflow();
         $stage->update(['is_final' => true]);
         ApprovalStageApproverRule::create(['approval_stage_id' => $stage->id, 'capability' => UserCapability::KAIZEN_DEPARTMENT_APPROVE, 'scope_source' => ApprovalApproverScopeSource::KAIZEN_DEPARTMENT, 'is_active' => true]);
-        
+
         $response = $this->actingAs($this->admin)->post(route('settings.approval-configurations.publish', $workflow->id));
         $response->assertRedirect()->assertSessionHas('success');
     }
@@ -367,7 +371,7 @@ class ApprovalConfigurationRuleMutationTest extends TestCase
     {
         [$workflow, $stage] = $this->createDraftWorkflow();
         ApprovalStageApproverRule::create(['approval_stage_id' => $stage->id, 'capability' => UserCapability::KAIZEN_DEPARTMENT_APPROVE, 'scope_source' => ApprovalApproverScopeSource::KAIZEN_DEPARTMENT, 'is_active' => true]);
-        
+
         $response = $this->actingAs($this->admin)->getJson(route('settings.approval-configurations.show', $workflow->id));
         $response->assertJsonStructure([
             'data' => [
@@ -376,11 +380,11 @@ class ApprovalConfigurationRuleMutationTest extends TestCase
                         'id',
                         'approver_rule' => [
                             'capability',
-                            'scope_source'
-                        ]
-                    ]
-                ]
-            ]
+                            'scope_source',
+                        ],
+                    ],
+                ],
+            ],
         ]);
     }
 }

@@ -2,11 +2,11 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\UserCapability;
 use App\Models\ApprovalWorkflow;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rules\Enum;
-use App\Enums\UserCapability;
 
 class MutateApprovalStageApproverRuleRequest extends FormRequest
 {

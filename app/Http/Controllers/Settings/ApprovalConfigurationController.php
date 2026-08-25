@@ -4,11 +4,17 @@ namespace App\Http\Controllers\Settings;
 
 use App\Actions\ApprovalConfiguration\CreateApprovalWorkflowDraft;
 use App\Actions\ApprovalConfiguration\DeactivateApprovalWorkflow;
+use App\Actions\ApprovalConfiguration\MutateApprovalStageApproverRule;
 use App\Actions\ApprovalConfiguration\PublishApprovalWorkflow;
 use App\Actions\ApprovalConfiguration\SetDefaultApprovalWorkflow;
 use App\Actions\ApprovalConfiguration\UpdateApprovalWorkflowDraft;
+use App\Enums\ApprovalApproverScopeSource;
+use App\Enums\ApproverResolutionMode;
+use App\Enums\CapabilityScope;
+use App\Enums\UserCapability;
 use App\Exceptions\DomainException;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\MutateApprovalStageApproverRuleRequest;
 use App\Http\Requests\StoreApprovalWorkflowRequest;
 use App\Http\Requests\UpdateApprovalWorkflowRequest;
 use App\Models\ApprovalWorkflow;
@@ -203,10 +209,10 @@ class ApprovalConfigurationController extends Controller
     }
 
     public function mutateApproverRule(
-        int $workflowId, 
-        int $stageId, 
-        \App\Http\Requests\MutateApprovalStageApproverRuleRequest $request, 
-        \App\Actions\ApprovalConfiguration\MutateApprovalStageApproverRule $action
+        int $workflowId,
+        int $stageId,
+        MutateApprovalStageApproverRuleRequest $request,
+        MutateApprovalStageApproverRule $action
     ): JsonResponse|RedirectResponse {
         try {
             $workflow = ApprovalWorkflow::findOrFail($workflowId);
@@ -216,20 +222,22 @@ class ApprovalConfigurationController extends Controller
                 if ($request->wantsJson()) {
                     return response()->json(['message' => 'Cannot mutate a published workflow.'], 422);
                 }
+
                 return back()->with('error', 'İşlem kurallara uymuyor.');
             }
 
-            if ($workflow->approver_resolution_mode === \App\Enums\ApproverResolutionMode::LEGACY_GROUP) {
+            if ($workflow->approver_resolution_mode === ApproverResolutionMode::LEGACY_GROUP) {
                 if ($request->wantsJson()) {
                     return response()->json(['message' => 'Cannot assign capability rules to a legacy group workflow.'], 422);
                 }
+
                 return back()->with('error', 'İşlem kurallara uymuyor.');
             }
 
-            $capability = \App\Enums\UserCapability::from($request->validated('capability'));
-            $scopeSource = $capability->scope() === \App\Enums\CapabilityScope::DEPARTMENT 
-                ? \App\Enums\ApprovalApproverScopeSource::KAIZEN_DEPARTMENT 
-                : \App\Enums\ApprovalApproverScopeSource::SYSTEM;
+            $capability = UserCapability::from($request->validated('capability'));
+            $scopeSource = $capability->scope() === CapabilityScope::DEPARTMENT
+                ? ApprovalApproverScopeSource::KAIZEN_DEPARTMENT
+                : ApprovalApproverScopeSource::SYSTEM;
 
             $action->execute(
                 $request->user(),

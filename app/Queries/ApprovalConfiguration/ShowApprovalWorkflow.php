@@ -31,15 +31,15 @@ class ShowApprovalWorkflow
                     'is_final',
                     'is_active',
                 ])->orderBy('sequence', 'asc')
-                ->with(['approverRule' => function ($ruleQuery) {
-                    $ruleQuery->select([
-                        'id',
-                        'approval_stage_id',
-                        'capability',
-                        'scope_source',
-                        'is_active',
-                    ]);
-                }]);
+                    ->with(['approverRule' => function ($ruleQuery) {
+                        $ruleQuery->select([
+                            'id',
+                            'approval_stage_id',
+                            'capability',
+                            'scope_source',
+                            'is_active',
+                        ]);
+                    }]);
             }])
             ->findOrFail($id);
     }
