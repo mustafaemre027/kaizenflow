@@ -157,3 +157,13 @@ PROCEDURAL DEVIATION — THE INITIAL COLLISION CHARACTERIZATION TEST EXPECTED QUER
 - Yeni test commit’i düzeltmenin baþarýlý DB sonucunu kalýcý olarak doðrulamaktadýr.
 - History rewrite yapýlmamýþtýr.
 
+
+## 9. Blok 2 Gerçekleþtirme Sonuçlarý
+
+Blok 2 hedefleri kapsamýnda;
+- Enum ve Model yapýlarý (ApproverResolutionMode, ApprovalApproverScopeSource, ApprovalStageApproverRule) oluþturulmuþtur.
+- DB Constraint migrationlarý eksiksiz uygulanmýþ ve MySQL/SQLite platformlarýnda RefreshDatabase uyumluluðu TDD ile doðrulanmýþtýr.
+- MutateApprovalStageApproverRule Domain Action'ý deterministik lock order ile (User -> Grant -> Workflow -> Stage -> Rule) uygulanmýþ, "high" düzeyli lock açýðý kapatýlmýþtýr.
+- CapabilityApprovalStageApproverResolver ile **self-approval prevention** aktif edilmiþ, pasif rule/grant/actor kombinasyonlarý ve departman eþleþmezlikleri için tamamen fail-closed izole bir yapý kurulmuþtur.
+- Bootstrap PACKAGE güncellenmiþ ve yetkilerin exact-delegation'a uygun olarak Admin'e verilmesi saðlanmýþtýr.
+- Yüksek kapsama sahip testler yazýlmýþ, kod RED -> GREEN -> STYLE hattýyla commit edilmiþtir. TDD ve izole test aþamasý baþarýyla tamamlanmýþtýr.
