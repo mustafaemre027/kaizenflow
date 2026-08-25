@@ -63,7 +63,7 @@
                 <h2 class="kf-panel-title">Onay Aşamaları</h2>
             </div>
             <div class="kf-panel-body p-0">
-                <div class="table-responsive">
+                <div class="table-responsive d-none d-md-block">
                     <table class="table mb-0 align-middle">
                         <thead>
                             <tr>
@@ -96,6 +96,33 @@
                             @endforeach
                         </tbody>
                     </table>
+                </div>
+
+                <div class="d-block d-md-none">
+                    <ul class="list-group list-group-flush">
+                        @foreach($workflow->stages->sortBy('sequence') as $stage)
+                        <li class="list-group-item px-3 py-3 border-bottom">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-secondary rounded-pill">{{ $stage->sequence }}</span>
+                                    <span class="fw-bold text-dark">{{ $stage->code }}</span>
+                                </div>
+                                <div>
+                                    @if($stage->is_final)
+                                        <span class="kf-badge kf-badge-priority" style="font-size: 0.7rem;">Final</span>
+                                    @endif
+                                    @if(!$stage->is_active)
+                                        <span class="kf-badge kf-badge-neutral" style="font-size: 0.7rem;">Pasif</span>
+                                    @endif
+                                </div>
+                            </div>
+                            <div class="mb-1 text-dark fw-medium">{{ $stage->name }}</div>
+                            @if($stage->description)
+                                <div class="text-muted small">{{ $stage->description }}</div>
+                            @endif
+                        </li>
+                        @endforeach
+                    </ul>
                 </div>
             </div>
         </div>
