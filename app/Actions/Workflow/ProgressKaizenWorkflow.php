@@ -4,9 +4,11 @@ namespace App\Actions\Workflow;
 
 use App\Enums\KaizenStatus;
 use App\Enums\WorkflowAction;
+use App\Exceptions\AuthorizationException;
 use App\Exceptions\Workflow\InvalidApprovalWorkflowConfiguration;
 use App\Models\Kaizen;
 use App\Models\User;
+use App\Services\Workflow\ApprovalStageApproverResolver;
 use App\Services\Workflow\ApprovalWorkflowNavigator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -15,7 +17,7 @@ class ProgressKaizenWorkflow
 {
     public function __construct(
         private readonly ApprovalWorkflowNavigator $navigator,
-        private readonly \App\Services\Workflow\ApprovalStageApproverResolver $resolver
+        private readonly ApprovalStageApproverResolver $resolver
     ) {}
 
     public function execute(Kaizen $kaizen, User $actor, WorkflowAction $action, ?string $comment = null): Kaizen
@@ -41,9 +43,9 @@ class ProgressKaizenWorkflow
             if (! $currentStage || $currentStage->approval_workflow_id !== $instance->approval_workflow_id) {
                 throw new \DomainException('Workflow current stage is corrupted.');
             }
-            
+
             if (! $this->resolver->canAct($actor, $lockedKaizen)) {
-                throw new \App\Exceptions\AuthorizationException('You are not authorized to act on this Kaizen stage.');
+                throw new AuthorizationException('You are not authorized to act on this Kaizen stage.');
             }
 
             $comment = is_string($comment) ? trim($comment) : null;

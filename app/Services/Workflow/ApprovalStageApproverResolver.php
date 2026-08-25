@@ -2,7 +2,9 @@
 
 namespace App\Services\Workflow;
 
+use App\Enums\ApproverResolutionMode;
 use App\Enums\KaizenStatus;
+use App\Models\ApprovalStage;
 use App\Models\Kaizen;
 use App\Models\User;
 
@@ -55,18 +57,18 @@ class ApprovalStageApproverResolver
             return false;
         }
 
-        if ($workflow->approver_resolution_mode === \App\Enums\ApproverResolutionMode::CAPABILITY_RULE) {
+        if ($workflow->approver_resolution_mode === ApproverResolutionMode::CAPABILITY_RULE) {
             return $this->capabilityResolver->canAct($user, $kaizen, $currentStage);
         }
 
-        if ($workflow->approver_resolution_mode === \App\Enums\ApproverResolutionMode::LEGACY_GROUP) {
+        if ($workflow->approver_resolution_mode === ApproverResolutionMode::LEGACY_GROUP) {
             return $this->isLegacyAssigned($user, $kaizen, $currentStage);
         }
 
         return false;
     }
 
-    private function isLegacyAssigned(User $user, Kaizen $kaizen, \App\Models\ApprovalStage $currentStage): bool
+    private function isLegacyAssigned(User $user, Kaizen $kaizen, ApprovalStage $currentStage): bool
     {
         $eligibleAssignmentsCount = $currentStage->stageAssignments()
             ->where('is_active', true)

@@ -17,15 +17,12 @@ use App\Models\ApprovalStage;
 use App\Models\ApprovalStageApproverRule;
 use App\Models\ApprovalStageAssignment;
 use App\Models\ApprovalWorkflow;
-use App\Models\AuditLog;
 use App\Models\Department;
 use App\Models\Kaizen;
 use App\Models\KaizenWorkflowInstance;
 use App\Models\User;
 use App\Models\UserCapabilityGrant;
 use App\Models\UserSystemCapabilityGrant;
-use App\Services\AppendAuditLog;
-use App\Services\Workflow\ApprovalStageApproverResolver;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
@@ -35,13 +32,15 @@ class DynamicApproverRuntimeIntegrationTest extends TestCase
     use RefreshDatabase;
 
     private User $actor;
+
     private Department $dept;
+
     private Kaizen $kaizen;
 
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         $this->actor = User::factory()->create(['is_active' => true]);
         $this->dept = Department::factory()->create();
         $this->kaizen = Kaizen::factory()->create([
@@ -161,7 +160,7 @@ class DynamicApproverRuntimeIntegrationTest extends TestCase
     public function test_self_approval_is_prevented_and_rolls_back()
     {
         [$workflow, $stage, $instance] = $this->setupWorkflowAndInstance(ApproverResolutionMode::CAPABILITY_RULE);
-        
+
         $this->kaizen->creator_user_id = $this->actor->id;
         $this->kaizen->save();
 
@@ -178,7 +177,7 @@ class DynamicApproverRuntimeIntegrationTest extends TestCase
         ]);
 
         $action = $this->app->make(ProgressKaizenWorkflow::class);
-        
+
         try {
             $action->execute($this->kaizen, $this->actor, WorkflowAction::APPROVE, 'Approve');
             $this->fail('Expected AuthorizationException');
@@ -239,7 +238,7 @@ class DynamicApproverRuntimeIntegrationTest extends TestCase
 
         $action = $this->app->make(CreateApprovalWorkflowDraft::class);
         $workflow = $action->execute($admin, 'TEST', 'Test', null, [
-            ['code' => 'STG1', 'name' => 'Stage 1', 'sequence' => 1, 'is_final' => true]
+            ['code' => 'STG1', 'name' => 'Stage 1', 'sequence' => 1, 'is_final' => true],
         ]);
 
         $this->assertEquals(ApproverResolutionMode::CAPABILITY_RULE, $workflow->approver_resolution_mode);
@@ -259,7 +258,7 @@ class DynamicApproverRuntimeIntegrationTest extends TestCase
         ]);
 
         $action = $this->app->make(PublishApprovalWorkflow::class);
-        
+
         $this->expectException(DomainException::class);
         $action->execute($admin, $workflow);
     }
@@ -268,7 +267,7 @@ class DynamicApproverRuntimeIntegrationTest extends TestCase
     {
         [$workflow, $stage, $instance] = $this->setupWorkflowAndInstance(ApproverResolutionMode::CAPABILITY_RULE);
         $workflow->update(['published_at' => null, 'is_active' => false]);
-        $stage->update(['is_final' => true]); 
+        $stage->update(['is_final' => true]);
 
         ApprovalStageApproverRule::factory()->create([
             'approval_stage_id' => $stage->id,
