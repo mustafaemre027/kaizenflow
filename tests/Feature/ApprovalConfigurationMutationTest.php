@@ -105,6 +105,26 @@ class ApprovalConfigurationMutationTest extends TestCase
         $this->assertNotNull($audit);
     }
 
+    public function test_update_draft_workflow_stage_reorder_constraint_collision()
+    {
+        $workflow = ApprovalWorkflow::factory()->create(['code' => 'REORDER_TEST', 'version' => 1, 'published_at' => null, 'is_active' => false]);
+        $stage1 = ApprovalStage::factory()->create(['approval_workflow_id' => $workflow->id, 'code' => 'DEPT', 'name' => 'DEPARTMENT_REVIEW', 'sequence' => 1]);
+        $stage2 = ApprovalStage::factory()->create(['approval_workflow_id' => $workflow->id, 'code' => 'OPEX', 'name' => 'OPEX_REVIEW', 'sequence' => 2]);
+        $stage3 = ApprovalStage::factory()->create(['approval_workflow_id' => $workflow->id, 'code' => 'MGT', 'name' => 'MANAGEMENT_APPROVAL', 'sequence' => 3]);
+
+        $action = $this->app->make(UpdateApprovalWorkflowDraft::class);
+
+        // Expect constraint violation because stage2 (sequence 2) moves to sequence 1
+        // which collides with existing stage1 (sequence 1) before stage1 is deleted or moved
+        $this->expectException(\Illuminate\Database\QueryException::class);
+
+        $action->execute($this->authorizedUser, $workflow, 'Updated Workflow', 'Desc', [
+            ['id' => $stage2->id, 'code' => 'OPEX', 'name' => 'OPEX_REVIEW', 'sequence' => 1, 'is_final' => false],
+            ['code' => 'MGR', 'name' => 'MANAGER_APPROVAL', 'sequence' => 2, 'is_final' => false],
+            ['id' => $stage3->id, 'code' => 'BRD', 'name' => 'BOARD_APPROVAL', 'sequence' => 3, 'is_final' => true],
+        ]);
+    }
+
     public function test_update_published_workflow_fails()
     {
         $workflow = ApprovalWorkflow::factory()->create(['code' => 'PUB', 'version' => 1, 'published_at' => now(), 'is_active' => true]);
