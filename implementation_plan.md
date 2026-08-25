@@ -148,3 +148,12 @@ BÃ¼tÃ¼n HTTP Mutation geliÅŸtirme fazÄ± adli testlerle doÄŸrulanmÄ±ÅŸ ve kalite 
  -   F i x e d   c o n s t r a i n t   c o l l i s i o n   b y   t e m p o r a r i l y   m o v i n g   s t a g e s   t o   o f f s e t   s e q u e n c e   b e f o r e   f i n a l   a p p l y .  
  -   V e r i f i e d   f i x   w i t h   S Q L i t e   a n d   M y S Q L   s u i t e s .  
  
+## 10. Prosedürel Sapma Kaydý
+
+PROCEDURAL DEVIATION — THE INITIAL COLLISION CHARACTERIZATION TEST EXPECTED QUERYEXCEPTION AND THEREFORE DID NOT REPRESENT A FAILING RED TEST. THE GREEN PRODUCTION FIX WAS FOLLOWED BY A SEPARATE SUCCESS-ASSERTION TEST COMMIT. FINAL CODE AND TEST INTEGRITY UNAFFECTED.
+
+- 80c81e4 hatayý karakterize eden test commitidir.
+- 4b1c7cc production düzeltmesidir.
+- Yeni test commit’i düzeltmenin baþarýlý DB sonucunu kalýcý olarak doðrulamaktadýr.
+- History rewrite yapýlmamýþtýr.
+
