@@ -4,10 +4,15 @@ use App\Actions\ApprovalConfiguration\CreateApprovalWorkflowDraft;
 use App\Actions\ApprovalConfiguration\MutateApprovalStageApproverRule;
 use App\Actions\ApprovalConfiguration\PublishApprovalWorkflow;
 use App\Actions\ApprovalConfiguration\SetDefaultApprovalWorkflow;
+use App\Actions\Workflow\ProgressKaizenWorkflow;
+use App\Enums\ApprovalApproverScopeSource;
 use App\Enums\UserCapability;
+use App\Enums\WorkflowAction;
 use App\Exceptions\AuthorizationException;
 use App\Exceptions\DomainException;
+use App\Models\ApprovalStage;
 use App\Models\ApprovalWorkflow;
+use App\Models\KaizenWorkflowInstance;
 use App\Models\User;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Support\Facades\DB;
@@ -113,17 +118,17 @@ if (in_array('--race-worker', $argv)) {
             echo "STATUS:SUCCESS\n";
         } elseif ($raceType === 'RULE_A') {
             $actor = User::findOrFail($payload['user_id']);
-            $stage = \App\Models\ApprovalStage::findOrFail($payload['stage_id']);
+            $stage = ApprovalStage::findOrFail($payload['stage_id']);
             $capability = UserCapability::from($payload['capability']);
-            $scopeSource = \App\Enums\ApprovalApproverScopeSource::from($payload['scope_source']);
+            $scopeSource = ApprovalApproverScopeSource::from($payload['scope_source']);
             $action = $app->make(MutateApprovalStageApproverRule::class);
             $action->execute($actor, $stage, $capability, $scopeSource, true);
             echo "STATUS:SUCCESS\n";
         } elseif ($raceType === 'RULE_B_MUTATE') {
             $actor = User::findOrFail($payload['user_id']);
-            $stage = \App\Models\ApprovalStage::findOrFail($payload['stage_id']);
+            $stage = ApprovalStage::findOrFail($payload['stage_id']);
             $capability = UserCapability::from($payload['capability']);
-            $scopeSource = \App\Enums\ApprovalApproverScopeSource::from($payload['scope_source']);
+            $scopeSource = ApprovalApproverScopeSource::from($payload['scope_source']);
             $action = $app->make(MutateApprovalStageApproverRule::class);
             $action->execute($actor, $stage, $capability, $scopeSource, false);
             echo "STATUS:SUCCESS\n";
@@ -135,9 +140,9 @@ if (in_array('--race-worker', $argv)) {
             echo "STATUS:SUCCESS\n";
         } elseif ($raceType === 'RULE_C') {
             $actor = User::findOrFail($payload['user_id']);
-            $instance = \App\Models\KaizenWorkflowInstance::findOrFail($payload['instance_id']);
-            $action = $app->make(\App\Actions\Workflow\ProgressKaizenWorkflow::class);
-            $action->execute($instance->kaizen, $actor, \App\Enums\WorkflowAction::APPROVE, 'concurrent test');
+            $instance = KaizenWorkflowInstance::findOrFail($payload['instance_id']);
+            $action = $app->make(ProgressKaizenWorkflow::class);
+            $action->execute($instance->kaizen, $actor, WorkflowAction::APPROVE, 'concurrent test');
             echo "STATUS:SUCCESS\n";
         }
     } catch (AuthorizationException $e) {

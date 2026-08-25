@@ -4,9 +4,9 @@ namespace Tests\Feature\Workflow;
 
 use App\Enums\ApprovalApproverScopeSource;
 use App\Enums\ApproverResolutionMode;
+use App\Enums\KaizenStatus;
 use App\Enums\UserCapability;
 use App\Enums\UserRole;
-use App\Enums\WorkflowAction;
 use App\Models\ApprovalStage;
 use App\Models\ApprovalStageApproverRule;
 use App\Models\ApprovalWorkflow;
@@ -21,7 +21,9 @@ use Tests\TestCase;
 class DynamicApproverConcurrencyTest extends TestCase
 {
     private array $createdUserIds = [];
+
     private array $createdWorkflowCodes = [];
+
     private ?RaceHarness $harness = null;
 
     protected function setUp(): void
@@ -38,6 +40,7 @@ class DynamicApproverConcurrencyTest extends TestCase
     {
         if (\config('database.default') !== 'mysql') {
             parent::tearDown();
+
             return;
         }
 
@@ -70,7 +73,7 @@ class DynamicApproverConcurrencyTest extends TestCase
             })->delete();
             DB::table('approval_workflows')->where('code', $code)->delete();
         }
-        
+
         DB::table('kaizens')->whereIn('creator_user_id', $this->createdUserIds)->delete();
 
         foreach ($this->createdUserIds as $userId) {
@@ -118,7 +121,7 @@ class DynamicApproverConcurrencyTest extends TestCase
             'capability' => UserCapability::KAIZEN_BOARD_APPROVE->value,
             'scope_source' => ApprovalApproverScopeSource::SYSTEM->value,
         ];
-        
+
         $payload2 = [
             'user_id' => $admin->id,
             'workflow_id' => $wf->id,
@@ -141,8 +144,8 @@ class DynamicApproverConcurrencyTest extends TestCase
         }
 
         $rules = ApprovalStageApproverRule::where('approval_stage_id', $stage->id)->get();
-        $this->assertCount(1, $rules, "Only exactly 1 rule must exist per stage");
-        
+        $this->assertCount(1, $rules, 'Only exactly 1 rule must exist per stage');
+
         $audits = DB::table('audit_logs')
             ->where('event', 'approval_configuration.approver_rule_updated')
             ->where('actor_user_id', $admin->id)
@@ -195,7 +198,7 @@ class DynamicApproverConcurrencyTest extends TestCase
             'capability' => UserCapability::KAIZEN_BOARD_APPROVE->value,
             'scope_source' => ApprovalApproverScopeSource::SYSTEM->value,
         ];
-        
+
         // Worker 2 tries to publish workflow
         $payloadPublish = [
             'user_id' => $admin->id,
@@ -226,7 +229,7 @@ class DynamicApproverConcurrencyTest extends TestCase
 
         $wf->refresh();
         $rule = ApprovalStageApproverRule::where('approval_stage_id', $stage->id)->first();
-        
+
         if ($wf->published_at !== null) {
             $this->assertTrue($rule->is_active, 'If published, rule MUST be active.');
         } else {
@@ -272,10 +275,10 @@ class DynamicApproverConcurrencyTest extends TestCase
             'scope_source' => ApprovalApproverScopeSource::SYSTEM,
             'is_active' => true,
         ]);
-        
+
         $kaizen = Kaizen::factory()->create([
             'creator_user_id' => $creator->id,
-            'status' => \App\Enums\KaizenStatus::SUBMITTED,
+            'status' => KaizenStatus::SUBMITTED,
         ]);
 
         $instance = new KaizenWorkflowInstance;
@@ -307,7 +310,7 @@ class DynamicApproverConcurrencyTest extends TestCase
         $this->assertStringContainsString('STATUS:REJECTED', $res['stdout']);
 
         $instance->refresh();
-        $this->assertEquals($stage->id, $instance->current_stage_id, "Stage must not advance");
+        $this->assertEquals($stage->id, $instance->current_stage_id, 'Stage must not advance');
 
         $transitions = DB::table('kaizen_workflow_transitions')->where('kaizen_workflow_instance_id', $instance->id)->count();
         $this->assertEquals(0, $transitions);

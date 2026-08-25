@@ -32,6 +32,7 @@ class ApprovalConfigurationConcurrencyTest extends TestCase
     {
         if (\config('database.default') !== 'mysql') {
             parent::tearDown();
+
             return;
         }
 
