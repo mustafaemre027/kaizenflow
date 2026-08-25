@@ -30,6 +30,11 @@ class ApprovalConfigurationConcurrencyTest extends TestCase
 
     protected function tearDown(): void
     {
+        if (env('DB_CONNECTION') !== 'mysql') {
+            parent::tearDown();
+            return;
+        }
+
         if ($this->harness) {
             $this->harness->cleanup();
         }
