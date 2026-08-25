@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class ApprovalStage extends Model
 {
@@ -35,5 +36,10 @@ class ApprovalStage extends Model
     public function stageAssignments(): HasMany
     {
         return $this->hasMany(ApprovalStageAssignment::class, 'approval_stage_id');
+    }
+
+    public function approverRule(): HasOne
+    {
+        return $this->hasOne(ApprovalStageApproverRule::class, 'approval_stage_id');
     }
 }

@@ -20,11 +20,11 @@ class ApprovalStageApproverRuleConstraintTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         $workflow = ApprovalWorkflow::factory()->create([
-            'approver_resolution_mode' => 'CAPABILITY_RULE'
+            'approver_resolution_mode' => 'CAPABILITY_RULE',
         ]);
-        
+
         $this->stage = ApprovalStage::factory()->create([
             'approval_workflow_id' => $workflow->id,
         ]);

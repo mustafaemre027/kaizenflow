@@ -4,6 +4,7 @@ namespace Tests\Feature\Workflow;
 
 use App\Enums\ApprovalApproverScopeSource;
 use App\Enums\UserCapability;
+use App\Enums\UserRole;
 use App\Models\ApprovalStage;
 use App\Models\ApprovalStageApproverRule;
 use App\Models\ApprovalWorkflow;
@@ -11,8 +12,8 @@ use App\Models\Department;
 use App\Models\Kaizen;
 use App\Models\KaizenWorkflowInstance;
 use App\Models\User;
-use App\Models\UserSystemCapabilityGrant;
 use App\Models\UserCapabilityGrant;
+use App\Models\UserSystemCapabilityGrant;
 use App\Services\Workflow\CapabilityApprovalStageApproverResolver;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -22,10 +23,15 @@ class CapabilityApprovalStageApproverResolverTest extends TestCase
     use RefreshDatabase;
 
     private User $actor;
+
     private Department $department1;
+
     private Department $department2;
+
     private Kaizen $kaizen;
+
     private ApprovalWorkflow $workflow;
+
     private ApprovalStage $stage;
 
     protected function setUp(): void
@@ -33,13 +39,13 @@ class CapabilityApprovalStageApproverResolverTest extends TestCase
         parent::setUp();
 
         $this->actor = User::factory()->create(['is_active' => true]);
-        
+
         $this->department1 = Department::factory()->create();
         $this->department2 = Department::factory()->create();
 
         $this->workflow = ApprovalWorkflow::factory()->create(['approver_resolution_mode' => 'CAPABILITY_RULE', 'is_active' => true]);
         $this->stage = ApprovalStage::factory()->create(['approval_workflow_id' => $this->workflow->id, 'is_active' => true]);
-        
+
         $this->kaizen = Kaizen::factory()->create([
             'department_id' => $this->department1->id,
             'creator_user_id' => User::factory()->create()->id,
@@ -48,7 +54,7 @@ class CapabilityApprovalStageApproverResolverTest extends TestCase
         KaizenWorkflowInstance::factory()->create([
             'kaizen_id' => $this->kaizen->id,
             'approval_workflow_id' => $this->workflow->id,
-            'current_approval_stage_id' => $this->stage->id,
+            'current_stage_id' => $this->stage->id,
             'completed_at' => null,
             'cancelled_at' => null,
         ]);
@@ -89,15 +95,16 @@ class CapabilityApprovalStageApproverResolverTest extends TestCase
             'scope_source' => ApprovalApproverScopeSource::SYSTEM,
             'is_active' => false,
         ]);
-        
+
         $resolver = $this->app->make(CapabilityApprovalStageApproverResolver::class);
         $this->assertFalse($resolver->canAct($this->actor, $this->kaizen, $this->stage));
     }
 
     public function test_self_approval_is_prevented()
     {
-        $this->kaizen->update(['creator_user_id' => $this->actor->id]);
-        
+        $this->kaizen->creator_user_id = $this->actor->id;
+        $this->kaizen->save();
+
         ApprovalStageApproverRule::factory()->create([
             'approval_stage_id' => $this->stage->id,
             'capability' => UserCapability::KAIZEN_OPEX_REVIEW,
@@ -202,8 +209,8 @@ class CapabilityApprovalStageApproverResolverTest extends TestCase
             'scope_source' => ApprovalApproverScopeSource::SYSTEM,
             'is_active' => true,
         ]);
-        
-        $this->actor->update(['role' => \App\Enums\UserRole::ADMIN]);
+
+        $this->actor->update(['role' => UserRole::ADMIN]);
 
         $resolver = $this->app->make(CapabilityApprovalStageApproverResolver::class);
         $this->assertFalse($resolver->canAct($this->actor, $this->kaizen, $this->stage));

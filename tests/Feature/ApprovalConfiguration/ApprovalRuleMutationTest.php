@@ -13,6 +13,7 @@ use App\Models\ApprovalWorkflow;
 use App\Models\AuditLog;
 use App\Models\User;
 use App\Models\UserSystemCapabilityGrant;
+use App\Services\AppendAuditLog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -21,9 +22,13 @@ class ApprovalRuleMutationTest extends TestCase
     use RefreshDatabase;
 
     private User $authorizedUser;
+
     private User $unauthorizedUser;
+
     private User $inactiveUser;
+
     private ApprovalWorkflow $workflow;
+
     private ApprovalStage $stage;
 
     protected function setUp(): void
@@ -70,7 +75,7 @@ class ApprovalRuleMutationTest extends TestCase
     public function test_it_rejects_mutation_on_published_workflow()
     {
         $this->workflow->update(['published_at' => now()]);
-        
+
         $action = $this->app->make(MutateApprovalStageApproverRule::class);
 
         $this->expectException(DomainException::class);
@@ -81,7 +86,7 @@ class ApprovalRuleMutationTest extends TestCase
     public function test_it_rejects_mutation_on_legacy_group_workflow()
     {
         $this->workflow->update(['approver_resolution_mode' => 'LEGACY_GROUP']);
-        
+
         $action = $this->app->make(MutateApprovalStageApproverRule::class);
 
         $this->expectException(DomainException::class);
@@ -160,7 +165,7 @@ class ApprovalRuleMutationTest extends TestCase
 
     public function test_audit_exception_rolls_back()
     {
-        $this->mock(\App\Services\AppendAuditLog::class, function ($mock) {
+        $this->mock(AppendAuditLog::class, function ($mock) {
             $mock->shouldReceive('execute')->andThrow(new \Exception('Audit failed'));
         });
 
