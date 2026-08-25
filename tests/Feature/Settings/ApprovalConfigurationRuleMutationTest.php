@@ -130,9 +130,11 @@ class ApprovalConfigurationRuleMutationTest extends TestCase
 
     public function test_5_passive_user_is_rejected()
     {
-        $this->admin->update(['is_active' => false]);
+        $this->admin->forceFill(['is_active' => false])->save();
         [$workflow, $stage] = $this->createDraftWorkflow();
-        $this->actingAs($this->admin)->patchJson($this->routeName($workflow->id, $stage->id), ['capability' => UserCapability::KAIZEN_DEPARTMENT_APPROVE->value])->assertStatus(403);
+        $this->actingAs($this->admin->fresh());
+        
+        $this->patchJson($this->routeName($workflow->id, $stage->id), ['capability' => UserCapability::KAIZEN_DEPARTMENT_APPROVE->value])->assertStatus(403);
     }
 
     public function test_6_unauthorized_invalid_payload_returns_403()

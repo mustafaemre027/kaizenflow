@@ -201,4 +201,56 @@ class ApprovalConfigurationController extends Controller
             return back()->with('error', 'İşlem kurallara uymuyor.');
         }
     }
+
+    public function mutateApproverRule(
+        int $workflowId, 
+        int $stageId, 
+        \App\Http\Requests\MutateApprovalStageApproverRuleRequest $request, 
+        \App\Actions\ApprovalConfiguration\MutateApprovalStageApproverRule $action
+    ): JsonResponse|RedirectResponse {
+        try {
+            $workflow = ApprovalWorkflow::findOrFail($workflowId);
+            $stage = $workflow->stages()->findOrFail($stageId);
+
+            if ($workflow->published_at !== null) {
+                if ($request->wantsJson()) {
+                    return response()->json(['message' => 'Cannot mutate a published workflow.'], 422);
+                }
+                return back()->with('error', 'İşlem kurallara uymuyor.');
+            }
+
+            if ($workflow->approver_resolution_mode === \App\Enums\ApproverResolutionMode::LEGACY_GROUP) {
+                if ($request->wantsJson()) {
+                    return response()->json(['message' => 'Cannot assign capability rules to a legacy group workflow.'], 422);
+                }
+                return back()->with('error', 'İşlem kurallara uymuyor.');
+            }
+
+            $capability = \App\Enums\UserCapability::from($request->validated('capability'));
+            $scopeSource = $capability->scope() === \App\Enums\CapabilityScope::DEPARTMENT 
+                ? \App\Enums\ApprovalApproverScopeSource::KAIZEN_DEPARTMENT 
+                : \App\Enums\ApprovalApproverScopeSource::SYSTEM;
+
+            $action->execute(
+                $request->user(),
+                $stage,
+                $capability,
+                $scopeSource,
+                $request->validated('is_active') ?? true
+            );
+
+            if ($request->wantsJson()) {
+                return response()->json(['message' => 'Rule successfully mutated.']);
+            }
+
+            return redirect()->route('settings.approval-configurations.show', $workflow->id)
+                ->with('success', 'Onaylayıcı kuralı başarıyla güncellendi.');
+        } catch (DomainException $e) {
+            if ($request->wantsJson()) {
+                throw $e;
+            }
+
+            return back()->with('error', 'İşlem kurallara uymuyor.');
+        }
+    }
 }

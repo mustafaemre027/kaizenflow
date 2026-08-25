@@ -18,6 +18,7 @@ class ShowApprovalWorkflow
                 'is_active',
                 'is_default',
                 'published_at',
+                'approver_resolution_mode',
             ])
             ->with(['stages' => function ($query) {
                 $query->select([
@@ -29,7 +30,16 @@ class ShowApprovalWorkflow
                     'sequence',
                     'is_final',
                     'is_active',
-                ])->orderBy('sequence', 'asc');
+                ])->orderBy('sequence', 'asc')
+                ->with(['approverRule' => function ($ruleQuery) {
+                    $ruleQuery->select([
+                        'id',
+                        'approval_stage_id',
+                        'capability',
+                        'scope_source',
+                        'is_active',
+                    ]);
+                }]);
             }])
             ->findOrFail($id);
     }
