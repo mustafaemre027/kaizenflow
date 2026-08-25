@@ -167,3 +167,13 @@ Blok 2 hedefleri kapsamýnda;
 - CapabilityApprovalStageApproverResolver ile **self-approval prevention** aktif edilmiþ, pasif rule/grant/actor kombinasyonlarý ve departman eþleþmezlikleri için tamamen fail-closed izole bir yapý kurulmuþtur.
 - Bootstrap PACKAGE güncellenmiþ ve yetkilerin exact-delegation'a uygun olarak Admin'e verilmesi saðlanmýþtýr.
 - Yüksek kapsama sahip testler yazýlmýþ, kod RED -> GREEN -> STYLE hattýyla commit edilmiþtir. TDD ve izole test aþamasý baþarýyla tamamlanmýþtýr.
+
+## 10. Blok 3 Gerçekleþtirme Sonuçlarý (Runtime Entegrasyonu)
+
+Blok 3 hedefleri doðrultusunda;
+- ApprovalStageApproverResolver içerisine CapabilityApprovalStageApproverResolver baðýmlýlýðý enjekte edilmiþ ve ApproverResolutionMode::CAPABILITY_RULE ile ApproverResolutionMode::LEGACY_GROUP arasý ayrým (hiçbir fallback olmaksýzýn) saðlanmýþtýr.
+- Tüm modlarda Self-Approval kesin red kuralý en tepeye yerleþtirilmiþ ve yetkisizlik durumunda instance, stage ve audit ilerlemesi durdurularak tam ACID rollback doðrulanmýþtýr.
+- ProgressKaizenWorkflow mutation Action'ý içerisine resolver yetkilendirme katmaný eklenerek güvenlik açýðý giderilmiþ ve testlerde izole yetkilendirme doðrulamasý yapýlmýþtýr.
+- CreateApprovalWorkflowDraft Action'ýnda yeni taslaklarýn ApproverResolutionMode::CAPABILITY_RULE ile oluþmasý açýkça zorlanmýþtýr.
+- PublishApprovalWorkflow Action'ýna CAPABILITY_RULE workflow'larý için "her aktif stage için tam bir aktif rule bulunmasý" invariantý (yayýnlama engeli) eklenmiþtir.
+- SQLite (773 Passed) ve MySQL canlý test (773 Passed, 2208 Assertions) TDD döngüsünde 0 hata ile çalýþtýrýlmýþ ve Development DB bütünüyle izole edilerek deðiþmezliði korunmuþtur.
