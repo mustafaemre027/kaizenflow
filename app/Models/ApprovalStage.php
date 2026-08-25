@@ -22,6 +22,7 @@ class ApprovalStage extends Model
     ];
 
     protected $casts = [
+        'sequence' => 'integer',
         'is_final' => 'boolean',
         'is_active' => 'boolean',
     ];

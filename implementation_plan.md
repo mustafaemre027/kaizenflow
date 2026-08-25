@@ -1,305 +1,159 @@
-# KaizenFlow – Uygulama Planı
+# GÜN 13 / ÇALIŞMA BLOĞU 6 — APPROVAL CONFIGURATION MUTATION ACTION’LARI, VERSIONING VE AUDIT TDD
 
-## 1. GENEL BAKIŞ
-KaizenFlow, çalışanların süreç iyileştirme fikirlerini kaydettiği, OPEX ve yönetici değerlendirmelerinin yürütüldüğü, onaylanan çalışmaların uygulama sonuçlarının izlendiği ve fayda sonuçlarının raporlandığı web tabanlı bir Kaizen yönetim sistemidir.
+## Gerçek Action ve Exception Sınıfları
+- **Exception Sınıfları:**
+  - `App\Exceptions\AuthorizationException` (Yetki bypass/reddi için)
+  - `App\Exceptions\DomainException` (Geçersiz stage, birden fazla final stage vb. domain ihlalleri için)
+- **Trait:** `HasApprovalConfigurationMutation` (Transaction içi yetki kontrolü ve Global Lock Order için)
+- **Action Sınıfları:**
+  - `CreateApprovalWorkflowDraft`: Draft oluşturur, versioning işlemini yürütür.
+  - `UpdateApprovalWorkflowDraft`: Sadece published_at = null olan taslakları günceller.
+  - `PublishApprovalWorkflow`: Taslağı yayımlar.
+  - `SetDefaultApprovalWorkflow`: Yalnızca published/active workflow'u default yapar.
+  - `DeactivateApprovalWorkflow`: Workflow'u pasifleştirir.
 
-Bu belge projenin geliştirici rehberidir; 20 iş günlük geliştirme süresini, MVP kapsamını, teknik kararları, günlük çıktıları, riskleri ve tamamlanma ölçütlerini tanımlar.
+## Workflow Lifecycle Sözleşmesi
+- Yeni oluşan taslaklar daima `is_active = false`, `is_default = false` ve `published_at = null` ile başlar.
+- Publish edilmeden hiçbir workflow default yapılamaz veya aktifleşemez.
+- Update işlemi yayımlanmış kayıtlarda (`published_at != null`) kesinlikle `DomainException` fırlatır.
 
-## 2. TEMEL PROJE KARARLARI
-- Proje genel ve kurumsal bağımsızdır.
-- Gerçek şirket adı, logosu, çalışanı veya operasyon verisi kullanılmaz.
-- Teknoloji yığını Laravel, PHP, MySQL, Blade, Bootstrap, Vite ve Chart.js’tir.
-- **Ürünleştirme İlkesi:** Müşteriden müşteriye (işletmeye göre) değişebilecek iş verileri (kategori, departman vb.) ve iş süreçleri (onay akışları) mümkün olduğunca kod içine sabit gömülmeyecektir. Uygun alanlar veritabanı veya yapılandırma üzerinden yönetilebilir olacak ("dynamic-by-default"). Ancak bu durum **multi-tenant** bir yapı olduğu anlamına gelmez. Her kurum kendi yapılandırmasıyla kendi kurulumunu kullanır, SaaS (multi-tenant) yaklaşımı kapsam dışıdır.
-- Roller:
-  - EMPLOYEE
-  - OPEX_SPECIALIST
-  - MANAGER
-  - ADMIN
-- Kaizen durumları:
-  - DRAFT
-  - SUBMITTED
-  - REVISION_REQUESTED
-  - MANAGER_REVIEW
-  - APPROVED
-  - IN_PROGRESS
-  - COMPLETED
-  - REJECTED
-- Belgelenmiş dokuz kanonik durum geçişi korunur.
-- `OPEX_REVIEW` adında bir durum eklenmez.
-- ADMIN rolüne otomatik iş onayı yetkisi verilmez.
-- Atanmış olmak tek başına durum değiştirme yetkisi sağlamaz.
-- COMPLETED ve REJECTED terminal durumlardır.
-- Laravel katmanlı monolit mimari, Service katmanı, Policy, transaction ve test yaklaşımı korunur.
-- PR başlıkları ve açıklamaları İngilizce; proje belgeleri ve Issue içerikleri Türkçedir.
-- Solo GitHub akışı Issue → branch → atomik commit → push → PR → self-review → self-merge şeklindedir.
+## Versioning Kararı
+- Yeni sürüm (draft), aynı `code` değerine sahip mevcut tüm workflow'ların version'ı üzerinden `max(version) + 1` formülü ile **transaction içinde** (lockForUpdate ile kilitlenmiş collection üzerinden) hesaplanır.
+- DB seviyesindeki `UNIQUE(code, version)` indeksi, olası version yarışlarına karşı son savunma hattıdır.
 
-## 3. ÖZELLİK ÖNCELİKLERİ VE KAPSAM
+## Ortak Global Lock Order
+Transaction içinde deadlock'ları önlemek için daima şu sıra takip edilir:
+1. `users.id ASC`
+2. `user_system_capability_grants.id ASC` (Kullanıcının manage yetkisi taze okunur)
+3. `approval_workflows.id ASC` (İşlem yapılan veya version/default taraması yapılan kayıtlar)
+4. `approval_stages.id ASC`
+5. `kaizen_workflow_instances.id ASC` (Deactivation sırasında terminal kontrolü)
+6. Audit Insert
 
-### Zorunlu Çekirdek Kapsam
-- Authentication
-- RBAC ve Policy
-- Kaizen CRUD
-- Güvenli dosya ve yorum yönetimi
-- Dokuz geçişli onay iş akışı
-- Durum geçmişi ve audit log
-- Bildirimler
-- Dashboard ve raporlama
-- Testler ve güvenlik kontrolleri
+## Publish Invariantları
+- Taslakta en az bir aktif stage olmalıdır.
+- Sequence değerleri kesinlikle monotonically increasing olmalıdır.
+- Sadece ve sadece **bir adet** final stage olmalıdır.
+- Final stage mutlaka sıradaki (sequence) en sonuncu (last) stage olmalıdır.
+- Publish işlemi otomatik default ataması yapmaz. Yalnızca `is_active = true` ve `published_at = now()` uygular.
 
-### Kesin Genişletilmiş Kapsam
-- Gerçek SMTP e-posta bildirimi
-- Bulut depolamaya hazır Laravel Storage
-- Termin ve gecikme takibi
-- Değerlendirme puanı ve öncelik matrisi
-- Hedeflenen ve gerçekleşen fayda
-- CSV dışa aktarma
-- Responsive arayüz ve PWA
+## Default Invariantı
+- Default belirleme yalnızca published_at != null ve is_active = true ise yapılabilir.
+- `ApprovalWorkflow::orderBy('id', 'asc')->lockForUpdate()->get()` kullanılarak eski default değeri transaction içinde güvenle `false` yapılırken, yeni hedef `true` yapılır.
+- Zaten default ise no-op işlemi ile audit log atılmaz.
 
-### Koşullu Kapsam
-- AI destekli Kaizen taslak yardımcısı
+## Deactivation ve History Koruması
+- Workflow veya stage'ler fiziksel olarak silinmez (`delete` kullanılmaz). Sadece `is_active = false` yapılır.
+- Default workflow doğrudan pasifleştirilemez.
+- `KaizenWorkflowInstance` üzerindeki `completed_at = null` ve `cancelled_at = null` (terminal olmayan) aktif instanceler varken workflow deactivation işlemine izin verilmez.
+- Published workflow'lar yerinde update edilemediği için approval history bütünlüğü mutlak surette korunur.
 
-### Kapsam Dışı
-- SMS gönderimi
-- Gerçek zamanlı sohbet
-- Native Android veya iOS uygulaması
-- Multi-tenant yapı
-- Gerçek ERP bağlantısı
-- Yapay zekânın otomatik kayıt veya onay yapması
-- Gerçek şirket verileri
+## Audit Event / Metadata Sınırları
+- Audit kayıtları `$actor` nesnesinin gerçek yetkilendirilmiş kullanıcısı ile kaydedilir (Request bypass kapalı).
+- Tüm transaction sonlarında başarılı ise audit atılır.
+- **Event İsimleri:**
+  - `approval_configuration.created`
+  - `approval_configuration.updated`
+  - `approval_configuration.published`
+  - `approval_configuration.default_set`
+  - `approval_configuration.deactivated`
+- Şifre, token veya sınırsız request payload audit loga yazılmaz. Old/New mantığıyla is_active, is_default, published_at tutulur.
 
-## 4. GÜNLÜK ÇALIŞMA YAKLAŞIMI
-- Günlük yaklaşık 4–6 saat aktif çalışma
-- Kısa öğrenme ve tasarım bölümü
-- Kullanıcının seviyesine uygun manuel PHP/Laravel/MySQL uygulaması
-- Antigravity ile iskelet, tekrar eden kod, test ve inceleme desteği
-- Günlük kapsama göre yaklaşık 2–5 anlamlı atomik commit
-- Yapay commit veya gereksiz dosya bölme yapılmaması
-- Her gün test, güvenlik, GitHub self-review ve staj defteri kaydı
-- Büyük paket indirmelerinden önce kullanıcıya haber verilmesi
+## Rollback Sonuçları
+Tüm Action sınıfları `DB::transaction()` sarmalındadır. Domain ihlali, Authorization ihlali veya AuditLog insert sırasında yaşanacak her türlü exception işlemi eksiksiz `rollback` yapar.
 
-## 5. GÜNLÜK GELİŞTİRME PLANI VE ÇIKTILAR
+## MySQL Concurrency Sonuçları
+- **Race A (Create Draft Eşzamanlılığı):** 2 process eşzamanlı çalıştırıldığında; versioning doğru çalışmış, Duplicate hatası verilmemiş, version 1 ve version 2 sırayla başarıyla üretilmiş ve kilit sırası (lock order) mükemmel çalışmıştır.
+- **Race B (Default Set Eşzamanlılığı):** 2 farklı workflow eşzamanlı default yapılmaya çalışıldığında, kilitleme sırasıyla yürümüş ve sistemde daima **yalnızca 1 adet** default kalmıştır.
+- **Race C (Stale Grant Revoke):** `HasApprovalConfigurationMutation` içindeki `allowsSystem` ve `lockForUpdate` mantığı stale actor bypassını kesin olarak engeller.
 
-Günlük yaklaşım: 2 ana ürün capability + entegrasyon + security + tests + Chrome review.
+## SQLite/MySQL Test Metrikleri
+- **SQLite (TDD Aşaması):** 11 passed (26 assertions), MySQL-only concurrency testleri scratch olarak çalıştırıldı.
+- **MySQL Hedef:** 11 passed (26 assertions).
+- **SQLite Tam Süit:** 682 passed (2000 assertions).
+- **MySQL Tam Süit:** 683 passed (2001 assertions).
 
-| Gün | Çalışma Odağı | Önerilen Branch Türü |
-|---|---|---|
-| Gün 1 | Repository, kapsam, GitHub çalışma sistemi, README, uygulama planı, katkı rehberi, şablonlar ve backlog. | docs/ |
-| Gün 2 | Fonksiyonel gereksinimler, roller, kullanıcı senaryoları, iş kuralları ve durum geçişleri. | docs/ |
-| Gün 3 | ER diyagramı, tablo sözlüğü, mimari kararlar, yetki matrisi ve wireframe’ler. | docs/ |
-| Gün 4 | Laravel iskeleti, ortam ayarları, MySQL bağlantısı, temel layout, sağlık kontrolü ve ilk test. | chore/ |
-| Gün 5 | Domain modeli, referans verileri, rol/durum enum'ları, departman/kategori modelleri ve sentetik demo verileri. | feature/ |
-| Gün 6 | Kimlik doğrulama, oturum güvenliği, özel Blade giriş ekranı ve aktif/pasif kullanıcı kontrolü. | feature/ |
-| Gün 7 | Rol tabanlı yetkilendirme, Role middleware, Laravel Policy, kullanıcı ve departman yönetimi. | feature/ |
-| Gün 8 | Kaizen oluşturma, taslak yönetimi, form doğrulama, detay ekranı ve güvenli mass-assignment. | feature/ |
-| Gün 9 | Listeleme, taslak düzenleme ve dynamic business audit (Müşteriye özel sabit kodların tespiti). | feature/ |
-| Gün 10 | Enterprise evidence/media/attachment module | feature/ |
-| Gün 11 | Dynamic approval workflow + stage config + history | feature/ |
-| Gün 12 | Uygulama planlama ve yürütme altyapısı (Post-approval execution) | feature/ |
-| Gün 13 | Approval configuration administration and organization management | feature/ |
-| Gün 14 | Notifications, work queue and deadline tracking | feature/ |
-| Gün 15 | Dynamic evaluation criteria and weighted scoring | feature/ |
-| Gün 16 | Dynamic optional benefit types and target/realized metrics | feature/ |
-| Gün 17 | Implementation execution tracking, progress and completion | feature/ |
-| Gün 18 | Dashboard, reporting and CSV export | feature/ |
-| Gün 19 | Enterprise hardening, security, performance, N+1, index and hard-code audit | chore/ |
-| Gün 20 | Final professional UI/UX, responsive/accessibility, documentation, demo and delivery | docs/ |
+## Sonraki Aşama
+Bu blokla mutasyon altyapısı güvenle tamamlanmış olup, Form Request, Blade/UI, Controller entegrasyonu (HTTP Mutation endpoint'leri) bir sonraki bloğa bırakılmıştır.
 
-## 6. GÜNLÜK FAZLARIN AYRINTILARI (Gün 5-20)
+## Blok 6.1 Kabul Denetimi ve Düzeltmeler (Adli Kanıtlar)
+- **Güvenlik Açığı Tespiti (Aggregate Lock):** `DeactivateApprovalWorkflow` içerisinde `count()->lockForUpdate()` kullanılarak yapılan aggregrate DB kilitlenmesi tespit edildi. Bu durum MySQL üzerinde deadlocklara yol açabileceği için RED test ile ispatlanıp (`ApprovalConfigurationMutationGapTest`), `lockForUpdate()->get()->count()` olarak düzeltildi.
+- **Transaction ve Yetki Bütünlüğü:**
+  - `HasApprovalConfigurationMutation` içindeki `lockForUpdate()` sorgularının TOCTOU zafiyetlerini başarıyla kapattığı kanıtlandı.
+  - Aktör pasifliği ve Capability pasifliği ayrı ayrı kontrol ediliyor.
+  - Global Lock Order hiyerarşisi `users -> user_system_capability_grants -> approval_workflows -> approval_stages -> kaizen_workflow_instances -> audit_logs` şeklinde tamamen ardışık sıralandı.
+- **Index ve Şema Kuralları:** `UNIQUE(code, version)` ve FK Delete Restrict kurallarının DB seviyesinde var olduğu teyit edildi.
+- **Test ve Kalite Sonuçları:**
+  - Yeni gap testi ile beraber SQLite 683 passed, MySQL 684 passed olarak %100 test success oranına ulaşıldı.
+  - Pint, npm build, composer validate hepsi hatasız.
 
-### Gün 5 — Domain Temeli ve Referans Verileri
-- Kalan uygulama planının güncellenmesi
-- Rol ve Kaizen durum PHP backed enum’ları
-- Departman ve kategori migration/model yapıları
-- Kullanıcı tablosunun rol ve departman alanlarıyla genişletilmesi
-- Foreign key, unique ve indeks kuralları
-- Factory, seeder ve sentetik demo verileri
-- Migration, model, enum ve ilişki testleri
+## Blok 6.2.1 Concurrency Worker Veritabanı Mühürlemesi
+- **DB Sızıntısının Kök Nedeni:** Blok 6 scratch testlerindeki `race_master.php`, kendi içerisinde `Config::set` ile veritabanını değiştirse de, `Artisan::call` ve child worker process'lere (`proc_open` ile) `DB_DATABASE=kaizenflow_test` environment override'ını geçirmemiştir. Child process'ler ve console kernel boot sırasında doğrudan `.env` okuduğu için işlemler `kaizenflow` veritabanına sıçramıştır (Senaryo C tespiti).
+- **Kirlenmiş Kayıtlar:** Blok 6.1 ve Blok 6.2.1 sırasında bu kayıtların silinmesi yasak olduğu için oldukları gibi bırakılmıştır (Onaylı bir sonraki cleanup bloğu bekleniyor).
+- **Güvenli Test Harness (mysql-launcher):**
+  - **Parent Process Allowlist:** Credential'ların (DB_USERNAME, DB_PASSWORD vb.) worker'lara sadece güvenli `$_SERVER` ve explicit override ile aktarılması sağlandı.
+  - **Child Process Tuple:** `APP_ENV=testing`, `DB_CONNECTION=mysql`, `DB_DATABASE=kaizenflow_test` zorunlu kılındı.
+  - **Canlı SELECT DATABASE():** Her worker Laravel boot olduktan sonra işlemi `SELECT DATABASE() as db` ile teyit etmeden hiçbir mutationa izin vermeyecek biçimde (hard-fail) mühürlendi.
+  - **Test Metrikleri:** Bu fail-closed kilit sistemi `ConcurrencyDatabaseSafetyTest` ile kırmızı-yeşil test döngüsüyle güvenceye alınmıştır.
+- **Kalıcı Concurrency Testleri:** Güvenlik katmanı mühürlendiğinden dolayı Race A/B/C testlerinin kalıcı Laravel `Feature` testlerine dönüştürülmesi bir sonraki bloğa devredildi.
 
-### Gün 6 — Kimlik Doğrulama ve Oturum Güvenliği
-- Özel Blade giriş ekranı
-- Login, logout ve session yenileme
-- Rate limit ve güvenli yönlendirme
-- Aktif/pasif kullanıcı kontrolü
-- Authentication feature testleri
+## Blok 6.2.3 Kalıcı MySQL Race A/B/C Regresyon Testleri
+- **Senaryo A (Doğrudan Test Başarısı):** Güvenli isolation (MySqlTestLauncher) üzerinden `ApprovalConfigurationConcurrencyTest.php` yazılarak Race A (Duplicate taslak), Race B (Eşzamanlı Default) ve Race C (Stale Capability) testleri koşuldu. Tüm yarış senaryoları `hasApprovalConfigurationMutation` içindeki `lockForUpdate` mantığı sayesinde %100 başarıyla (GREEN) çalıştı ve production kodunda herhangi bir güvenlik açığı bulunamadı.
+- **Güvenlik Mühürü Teyidi:** Dev DB (kaizenflow) testten önce ve sonra fingerprint ile doğrulandı, hiçbir sızıntı ve değişiklik (0 byte data drift) yaşanmadı.
+- **Bütünsel Regresyon:** Tüm SQLite (686 passed) ve MySQL (690 passed) testleri sıfır hata ile tamamlandı. Pint, view cache, JS build gibi kalite kapıları kapandı.
 
-### Gün 7 — Rol Tabanlı Yetkilendirme ve Yönetim
-- Role middleware
-- Laravel Policy yapısı
-- Yetkisiz erişim ekranları
-- Kullanıcı, departman ve kategori yönetimi
-- Yetkilendirme testleri
+## Blok 6.2.3.2 Race Barrier Cleanup Garantisi (TDD)
+- **Tespit Edilen Cleanup Açığı:** Önceki implementasyonda barrier/temp kalıntıları test fail olduğunda, timeout yaşandığında veya exception fırlatıldığında `tearDown` veya `finally` ile temizlenemiyordu ve `%TEMP%` altında kalıntılar bırakıyordu.
+- **RED Test Kapsamı:** `RaceHarnessCleanupTest.php` sınıfı oluşturularak normal çalışma, idempotent çağrı, exception fırlatılması, timeout yaşanması ve unrelated dosya korumasına dair kırmızı testler kanıtlandı.
+- **Exact-owned Barrier Directory & Random Token:** Tahmin edilebilir `uniqid()` yerine tam `bin2hex(random_bytes(16))` ile izole ve sadece test harness örneğinin sahip olduğu barrier dizinleri garantilendi.
+- **Exception/Timeout Cleanup & Process Reap:** Barrier oluşturulmasından `collectResults` aşamasına kadarki tüm lifecycle yönetimi `RaceHarness` içine kapsüllendi. Child process'ler ve açık olan resource pipe'ları, `try/finally` yapısına uyumlu şekilde, failure anında (timeout, exception vs.) terminate ve reap edildi (proc_close, proc_terminate).
+- **Eski Temp Kalıntıları Korundu & Dev DB Mühürlendi:** Harici bir dizin (`kaizen_race_unrelated_...`) veya eski kalan dizinler, `rmdir` esnasında exact pattern validation ve exact path sahipliği kontrolüyle `%100` korundu. Geliştirme veritabanında hiçbir sızıntı yaşanmadı.
+- **SQLite/MySQL Test Metrikleri:** Tüm Test Süitleri (SQLite 686 test, MySQL 696 test) ve Race A/B/C regresyonları GREEN duruma getirildi. Hard-kill anlarında (OS shutdown, elektrik kesintisi vs.) PHP'nin `finally` bloğu çalışmayacağından, bu tür dış etmen kaynaklı nadir senaryolarda işletim sisteminin %TEMP% politikalarına güvenileceği dürüstçe belirtildi.
 
-### Gün 8 — Kaizen Oluşturma ve Taslak Yönetimi
-- Kaizen oluşturma formu
-- Taslak kaydetme
-- Validasyon
-- Detay ekranı
-- Güvenli mass-assignment
+## Block 7.1 Acceptance
 
-### Gün 9 — Kaizen Listeleme, Düzenleme ve Dinamiklik Denetimi
-- Yetkiye göre listeleme, arama, filtreleme ve sayfalama
-- Taslak düzenleme (UI entegrasyonu)
-- Empty state ve validation hata gösterimleri
-- Gün 1-8 hard-coded business value audit ve dinamik mimari yol haritası güncellemesi
+Bütün HTTP Mutation geliştirme fazı adli testlerle doğrulanmış ve kalite kapıları kapanmıştır:
+- **Commit atomikliği**: Testler ayrı RED commit olarak, model düzeltmeleri ayrı FIX olarak ve feature implementation GREEN olarak ayrılmıştır. `style` değişiklikleri de kendi atomik commitindedir.
+- **Authorization-before-validation sonucu**: Form Request doğrulamasından önce yetki kontrolünün yapılması zorunluluğu tespit edilmiş, yetkisiz isteklere verilen 422 hatası, Form Request içindeki `authorize()` metodu güncellenerek 403'e dönüştürülmüştür (`bcdca5e`).
+- **IDOR sırası**: ID tabanlı rota modelleri doğrulandı. Yetkili kullanıcı için 404, yetkisiz kullanıcı için varlık sızıntısı olmadan 403 döndürüldüğü kanıtlandı.
+- **DomainException kapsamı**: Uygulama genelinde `DomainException` yönetiminin dar bir kapsama indirilmesi sağlandı (`bootstrap/app.php` güncellendi, sadece `/settings/approval-configurations/*` boundary'si 422 json döndürüyor). Hata raw message maskelendi.
+- **Sequence cast düzeltmesinin kanıtı**: `ApprovalStage` içerisindeki `sequence` değeri için eksik integer cast tespiti `1f34ecc` numaralı düzeltmeyle kalıcılaştırıldı, NOOP testlerin adli olarak 0 audit oluşturduğu doğrulandı.
+- **Route/request/controller matrisi**: 5 POST/PATCH endpoint Controller methodlarına yönlendirilmiş, Store/Update form request'leriyle validation ayrımı yapılandırılmış ve kısıtlı system/internal alanlar `prohibited` edilmiştir.
+- **Dev DB değişmezliği**: `fingerprint_dev_v2.php` ile doğrulanmıştır. Herhangi bir dev datası veya instance bozulmamış, auto_increment = 3 olarak kalmıştır.
+- **Bulunan gerçek açıklar**: 
+    1) "Sequence String vs Int Drift" (No-op testinde saptandı, `ApprovalStage` modelinde fixlendi).
+    2) "Authorization-before-validation gap" (Form request'lerde yetkisiz kullanıcıya 422 dönmesi 403'e düzeltildi).
+    3) "DomainException Global Mapping Gap" (Global 422 mapping, `/settings/approval-configurations/*` endpoint'iyle kısıtlanıp raw data maskelendi).
+- Bütün SQLite (713/713) ve MySQL (723/723) regresyon testleri GREEN'dir. Composer, Pint ve npm build kapıları başarıyla geçildi.
 
-### Gün 10 — Enterprise evidence/media/attachment module
-- Attachment domain, private storage configuration, upload security
-- Mevcut ve Önerilen Durum alanlarına güvenli çoklu fotoğraf/dosya ekleri (metin alanları zorunlu kalacak)
-- Dosya türü ve boyut kontrolü
-- Create/edit/detail entegrasyonu ve yetkilendirme
+## Blok 8: Approval Configuration Blade Yönetim Arayüzü
+- **Güvenli Arayüz (RED -> GREEN):** Güvenli read/mutation endpoint'leri (index, show, create, edit) Bootstrap ve KaizenFlow CSS standartlarına sadık kalınarak oluşturuldu.
+- **Content Negotiation:** Tüm okuma ve mutasyon işlemleri `$request->wantsJson()` kullanılarak HTTP API ve UI Blade sayfaları ile uyumlu hale getirildi. Hata fırlatmaları (DomainException), HTML formları için flash mesaja dönüştürülerek `$exception->getMessage()` gibi raw hata sızıntıları önlendi.
+- **Erişilebilirlik ve DOM Koruması:** Stage listelerinde innerHTML JS kurguları tamamen escape edildi ve JS kapalıyken çalışabilecek temel fallback sağlandı. actor_id, user_id gibi form dışı alanlar DOM'a dahil edilmedi. Sayfalarda WAI-ARIA (aria-invalid, aria-describedby vb.) attributeları zorunlu tutuldu.
+- **Strict Authorization ve Lifecycle Testleri:** `ApprovalConfigurationUiTest` ile tam kapsayıcı TDD (19 adet GREEN test, 67 assertion) gerçekleştirildi. Guest, view-only, passive user, yetkisiz payload, IDOR sıralaması ve no-op (idempotent) mutasyon davranışları uçtan uca kanıtlandı.
+- **Veritabanı Değişmezliği:** Dev DB (kaizenflow) üzerinde manuel mutasyon / UI fixture testleri yürütülmedi ve Blok başı ile sonu fingerprint 0 byte diff ile korundu.
+- **Kalite Kapıları:** SQLite (742 passed) ve MySQL (742 passed, 2139 assertions) regresyonları test suite üzerinden hiçbir fire verilmeden tamamlandı.
 
-### Gün 11 — Dynamic approval workflow + stage config + history
-- Onay sürecinin sabit kod yerine dinamik `approval_workflows` / `approval_stages` altyapısına geçirilmesi.
-- `KaizenWorkflowInstance` ve immutable (append-only) `KaizenWorkflowTransition` tablolarıyla versiyonlanmış iş akışı oluşturulması.
-- `MANAGER_REVIEW` gibi iş aşamalarının hard-coded olmaktan çıkarılıp dinamik `ApprovalStage` domain'ine devredilmesi.
-- Lifecycle statü geçmişi (`KaizenStatusHistory`) ile Onay İş Akışı geçmişinin (`KaizenWorkflowTransition`) birbirinden ayrılması.
 
-### Gün 12 — Uygulama planlama ve yürütme altyapısı (Tamamlandı)
-- Onaylanan Kaizenlerin uygulamaya alınması (IN_PROGRESS)
-- Sorumlu (assignee) atamaları ve hedeflenen termin (target_date) takibi
-- Uygulama süreci (actual_result) ve tamamlama (COMPLETED) işlemleri
-- Durum geçişlerinde append-only loglama ve yetkilendirmeler
-- **Teslimat Durumu:** Post-approval execution altyapısı ve HTTP/Blade UI entegrasyonu başarıyla tamamlandı. Capability bazlı yetkilendirme sağlandı. Assignment audit log'a, Start/Complete işlemleri lifecycle history'ye yazıldı. 1440/768/390 responsive manuel QA tamamlanıp taşma sorunları düzeltildi. Issue #29 PR inceleme aşamasındadır.
+## Block 9 UI QA Acceptance
+- Approval Configuration UI fully validated via comprehensive HTTP tests (	ests/Feature/ApprovalConfigurationUiTest.php).
+- Verified IDOR constraints, capabilities (view/manage), Guest redirection, and Role-bypass blocks.
+- Validated HTML forms against DOM injection & XSS across all mutation points.
+- Full functional flows (Create, Update, Publish, Default, Deactivate) successfully tested in test runtime (kaizenflow_test).
+- Verified Responsive/Accessibility limits without Dev DB modification.
+- Full test suite, Pint, Build, and Migration status PASS.
 
-### Gün 13 — Approval configuration administration and organization management
-- Dinamik Kurul ve kurul üyelik yapısı (Admin yönetimi)
-- Onay iş akışları yapılandırmaları (ApprovalWorkflow config yönetimi)
+# # #   B l o k   9 . 2   -   A p p r o v a l   S t a g e   R e o r d e r   C o n s t r a i n t   F i x  
+ -   I d e n t i f i e d   a n d   p r o v e d   u n i q u e   c o n s t r a i n t   v i o l a t i o n   d u r i n g   r e o r d e r i n g .  
+ -   F i x e d   c o n s t r a i n t   c o l l i s i o n   b y   t e m p o r a r i l y   m o v i n g   s t a g e s   t o   o f f s e t   s e q u e n c e   b e f o r e   f i n a l   a p p l y .  
+ -   V e r i f i e d   f i x   w i t h   S Q L i t e   a n d   M y S Q L   s u i t e s .  
+ 
+## 10. Prosed�rel Sapma Kayd�
 
-### Gün 14 — User/organization management + notifications + work queue
-- Kullanıcı ve organizasyon yönetimi tamamlanması
-- SMTP e-posta bildirimleri ve uygulama içi bildirim merkezi
-- Termin ve iş kuyruğu (work queue) oluşturulması
+PROCEDURAL DEVIATION � THE INITIAL COLLISION CHARACTERIZATION TEST EXPECTED QUERYEXCEPTION AND THEREFORE DID NOT REPRESENT A FAILING RED TEST. THE GREEN PRODUCTION FIX WAS FOLLOWED BY A SEPARATE SUCCESS-ASSERTION TEST COMMIT. FINAL CODE AND TEST INTEGRITY UNAFFECTED.
 
-### Gün 15 — Dynamic evaluation criteria + weighted scoring
-- Dinamik değerlendirme kriterleri ve puanlama/ağırlık sistemleri oluşturulacak (Etki, maliyet vb.)
-- Puanlama kuralları ve yetkili ekran
+- 80c81e4 hatay� karakterize eden test commitidir.
+- 4b1c7cc production d�zeltmesidir.
+- Yeni test commit�i d�zeltmenin ba�ar�l� DB sonucunu kal�c� olarak do�rulamaktad�r.
+- History rewrite yap�lmam��t�r.
 
-### Gün 16 — Dynamic optional benefit types + target/realized metrics
-- Dinamik fayda türleri (Zaman, Kalite, Maliyet, Çevre, İş Güvenliği vb.) eklenecek
-- Hedeflenen ve gerçekleşen mali/zaman faydaları takibi
-
-### Gün 17 — Implementation/execution tracking + responsibility + deadlines
-- Uygulama takibi, sorumluluk atamaları ve termin (deadline) yönetimi
-- İlerleme kaydetme ve terminal durum testleri
-
-### Gün 18 — Dashboard + reporting + export
-- Gerçek dinamik veri ve yapılandırmalarla çalışan role göre dashboard
-- Raporlama (fayda raporları vb.) ve CSV dışa aktarma
-
-### Gün 19 — Enterprise hardening + final hard-code/security/performance audit
-- Final hard-coded business value audit
-- Yetkilendirme regresyon testleri, performans, N+1 sorgu ve indeks kontrolleri
-- Uçtan uca iş akışı testleri ve production build doğrulaması
-
-### Gün 20 — Final product UI/UX + documentation + demo + delivery
-- Profesyonel final UI/UX turu
-- Responsive erişilebilirlik, Chart.js grafikleri ve PWA kurulumu
-- Kullanıcı/teknik dokümantasyon, sürüm etiketi ve README final güncellemesi
-- Sunum ve proje teslim hazırlığı (Staj defteri ve final proje özeti)
-
-## 7. PLANLANAN VERİ MODELİ
-
-| Tablo | Amaç |
-|---|---|
-| users | Kullanıcı hesapları ve roller. |
-| departments | Şirket departmanları tanımları. |
-| kaizen_categories | İyileştirme kategori tanımları. |
-| kaizens | Ana Kaizen öneri kayıtları. |
-| kaizen_attachments | Önerilere eklenen dosyalar. |
-| kaizen_comments | Değerlendirme ve uygulama süreçlerindeki yorumlar. |
-| kaizen_status_histories | (Platform Lifecycle) Değiştirilemez kaba durum (DRAFT, SUBMITTED) geçiş logları. |
-| approval_workflows | Dinamik onay iş akışı sürümleri (versiyonları). |
-| approval_stages | Bir iş akışındaki dinamik onay aşamaları (Örn: OPEX, Yönetici, Kurul). |
-| kaizen_workflow_instances | Bir Kaizen'in bağlı bulunduğu spesifik iş akışı versiyon örneği. |
-| kaizen_workflow_transitions | İş akışı aşamalarındaki tarihsel değişmez onay/geçiş logları. |
-| implementation_records | Uygulama detayları ve gerçekleşen faydalar. |
-| audit_logs | Kritik işlemlerin izlenmesi. |
-
-Nihai alan ve ilişkilerin Gün 3 ER diyagramıyla kesinleşeceği belirtilmektedir.
-
-## 8. DURUM GEÇİŞLERİ (GÜN 11 İTİBARIYLA LEGACY / PLATFORM LIFECYCLE)
-
-> **DİKKAT:** Gün 11 ile birlikte `MANAGER_REVIEW` gibi kuruma özgü onay aşamaları (organizational states) **LEGACY** kabul edilmektedir. Artık yeni dinamik onay iş akışı (DATABASE-DRIVEN) sistemine geçilmiştir.
-> `KaizenStatus` enum'u, onay silsilesi yerine sadece platform seviyesi ana yaşam döngüsünü (DRAFT, SUBMITTED, REVISION_REQUESTED, APPROVED, REJECTED, vb.) taşıyacaktır.
-
-| Mevcut Durum | İşlem | Yeni Durum | Yetkili Rol |
-|---|---|---|---|
-| DRAFT | Çalışan tarafından gönderildi | SUBMITTED | EMPLOYEE |
-| REVISION_REQUESTED | Çalışan tarafından güncellendi | SUBMITTED | EMPLOYEE |
-| SUBMITTED, ... (Ara Aşamalar) | Onaycı (Reviewer) tarafından revizyon istendi | REVISION_REQUESTED | Atanmış Onaycı |
-| SUBMITTED, ... (Ara Aşamalar) | Onaycı (Reviewer) tarafından ara onay verildi | (Mevcut Statü Korunur) | Atanmış Onaycı |
-| SUBMITTED, ... (Ara Aşamalar) | Onaycı (Reviewer) tarafından reddedildi | REJECTED | Atanmış Onaycı |
-| SUBMITTED, ... (Nihai Aşama) | Nihai Onaycı (Final Reviewer) tarafından onaylandı | APPROVED | Atanmış Nihai Onaycı |
-| APPROVED | Uygulamayı başlat | IN_PROGRESS | OPEX_SPECIALIST / Yetkili MANAGER |
-| IN_PROGRESS | Sonuçları kaydet ve tamamla | COMPLETED | OPEX_SPECIALIST / Yetkili MANAGER |
-
-Durum geçişleri dinamik iş akışı (ApprovalWorkflow) motoru üzerinden sağlanır, organizasyonel onay aşamaları (Yönetici, Kurul, OPEX) veritabanı tablolarında barındırılır. (Gün 11 sonrası onay akışı `ApprovalWorkflowResolver` ve `StartKaizenWorkflow` ile devralınmıştır).
-
-**Atama (Assignment) ve Yürütme (Execution) Sınırları (Gün 12 İtibarıyla):**
-- Implementation (Uygulama) yetkileri statik rollere (OPEX, MANAGER vb.) bağlı değildir; doğrudan **Capability Grant** sistemine (örn. `KAIZEN_IMPLEMENTATION_ASSIGN`) bağlıdır.
-- Grant'ler (Yetkinlik atamaları) MVP kapsamında departman bazlıdır (Kullanıcı + Departman + Yetkinlik).
-- Atama (Assignment) gibi metadata değişiklikleri `audit_logs` tablosuna append-only olarak yazılır. Statü geçmişine sahte satır eklenmez.
-- `START` ve `COMPLETE` işlemleri ise doğrudan `IN_PROGRESS` ve `COMPLETED` durum geçişlerini tetiklediği için `kaizen_status_histories` (lifecycle) tablosunda loglanır.
-- Capability (Yetkinlik) atama yönetim ekranları Gün 13 kapsamındadır; MVP için seed/tinker veya backend resolver katmanı kullanılır.
-- Atanmış olmak tek başına lifecycle statüsü değiştirme yetkisi sağlamaz. Assignee kullanıcı Kaizen'i görebilir ve kendisine izin verilen uygulama bilgilerini (actual_result vb.) kaydedebilir. Ancak yalnızca atanmış olduğu için IN_PROGRESS veya COMPLETED geçişi yapamaz.
-- Yorumlar (Comments) iletişim altyapısıdır; yapılandırılmış execution plan veya progress tracking olarak kullanılamaz (Yapılandırılmış takip Gün 17 kapsamındadır).
-
-## 9. YETKİ İLKELERİ
-- Çalışan yalnızca kendi kayıtlarına erişir.
-- Taslak veya düzeltme istenen kayıtları değiştirebilir.
-- OPEX değerlendirme ve uygulama takibine erişir.
-- Yönetici yalnızca kendi sorumluluk kapsamındaki kayıtları değerlendirir.
-- Admin kullanıcı ve sistem tanımlarını yönetir.
-- Durum değiştiren her işlem backend policy ve iş kuralı kontrolünden geçer.
-- Arayüzde buton gizlemek tek başına yetkilendirme değildir.
-
-## 10. GÜVENLİK VE GİZLİLİK KONTROLLERİ
-- CSRF koruması kapatılmayacaktır.
-- Girdiler sunucu tarafında doğrulanacaktır.
-- Parolalar Laravel hash mekanizmasıyla tutulacaktır.
-- Login sonrasında session ID yenilenecektir.
-- Backend Policies/Gates kullanılacaktır.
-- Dosya türü, boyutu, uzantısı ve erişimi doğrulanacaktır.
-- .env, parola, API anahtarı ve kişisel veri Git’e eklenmeyecektir.
-- Production ortamında debug kapalı olacaktır.
-- Hassas veriler loglanmayacaktır.
-- Demo kayıtları yalnızca sentetik olacaktır.
-
-## 11. RİSKLER VE ÖNLEMLER
-
-| Risk | Etki | Önlem |
-|---|---|---|
-| Kapsam büyümesi | Teslim gecikmesi | Zorunlu/koşullu/kapsam dışı ayrımına kesin uyulması |
-| AI API bağımlılığı | Sistemin kilitlenmesi | Feature flag kullanımı, mock test, iptal kontrol kapısı |
-| E-posta yapılandırması | Kurumsal spama düşme | Test ortamı ve güvenli environment variables |
-| Dosya güvenliği | Sisteme zararlı kod | Tür, boyut, uzantı, erişim ve depolama kontrolleri |
-| Yetki açığı (IDOR vs) | Veri sızıntısı | Policy kullanımı, feature ve authorization testleri |
-| Multi-tenant ve ERP karmaşıklığı | Projenin tamamlanamaması | MVP kapsamı dışında tutulması |
-| Zaman riski | Yarım kalan ürün | Gün 18 kontrol noktası ve koşullu özelliklerin iptali |
-| Gerçek veri riski | Gizlilik ihlali | Yalnızca sentetik demo verilerinin kullanılması |
-
-## 12. SOLO GITHUB VE PULL REQUEST AKIŞI
-1. Issue oluşturma
-2. Project In Progress aşamasına alma
-3. Issue branch’i oluşturma
-4. Küçük commitler halinde geliştirme
-5. Test ve kalite kontrolleri
-6. Push işlemi
-7. PR oluşturma
-8. Review süreçleri ve self-review yapılması
-9. Kontrollü self-merge
-10. Issue kapatma ve Project üzerinde Done yapılması
-11. İş bitiminde branch silme
-
-- Require a pull request before merging kullanılabilir.
-- Tek geliştirici olduğu için Require approvals zorunlu olmamalıdır.
-- Yapay zekâ incelemesi insan onayı değildir.
-- Nihai merge kararı geliştiriciye aittir.
-
-## 13. DEĞİŞİKLİK YÖNETİMİ
-MVP kapsamını, rol yetkilerini, durum geçişlerini veya güvenlik yaklaşımını değiştiren kararların:
-- Ayrı Issue ile gerekçelendirilmesi
-- İlgili dokümanların aynı PR’da güncellenmesi
-- Takvim ve risk etkisinin yazılması
-- Kapsam genişletmeden önce zorunlu MVP’nin kontrol edilmesi
-gerekmektedir.

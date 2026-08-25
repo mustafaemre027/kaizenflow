@@ -113,7 +113,10 @@ class KaizenCreateEvidenceTest extends TestCase
         ];
 
         $response = $this->actingAs($this->user)->post(route('kaizens.store'), $payload);
-
+        if ($response->status() !== 302) {
+            dd($response->json() ?? $response->content());
+        }
+        $response->assertSessionHasNoErrors();
         $kaizen = Kaizen::where('title', 'Single images test')->firstOrFail();
 
         $response->assertRedirect(route('kaizens.show', $kaizen));

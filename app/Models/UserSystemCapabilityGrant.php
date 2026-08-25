@@ -7,18 +7,20 @@ use App\Enums\UserCapability;
 use App\Exceptions\ScopeMismatchException;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class UserCapabilityGrant extends Model
+class UserSystemCapabilityGrant extends Model
 {
     use HasFactory;
 
     protected $fillable = [
         'user_id',
-        'department_id',
         'capability',
-        'is_active',
         'granted_by_user_id',
+        'is_active',
+    ];
+
+    protected $attributes = [
+        'is_active' => true,
     ];
 
     protected $casts = [
@@ -29,23 +31,18 @@ class UserCapabilityGrant extends Model
     protected static function booted()
     {
         static::saving(function (self $grant) {
-            if ($grant->capability && $grant->capability->scope() !== CapabilityScope::DEPARTMENT) {
-                throw new ScopeMismatchException('Only DEPARTMENT capabilities can be assigned to user_capability_grants.');
+            if ($grant->capability && $grant->capability->scope() !== CapabilityScope::SYSTEM) {
+                throw new ScopeMismatchException('Only SYSTEM capabilities can be assigned to user_system_capability_grants.');
             }
         });
     }
 
-    public function user(): BelongsTo
+    public function user()
     {
         return $this->belongsTo(User::class);
     }
 
-    public function department(): BelongsTo
-    {
-        return $this->belongsTo(Department::class);
-    }
-
-    public function grantedBy(): BelongsTo
+    public function grantedBy()
     {
         return $this->belongsTo(User::class, 'granted_by_user_id');
     }
