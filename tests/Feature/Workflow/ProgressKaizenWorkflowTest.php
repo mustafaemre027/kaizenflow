@@ -6,7 +6,9 @@ use App\Actions\Workflow\ProgressKaizenWorkflow;
 use App\Enums\KaizenStatus;
 use App\Enums\WorkflowAction;
 use App\Exceptions\Workflow\InvalidApprovalWorkflowConfiguration;
+use App\Models\ApprovalGroup;
 use App\Models\ApprovalStage;
+use App\Models\ApprovalStageAssignment;
 use App\Models\ApprovalWorkflow;
 use App\Models\Kaizen;
 use App\Models\KaizenWorkflowInstance;
@@ -51,10 +53,26 @@ class ProgressKaizenWorkflowTest extends TestCase
         return [$workflow, $stages, $kaizen, $instance];
     }
 
+    private function assignActorToStages(User $actor, array $stages): void
+    {
+        $group = ApprovalGroup::factory()->create(['is_active' => true]);
+        $group->members()->create(['user_id' => $actor->id, 'is_active' => true]);
+        foreach ($stages as $stage) {
+            ApprovalStageAssignment::create([
+                'approval_stage_id' => $stage->id,
+                'approval_group_id' => $group->id,
+                'scope' => 'GLOBAL',
+                'is_active' => true,
+            ]);
+        }
+    }
+
     public function test_arbitrary_three_stages_progression()
     {
         [$workflow, $stages, $kaizen, $instance] = $this->setupWorkflowAndInstance(3);
         $actor = User::factory()->create();
+        $this->assignActorToStages($actor, $stages);
+        $this->assignActorToStages($actor, $stages);
 
         // 1st approve
         $kaizen = $this->action->execute($kaizen, $actor, WorkflowAction::APPROVE);
@@ -89,6 +107,7 @@ class ProgressKaizenWorkflowTest extends TestCase
     {
         [$workflow, $stages, $kaizen, $instance] = $this->setupWorkflowAndInstance(5, [10, 40, 70, 95, 120]);
         $actor = User::factory()->create();
+        $this->assignActorToStages($actor, $stages);
 
         for ($i = 0; $i < 4; $i++) {
             $kaizen = $this->action->execute($kaizen, $actor, WorkflowAction::APPROVE);
@@ -106,6 +125,7 @@ class ProgressKaizenWorkflowTest extends TestCase
     {
         [$workflow, $stages, $kaizen, $instance] = $this->setupWorkflowAndInstance(3);
         $actor = User::factory()->create();
+        $this->assignActorToStages($actor, $stages);
 
         $kaizen = $this->action->execute($kaizen, $actor, WorkflowAction::REQUEST_REVISION, 'Need more info');
 
@@ -131,6 +151,7 @@ class ProgressKaizenWorkflowTest extends TestCase
     {
         [$workflow, $stages, $kaizen, $instance] = $this->setupWorkflowAndInstance(3);
         $actor = User::factory()->create();
+        $this->assignActorToStages($actor, $stages);
 
         $this->expectException(ValidationException::class);
         $this->action->execute($kaizen, $actor, WorkflowAction::REQUEST_REVISION, '   ');
@@ -140,6 +161,7 @@ class ProgressKaizenWorkflowTest extends TestCase
     {
         [$workflow, $stages, $kaizen, $instance] = $this->setupWorkflowAndInstance(3);
         $actor = User::factory()->create();
+        $this->assignActorToStages($actor, $stages);
 
         $kaizen = $this->action->execute($kaizen, $actor, WorkflowAction::REJECT, 'Not feasible');
 
@@ -165,6 +187,7 @@ class ProgressKaizenWorkflowTest extends TestCase
     {
         [$workflow, $stages, $kaizen, $instance] = $this->setupWorkflowAndInstance(3);
         $actor = User::factory()->create();
+        $this->assignActorToStages($actor, $stages);
 
         $this->expectException(ValidationException::class);
         $this->action->execute($kaizen, $actor, WorkflowAction::REJECT, '');
@@ -176,6 +199,7 @@ class ProgressKaizenWorkflowTest extends TestCase
         $stages[0]->update(['is_final' => false]); // Invalid config
 
         $actor = User::factory()->create();
+        $this->assignActorToStages($actor, $stages);
 
         $this->expectException(InvalidApprovalWorkflowConfiguration::class);
         $this->action->execute($kaizen, $actor, WorkflowAction::APPROVE);
@@ -186,6 +210,7 @@ class ProgressKaizenWorkflowTest extends TestCase
         [$workflow, $stages, $kaizen, $instance] = $this->setupWorkflowAndInstance(3);
         $instance->update(['completed_at' => now()]);
         $actor = User::factory()->create();
+        $this->assignActorToStages($actor, $stages);
 
         $this->expectException(\DomainException::class);
         $this->expectExceptionMessage('Workflow instance is already closed.');
@@ -197,6 +222,7 @@ class ProgressKaizenWorkflowTest extends TestCase
         [$workflow, $stages, $kaizen, $instance] = $this->setupWorkflowAndInstance(3);
         $instance->update(['cancelled_at' => now()]);
         $actor = User::factory()->create();
+        $this->assignActorToStages($actor, $stages);
 
         $this->expectException(\DomainException::class);
         $this->expectExceptionMessage('Workflow instance is already closed.');
@@ -209,6 +235,7 @@ class ProgressKaizenWorkflowTest extends TestCase
         $kaizen->status = KaizenStatus::DRAFT;
         $kaizen->save();
         $actor = User::factory()->create();
+        $this->assignActorToStages($actor, $stages);
 
         $this->expectException(\DomainException::class);
         $this->expectExceptionMessage('Kaizen must be in SUBMITTED state to progress workflow.');
@@ -223,6 +250,7 @@ class ProgressKaizenWorkflowTest extends TestCase
 
         $instance->update(['current_stage_id' => $stageB->id]);
         $actor = User::factory()->create();
+        $this->assignActorToStages($actor, $stagesA);
 
         $this->expectException(\DomainException::class);
         $this->expectExceptionMessage('Workflow current stage is corrupted.');
