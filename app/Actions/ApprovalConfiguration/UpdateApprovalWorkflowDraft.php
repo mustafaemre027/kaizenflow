@@ -62,7 +62,6 @@ class UpdateApprovalWorkflowDraft
 
     private function updateStages(ApprovalWorkflow $workflow, array $stages): bool
     {
-        $hasChanges = false;
         $existingStages = ApprovalStage::where('approval_workflow_id', $workflow->id)->orderBy('id', 'asc')->lockForUpdate()->get();
 
         $stageCodes = [];
@@ -70,15 +69,6 @@ class UpdateApprovalWorkflowDraft
         $finalCount = 0;
 
         $newIds = collect($stages)->pluck('id')->filter()->toArray();
-
-        foreach ($existingStages as $existingStage) {
-            if (! in_array($existingStage->id, $newIds)) {
-                if ($existingStage->is_active) {
-                    $existingStage->update(['is_active' => false]);
-                    $hasChanges = true;
-                }
-            }
-        }
 
         foreach ($stages as $stageData) {
             if (in_array($stageData['code'], $stageCodes)) {
@@ -90,56 +80,103 @@ class UpdateApprovalWorkflowDraft
             if ($stageData['is_final'] ?? false) {
                 $finalCount++;
             }
-
             $stageCodes[] = $stageData['code'];
             $stageSequences[] = $stageData['sequence'];
-
-            if (isset($stageData['id'])) {
-                $stage = $existingStages->where('id', $stageData['id'])->first();
-                if ($stage) {
-                    $stageChanges = [];
-                    if ($stage->code !== $stageData['code']) {
-                        $stageChanges['code'] = $stageData['code'];
-                    }
-                    if ($stage->name !== $stageData['name']) {
-                        $stageChanges['name'] = $stageData['name'];
-                    }
-                    if ($stage->description !== ($stageData['description'] ?? null)) {
-                        $stageChanges['description'] = $stageData['description'] ?? null;
-                    }
-                    if ($stage->sequence !== $stageData['sequence']) {
-                        $stageChanges['sequence'] = $stageData['sequence'];
-                    }
-                    if ($stage->is_final !== ($stageData['is_final'] ?? false)) {
-                        $stageChanges['is_final'] = $stageData['is_final'] ?? false;
-                    }
-                    if (! $stage->is_active) {
-                        $stageChanges['is_active'] = true;
-                    }
-
-                    if (! empty($stageChanges)) {
-                        $stage->update($stageChanges);
-                        $hasChanges = true;
-                    }
-                }
-            } else {
-                ApprovalStage::create([
-                    'approval_workflow_id' => $workflow->id,
-                    'code' => $stageData['code'],
-                    'name' => $stageData['name'],
-                    'description' => $stageData['description'] ?? null,
-                    'sequence' => $stageData['sequence'],
-                    'is_final' => $stageData['is_final'] ?? false,
-                    'is_active' => true,
-                ]);
-                $hasChanges = true;
-            }
         }
 
         if ($finalCount > 1) {
             throw new DomainException('Only one final stage is allowed.');
         }
 
-        return $hasChanges;
+        $hasChanges = false;
+        $stageUpdates = [];
+        $stagesToDeactivate = [];
+        $stagesToCreate = [];
+
+        foreach ($existingStages as $existingStage) {
+            if (! in_array($existingStage->id, $newIds)) {
+                if ($existingStage->is_active) {
+                    $stagesToDeactivate[] = $existingStage;
+                    $hasChanges = true;
+                }
+            }
+        }
+
+        foreach ($stages as $stageData) {
+            if (isset($stageData['id'])) {
+                $stage = $existingStages->where('id', $stageData['id'])->first();
+                if ($stage) {
+                    $changes = [];
+                    if ($stage->code !== $stageData['code']) {
+                        $changes['code'] = $stageData['code'];
+                    }
+                    if ($stage->name !== $stageData['name']) {
+                        $changes['name'] = $stageData['name'];
+                    }
+                    if ($stage->description !== ($stageData['description'] ?? null)) {
+                        $changes['description'] = $stageData['description'] ?? null;
+                    }
+                    if ($stage->sequence !== $stageData['sequence']) {
+                        $changes['sequence'] = $stageData['sequence'];
+                    }
+                    if ($stage->is_final !== ($stageData['is_final'] ?? false)) {
+                        $changes['is_final'] = $stageData['is_final'] ?? false;
+                    }
+                    if (! $stage->is_active) {
+                        $changes['is_active'] = true;
+                    }
+
+                    if (! empty($changes)) {
+                        $stageUpdates[$stage->id] = $changes;
+                        $hasChanges = true;
+                    }
+                }
+            } else {
+                $stagesToCreate[] = $stageData;
+                $hasChanges = true;
+            }
+        }
+
+        if (! $hasChanges) {
+            return false;
+        }
+
+        // Shift all existing stages to a temporary sequence to avoid unique constraint collisions
+        $tempOffset = 100000;
+        foreach ($existingStages as $stage) {
+            $stage->sequence = $tempOffset + $stage->id;
+            $stage->save();
+        }
+
+        // Apply real updates deterministically
+        foreach ($stagesToDeactivate as $stage) {
+            // Leave sequence as tempOffset + id to avoid collisions with active stages
+            $stage->is_active = false;
+            $stage->save();
+        }
+
+        foreach ($existingStages as $stage) {
+            if (in_array($stage->id, $newIds)) {
+                $finalSeq = collect($stages)->firstWhere('id', $stage->id)['sequence'];
+                $updates = $stageUpdates[$stage->id] ?? [];
+                $updates['sequence'] = $finalSeq;
+                $stage->forceFill($updates);
+                $stage->save();
+            }
+        }
+
+        foreach ($stagesToCreate as $stageData) {
+            ApprovalStage::create([
+                'approval_workflow_id' => $workflow->id,
+                'code' => $stageData['code'],
+                'name' => $stageData['name'],
+                'description' => $stageData['description'] ?? null,
+                'sequence' => $stageData['sequence'],
+                'is_final' => $stageData['is_final'] ?? false,
+                'is_active' => true,
+            ]);
+        }
+
+        return true;
     }
 }
