@@ -186,3 +186,5 @@ Blok 4 hedefleri doðrultusunda;
 - ApprovalConfigurationController'da içerik anlaþmasýna (JSON / HTML) tam uyumlu, exception maskeleyen, güvenli domain action çaðrýsý uygulanmýþtýr.
 - show.blade.php'de Blade entegrasyonu tamamlanmýþtýr. Çözümleme modlarý (Eski Grup / Dinamik Kural) ve draft aþamasýndaki kural düzenleme formlarý (PATCH method, CSRF, enum valuelarý) DOM testleriyle (N+1 engellenerek) doðrulanmýþtýr.
 - MySQL ve SQLite motorlarýnda 800+ test baþarýyla 0 hata (GREEN) dönmüþ, kaizenflow_test DB kanýtlanmýþ ve geliþtirme DB dokunulmamýþ durumda kalmýþtýr.
+
+- Pint aracý tarafýndan saptanan import sýrasý ve fully qualified class formatlama bulgularý Blok 4.1.1 kapsamýnda semantik deðiþiklik yaratmadan baþarýyla formatlanarak kapatýlmýþtýr.
