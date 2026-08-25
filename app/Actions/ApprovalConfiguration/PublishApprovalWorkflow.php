@@ -62,6 +62,21 @@ class PublishApprovalWorkflow
             if (! $stages->last()->is_final) {
                 throw new DomainException('The final stage must be the last stage in sequence.');
             }
+            
+            if ($workflow->approver_resolution_mode === \App\Enums\ApproverResolutionMode::CAPABILITY_RULE) {
+                foreach ($stages as $stage) {
+                    $rule = $stage->approverRule;
+                    if (! $rule || ! $rule->is_active) {
+                        throw new DomainException("Stage '{$stage->name}' does not have a valid active capability rule.");
+                    }
+                    if (
+                        ($rule->capability->scope() === \App\Enums\CapabilityScope::SYSTEM && $rule->scope_source !== \App\Enums\ApprovalApproverScopeSource::SYSTEM) ||
+                        ($rule->capability->scope() === \App\Enums\CapabilityScope::DEPARTMENT && $rule->scope_source !== \App\Enums\ApprovalApproverScopeSource::KAIZEN_DEPARTMENT)
+                    ) {
+                        throw new DomainException("Stage '{$stage->name}' has an invalid capability/scope mapping.");
+                    }
+                }
+            }
 
             $oldIsActive = $workflow->is_active;
 

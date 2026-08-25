@@ -37,6 +37,7 @@ class CreateApprovalWorkflowDraft
                 'is_active' => false,
                 'is_default' => false,
                 'published_at' => null,
+                'approver_resolution_mode' => \App\Enums\ApproverResolutionMode::CAPABILITY_RULE,
             ]);
 
             $this->validateAndCreateStages($workflow, $stages);
