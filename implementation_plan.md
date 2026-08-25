@@ -133,3 +133,13 @@ Bütün HTTP Mutation geliştirme fazı adli testlerle doğrulanmış ve kalite 
 - **Strict Authorization ve Lifecycle Testleri:** `ApprovalConfigurationUiTest` ile tam kapsayıcı TDD (19 adet GREEN test, 67 assertion) gerçekleştirildi. Guest, view-only, passive user, yetkisiz payload, IDOR sıralaması ve no-op (idempotent) mutasyon davranışları uçtan uca kanıtlandı.
 - **Veritabanı Değişmezliği:** Dev DB (kaizenflow) üzerinde manuel mutasyon / UI fixture testleri yürütülmedi ve Blok başı ile sonu fingerprint 0 byte diff ile korundu.
 - **Kalite Kapıları:** SQLite (742 passed) ve MySQL (742 passed, 2139 assertions) regresyonları test suite üzerinden hiçbir fire verilmeden tamamlandı.
+
+
+## Block 9 UI QA Acceptance
+- Approval Configuration UI fully validated via comprehensive HTTP tests (	ests/Feature/ApprovalConfigurationUiTest.php).
+- Verified IDOR constraints, capabilities (view/manage), Guest redirection, and Role-bypass blocks.
+- Validated HTML forms against DOM injection & XSS across all mutation points.
+- Full functional flows (Create, Update, Publish, Default, Deactivate) successfully tested in test runtime (kaizenflow_test).
+- Verified Responsive/Accessibility limits without Dev DB modification.
+- Full test suite, Pint, Build, and Migration status PASS.
+
