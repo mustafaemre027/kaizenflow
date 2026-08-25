@@ -105,7 +105,7 @@ class ApprovalConfigurationMutationTest extends TestCase
         $this->assertNotNull($audit);
     }
 
-    public function test_update_draft_workflow_stage_reorder_constraint_collision()
+    public function test_it_reorders_draft_workflow_stages_without_unique_constraint_collision()
     {
         $workflow = ApprovalWorkflow::factory()->create(['code' => 'REORDER_TEST', 'version' => 1, 'published_at' => null, 'is_active' => false]);
         $stage1 = ApprovalStage::factory()->create(['approval_workflow_id' => $workflow->id, 'code' => 'DEPT', 'name' => 'DEPARTMENT_REVIEW', 'sequence' => 1]);
@@ -114,15 +114,16 @@ class ApprovalConfigurationMutationTest extends TestCase
 
         $action = $this->app->make(UpdateApprovalWorkflowDraft::class);
 
-        // Expect constraint violation because stage2 (sequence 2) moves to sequence 1
-        // which collides with existing stage1 (sequence 1) before stage1 is deleted or moved
-        $this->expectException(\Illuminate\Database\QueryException::class);
-
         $action->execute($this->authorizedUser, $workflow, 'Updated Workflow', 'Desc', [
             ['id' => $stage2->id, 'code' => 'OPEX', 'name' => 'OPEX_REVIEW', 'sequence' => 1, 'is_final' => false],
             ['code' => 'MGR', 'name' => 'MANAGER_APPROVAL', 'sequence' => 2, 'is_final' => false],
             ['id' => $stage3->id, 'code' => 'BRD', 'name' => 'BOARD_APPROVAL', 'sequence' => 3, 'is_final' => true],
         ]);
+
+        $this->assertDatabaseHas('approval_stages', ['id' => $stage2->id, 'sequence' => 1, 'is_active' => true]);
+        $this->assertDatabaseHas('approval_stages', ['code' => 'MGR', 'sequence' => 2, 'is_active' => true]);
+        $this->assertDatabaseHas('approval_stages', ['id' => $stage3->id, 'sequence' => 3, 'code' => 'BRD', 'is_final' => true, 'is_active' => true]);
+        $this->assertDatabaseHas('approval_stages', ['id' => $stage1->id, 'is_active' => false]);
     }
 
     public function test_update_published_workflow_fails()
