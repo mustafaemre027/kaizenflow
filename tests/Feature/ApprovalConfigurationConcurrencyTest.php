@@ -30,7 +30,7 @@ class ApprovalConfigurationConcurrencyTest extends TestCase
 
     protected function tearDown(): void
     {
-        if (env('DB_CONNECTION') !== 'mysql') {
+        if (\config('database.default') !== 'mysql') {
             parent::tearDown();
             return;
         }
