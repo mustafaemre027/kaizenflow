@@ -32,7 +32,7 @@ class BootstrapSystemCapabilitiesTest extends TestCase
         $this->action->execute($target);
 
         $grants = UserSystemCapabilityGrant::where('user_id', $target->id)->get();
-        $this->assertCount(5, $grants);
+        $this->assertCount(7, $grants);
 
         $capabilities = $grants->pluck('capability')->all();
         $this->assertContains(UserCapability::AUTHORIZATION_MANAGE, $capabilities);
@@ -40,6 +40,8 @@ class BootstrapSystemCapabilitiesTest extends TestCase
         $this->assertContains(UserCapability::ORGANIZATION_MANAGE, $capabilities);
         $this->assertContains(UserCapability::APPROVAL_CONFIGURATION_VIEW, $capabilities);
         $this->assertContains(UserCapability::APPROVAL_CONFIGURATION_MANAGE, $capabilities);
+        $this->assertContains(UserCapability::KAIZEN_OPEX_REVIEW, $capabilities);
+        $this->assertContains(UserCapability::KAIZEN_BOARD_APPROVE, $capabilities);
 
         foreach ($grants as $grant) {
             $this->assertTrue($grant->is_active);
@@ -56,8 +58,8 @@ class BootstrapSystemCapabilitiesTest extends TestCase
         $this->assertEquals('system', $audit->metadata['scope']);
         $this->assertEquals('artisan', $audit->metadata['source']);
         $this->assertEquals('capability:bootstrap-admin', $audit->metadata['command']);
-        $this->assertCount(5, $audit->metadata['capabilities']);
-        $this->assertEquals(5, $audit->metadata['created_count']);
+        $this->assertCount(7, $audit->metadata['capabilities']);
+        $this->assertEquals(7, $audit->metadata['created_count']);
         $this->assertEquals(0, $audit->metadata['reactivated_count']);
         $this->assertEquals(0, $audit->metadata['unchanged_count']);
     }
@@ -93,10 +95,10 @@ class BootstrapSystemCapabilitiesTest extends TestCase
         $this->action->execute($target);
 
         $grants = UserSystemCapabilityGrant::where('user_id', $target->id)->where('is_active', true)->get();
-        $this->assertCount(5, $grants);
+        $this->assertCount(7, $grants);
 
         $audit = AuditLog::latest('id')->first();
-        $this->assertEquals(3, $audit->metadata['created_count']);
+        $this->assertEquals(5, $audit->metadata['created_count']);
         $this->assertEquals(1, $audit->metadata['reactivated_count']);
         $this->assertEquals(1, $audit->metadata['unchanged_count']);
     }
