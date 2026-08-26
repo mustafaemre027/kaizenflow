@@ -63,13 +63,7 @@ class KaizenImplementationWorkQueueHttpTest extends TestCase
 
     public function test_admin_cannot_bypass_self_only_boundary(): void
     {
-        $admin = User::factory()->create(['is_active' => true]);
-        DB::table('user_system_capability_grants')->insert([
-            'user_id' => $admin->id,
-            'capability' => 'SYSTEM_ADMIN',
-            'created_at' => now(),
-            'updated_at' => now()
-        ]);
+        $admin = User::factory()->create(['is_active' => true, 'role' => \App\Enums\UserRole::ADMIN]);
 
         $otherUser = User::factory()->create(['is_active' => true]);
         $otherKaizen = Kaizen::factory()->create([
@@ -253,6 +247,9 @@ class KaizenImplementationWorkQueueHttpTest extends TestCase
         
         // 1 query for kaizens, 1 for creators, 1 for assigned, 1 for categories, 1 for departments = ~5 queries
         // Make sure it's strictly less than 10 (since N=10)
+        if (count($queries) >= 10) {
+            dd($queries);
+        }
         $this->assertTrue(count($queries) < 10, 'N+1 detected in HTTP endpoint.');
     }
 
@@ -300,6 +297,7 @@ class KaizenImplementationWorkQueueHttpTest extends TestCase
         $kaizen = Kaizen::factory()->create([
             'assigned_user_id' => $user->id,
             'status' => KaizenStatus::IN_PROGRESS,
+            'target_date' => now()->addDays(5)->format('Y-m-d'),
         ]);
 
         $response = $this->actingAs($user)->get($this->route)->assertOk();
