@@ -7,15 +7,22 @@ use App\Http\Controllers\KaizenApprovalActionController;
 use App\Http\Controllers\KaizenAttachmentController;
 use App\Http\Controllers\KaizenController;
 use App\Http\Controllers\KaizenImplementationController;
+use App\Http\Controllers\Kaizens\KaizenImplementationWorkQueueController;
 use App\Http\Controllers\Settings\ApprovalConfigurationController;
 use App\Http\Controllers\Settings\CategoryController;
 use App\Http\Controllers\Settings\DepartmentController;
 use App\Http\Controllers\Settings\ReferenceDataController;
+use App\Queries\KaizenImplementationWorkQueueSummaryQuery;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::get('/', function (KaizenImplementationWorkQueueSummaryQuery $query) {
+    if (auth()->check() && ! auth()->user()->is_active) {
+        abort(403);
+    }
+    $workQueueSummary = auth()->check() ? $query->execute(auth()->user()) : null;
+
+    return view('welcome', compact('workQueueSummary'));
+})->name('home');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'create'])->name('login');
@@ -27,6 +34,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/kaizens', [KaizenController::class, 'index'])->name('kaizens.index');
     Route::get('/approvals', [ApprovalController::class, 'index'])->name('approvals.index');
     Route::get('/history', [HistoryController::class, 'index'])->name('history.index');
+    Route::get('/implementation/work-queue', [KaizenImplementationWorkQueueController::class, 'index'])->name('implementation.work-queue.index');
 
     // Implementation Execution Routes
     Route::post('/kaizens/{kaizen}/implementation/assign', [KaizenImplementationController::class, 'assign'])->name('kaizens.implementation.assign');
