@@ -1,70 +1,95 @@
-# Implementation Plan - Kaizen Work Queue Query
+# Active Session Security & Password Reset Implementation Plan
 
-## Results
+Bu plan Epic #6 (Milestone 4) kapsamında Issue #37 için güvenlik ve şifre sıfırlama (OTP) özelliklerinin TDD prensipleriyle (RED -> GREEN) uygulanmasını açıklar.
 
-* **Issue/Branch:** `#35` - `feature/35-kaizen-work-queue-overdue`
-* **Overdue Sözleşmesi:** Hedef tarihi (target_date) dolu olan, terminal olmayan (IN_PROGRESS veya APPROVED durumundaki) kayıtlar, uygulama saat dilimine (timezone) göre bugünün başlangıcından daha eskiyse dinamik olarak gecikmiş (is_overdue=1) sayılır.
-* **Work Queue Sınırı:** Kullanıcı yalnız `assigned_user_id` kendisine eşit olan kayıtları görebilir.
-* **Role Bypass Reddi:** ADMIN veya OPEX_SPECIALIST gibi yüksek yetkili roller, ataması kendilerine ait değilse kayıtları bu kuyrukta göremez.
-* **Timezone Sınırı:** Laravel'in `now()->startOfDay()` fonksiyonu ile gece yarısı sınırları deterministik olarak test edildi. Dün gecikmiş sayılırken, bugün gecikmiş sayılmaz.
-* **Query Sıralaması:** Sırasıyla `is_overdue DESC`, `target_date IS NULL ASC`, `target_date ASC` ve `id ASC` deterministik kuralları uygulandı.
-* **Index Kararı (Blok 2.2 Benchmark):** MySQL 8.0 `EXPLAIN ANALYZE` ile 20.000 atanmış kayıtta yapılan testlerde, aday composite index'lerin (`assigned_user_id, status, target_date` ve `assigned_user_id, target_date, status`) dinamik sıralama (`Using filesort`) sorununu aşamadığı, satır tarama (rows examined) sayısını azaltmak yerine %40 artırdığı (1441 -> 2000) ve milisaniyelik önemsiz farklar yarattığı kanıtlanmıştır. Mevcut `kaizens_assigned_user_id_status_index` en verimli plandır. Medium teknik borç, gereksiz index mutation reddedilerek (Senaryo B) kapatılmıştır.
-* **SQLite/MySQL Metrikleri:** Tüm TDD testleri (pagination N+1 count eşitlemesi dâhil) hem SQLite (9/9 pass) hem MySQL (9/9 pass) üzerinde eşdeğer davranış gösterdi. Null sorting MySQL ve SQLite için raw expression ile tek tipte tutuldu.
-* **DB İzolasyonu:** Dev veritabanı (%100 aynı), Test veritabanı (regression sonrası izole çalışıp kapandı) ve QA veritabanı (boş) mutasyona uğramadı.
-* **Adli Kabul (Blok 2.1):** Tüm kod ve test sınırları doğrulandı. Önceki rapordaki "19 RED test case" ifadesinin aslında "39 assertion içeren 9 test metodu" anlamına geldiği; "416 SQLite suite" ifadesinin `--filter Kaizen` nedeniyle oluştuğu ve asıl tam süitin MySQL gibi tam 826 testten (812 passed, 14 skipped) oluştuğu kanıtlandı. STYLE commit'in N+1 test düzeltmelerini barındırdığı doğrulandı. "Procedural deviation" dışında koda müdahale gerekmediği için kabul kararı verilmiştir.
+## User Review Required
 
-GÜN 15 BLOK 2 KABUL EDİLEBİLİR — KİŞİSEL KAIZEN UYGULAMA İŞ KUYRUĞU VE DİNAMİK GECİKME TESPİTİ SELF-ONLY GÖRÜNÜRLÜK, TIMEZONE SINIRI VE SQLITE/MYSQL EŞDEĞERLİĞİYLE TDD OLARAK TAMAMLANDI
+> [!IMPORTANT]
+> - Plan doğrultusunda öncelikle **testler** yazılacak (RED commit), sonrasında minimum implementasyon ile GREEN state'e ulaşılacaktır.
+> - Bu blokta Mailpit/gerçek SMTP ve Browser QA adımları koşulmayacak; e-posta doğrulama için `Mail::fake()` kullanılacaktır.
 
-## Blok 3 Sonuçları (UI/HTTP Entegrasyonu)
+## Proposed Changes
 
-- **Arayüz:** `/implementation/work-queue` route'u ile kişisel Kaizen iş kuyruğu sayfası `work_queue.blade.php` üzerinden sunuldu.
-- **Fail-Closed Güvenliği:** Inactive kullanıcılar Eloquent sorgusu yerine Controller seviyesinde 403 ile engellendi.
-- **Yetki Sınırı:** ADMIN rolü bypassı engellendi, "Self-only" kuralı testlerle kanıtlandı. Sadece login olan kullanıcının üstüne atanmış (assigned_user_id) kayıtlar görüntülenir.
-- **Dinamik UI:** Gecikmiş (kırmızı uyarı), bugün (sarı) ve ileriki/boş tarih durumları responsive yapıda HTML DOM testleriyle doğrulandı.
-- **Performans:** Eager-loading (N+1 engeli) kontrolü doğrulandı (MySQL DB üzerinde de limit aşımları yaşanmadı).
-- **Zararlı Veri Koruması:** Title alanlarındaki `<script>` verileri `{{ }}` ile kaçışlanarak XSS'e karşı korundu. Empty state arayüzü eklendi.
-- **Test ve CI/CD Kalitesi:** Hem SQLite (19 test) hem de MySQL test takımları tam başarı (0 failure, 0 skipped, 80 assertion) ile geçti. Pint ile formatlandı ve regresyon testi 845 test / 2405 assertion sorunsuz tamamlandı. 
+### 1. Active Session Security (Middleware & Authentication)
 
-GÜN 15 BLOK 3 KABUL EDİLEBİLİR — KİŞİSEL UYGULAMA İŞ KUYRUĞU SELF-ONLY HTTP SINIRI, RESPONSIVE BLADE ARAYÜZÜ, GECİKME GÖSTERİMİ VE SQLITE/MYSQL REGRESYONLARIYLA TAMAMLANDI
+Kullanıcı `is_active = false` durumuna geçtiğinde oturumunun fail-closed olarak sonlandırılmasını sağlayacağız.
 
-## Blok 4 Sonuçları (Kişisel İş Kuyruğu Dashboard Özet)
+#### [NEW] `app/Http/Middleware/ActiveUserMiddleware.php`
+- `active-user` alias'ı ile `bootstrap/app.php` içinde tanıtılacak.
+- Aktif oturum varsa ve kullanıcı pasifse:
+  - `Auth::logout()`
+  - `request()->session()->invalidate()`
+  - `request()->session()->regenerateToken()`
+- Gelen istek `expectsJson()` ise: `403 Forbidden` (`{"message": "Your account is inactive."}`) döndürülecek.
+- İstek HTML ise: `redirect()->route('login')->withErrors(['email' => 'Your account is inactive.'])` ile geri dönülecek.
 
-- **Sorgu Optimizasyonu:** `KaizenImplementationWorkQueueSummaryQuery` kullanılarak veritabanına tekil ve verimli bir aggregate sorgu (3 metrik aynı selectRaw içinde) yapıldı. Kayıt sayısına göre artmayan lineer bir count testi (`test_single_aggregate_query_performance`) ile N+1 ihtimali ortadan kaldırıldı.
-- **Fail-Closed Koruması:** `welcome.blade.php` ve `routes/web.php` route katmanında pasif (is_active=false) kullanıcılar için fail-closed 403 mekanizması devrede bırakıldı, ancak misafir erişimi (guest) korundu.
-- **Güvenlik & İzolasyon:** ADMIN bypass, farklı bir user_id enjeksiyonu engellendi. COMPLETED ve REJECTED (terminal) durumlar istatistik dışı tutuldu.
-- **Tarih Metrikleri:** SQLite ve MySQL arası farklı veri formatlarından korunmak için `LIKE` eşleşmesi ile date formatında deterministik çözüm üretildi.
-- **Arayüz Tasarımı:** Blade template üzerinde "Aktif Görev", "Gecikmiş", "Bugün" sayılarını gösteren, responsive tasarımlı (`d-flex`, `card`, `col-12 col-md-4`) bir özet paneli eklendi ve TDD prensipleriyle (RED, GREEN, STYLE, DOCS) commit edildi.
+#### [MODIFY] `routes/web.php`
+- `Route::middleware(['auth'])` grubu `Route::middleware(['auth', 'active-user'])` olarak güncellenecek.
+- Mevcut `Route::get('/')` (home) içindeki manuel `is_active` kontrolü de kaldırılarak veya aynı middleware grubuna alınarak DRY sağlanacak.
 
-GÜN 15 BLOK 4 KABUL EDİLEBİLİR — KİŞİSEL İŞ KUYRUĞU DASHBOARD ÖZETİ, TEKİL AGGREGATE SORGUSU, FAIL-CLOSED ROTASI VE TDD ZİNCİRİYLE TAMAMLANDI
+### 2. Forgot Password / Password Reset (Laravel Password Broker)
 
-## Blok 4.1.1 Sonuçları (Dashboard HTML/Güvenlik Test Kapsamı Kapanışı)
+Laravel'in dâhili `PasswordBroker` altyapısı kullanılarak şifre sıfırlama süreçleri eklenecektir.
 
-- **Test Stratejisi (Scenario B):** Daha önceki eksik DOM `col-12` testleri RED olarak güvenceye alınmış (`be33cf2`), `col-4` sınıfı `col-12 col-md-4` yapısı ile Blade template'inde değiştirilip GREEN edilmiş (`82787f5`) ve Pint formatlanmıştır.
-- **Actor/User Injection Reddi:** Dashboard endpoint'ine querystring üzerinden manipülatif parametre (assigned_user_id vb.) yollanması test edilmiş ve aktif authenticated kullanıcının verisinin DOM'a sızmadığı kanıtlanmıştır.
-- **XSS Güvenliği:** Render edilen HTML çıktısına payload enjekte edilmiş (`<script>alert("dashboard-xss")</script>`) ve ham script taglerinin DOM üzerinde sızmadığı doğrulanmıştır.
-- **Erişilebilirlik ve DOM Sözleşmesi:** Tek `<h1` kuralı, rotası `route('implementation.work-queue.index')` olan okunabilir `Uygulama İşlerim` butonu ve Bootstrap'ın native responsive (`col-12 col-md-4`) grid davranışları spesifik test metotları ile koruma altına alınmıştır.
+#### [MODIFY] `routes/web.php`
+- `guest` grubuna eklenecek rotalar:
+  - `GET /forgot-password` (password.request)
+  - `POST /forgot-password` (password.email)
+  - `GET /reset-password/{token}` (password.reset)
+  - `POST /reset-password` (password.update)
 
-GÜN 15 BLOK 4.1.1 KABUL EDİLEBİLİR — DASHBOARD ACTOR-INJECTION, XSS, ERİŞİLEBİLİR HTML VE RESPONSIVE DOM SÖZLEŞMELERİ KALICI TESTLERLE KAPATILDI
+#### [NEW] `app/Http/Controllers/Auth/PasswordResetLinkController.php`
+- "Şifremi Unuttum" isteğini karşılayacak.
+- Verilen e-postaya göre `Password::broker()->sendResetLink(...)` çağrılacak.
+- IP ve E-posta bazlı `RateLimiter` eklenecek, e-posta adresi loglarda/limiter anahtarlarında açık metin olarak sızdırılmayacak (hashlenerek tutulacak).
+- Dönen sonuç her zaman aynı, nötr cevap olacak (Kullanıcı enumeration engelleme). Pasif kullanıcılara mail gitmeyecek.
 
-## Gün 15 / Blok 5.1 - Manuel QA Kabulü ve Onarımı
+#### [NEW] `app/Http/Controllers/Auth/NewPasswordController.php`
+- Yeni parola formunu (token ile) karşılayacak.
+- Girdi doğrulamaları (Form Request) kullanılacak.
+- Başarılı sıfırlamada `Hash::make()` uygulanacak, `Auth::logoutOtherDevices($password)` kullanılarak önceki oturumlar geçersiz kılınacak (veya framework standartlarına göre session invalidation).
+- `remember_token` güncellenecek.
 
-### QA Sonuçları (Gerçek Tarayıcı)
-Kişisel uygulama iş kuyruğu dashboard modülü `kaizenflow_qa` ortamında başarıyla doğrulanmıştır:
-- `worker@test.com` için beklenen tüm sayısal değerler doğru hesaplanmıştır (Aktif: 4, Gecikmiş: 1, Bugün: 1).
-- Kuyruk sıralaması, gecikmiş hedefler önde olacak şekilde doğru çalışmaktadır.
-- Tamamlanan, reddedilen ve diğer kullanıcılara ait görevler (Other User Secret Task) kati surette gizlenmiştir (Self-Only Security).
-- `admincanary@test.com` dashboard sayıları 0/0/0 olarak doğrulanmıştır (Admin rolü ile bypass yapılmamıştır).
-- Tablet ve mobil (360/768px) ekranlarda dashboard responsive kurallarına uymakta ve okunaklılığını korumaktadır.
+#### [NEW] `app/Http/Requests/Auth/NewPasswordRequest.php`
+- `token`, `email`, `password`, `password_confirmation` kuralları eklenecek. Şifre zorluk kuralları dâhil edilecek.
 
-### Kök Neden (Root Cause) Analizi
-**Yanlış Canlı DB:** Blok 5.0.1 - 5.0.2 sırasında tespit edilen login fail-closed hatasının kök nedeni, QA Launcher tarafından oluşturulan `ServeCommand` (php artisan serve) child process'inin Laravel 11 `Dotenv`'in mutable davranışı sebebiyle `kaizenflow` (Dev) veritabanına bağlanmasıdır. Bu sapma, `launcher.php` dosyasının `proc_open` ile child process'e doğrudan injection yapması (Dotenv overriding'in .env.qa bypass'ı ile engellenmesi) suretiyle repository dosyaları (.env vs.) değiştirilmeden düzeltilmiştir.
+#### [MODIFY] `resources/views/auth/login.blade.php`
+- Forma "Şifremi unuttum" bağlantısı eklenecek.
 
-### Dev DB Session Sapması
-Sunucu yanlış veritabanına baktığı süre boyunca, yalnızca oturum açma denemelerine ait session verileri `kaizenflow.sessions` tablosuna yazılmıştır (Temporary session-only drift).
-**DOMAIN DATA IMMUTABLE; TEMPORARY SESSION-ONLY DRIFT DETECTED AND CLEANED.**
-İlgili QA teşebbüslerine ait session'lar, strict IP (127.0.0.1) ve time bounding ile tespit edilmiş ve ana dev DB üzerinden güvenle silinmiştir (Count: 17). Domain data (users/kaizens vs.) bütünüyle immutable kalmıştır.
+#### [NEW] `resources/views/auth/forgot-password.blade.php`
+- E-posta giriş formu (Erişilebilir `label`, tek `h1`, XSS escape).
 
-### Cleanup Durumu
-- Port 8010 listener process (Task-1590 PID) güvenle sonlandırılmıştır.
-- `kaizenflow_qa` veritabanı `migrate:fresh --force` ile sıfırlanmış, exact zeroing doğrulanmıştır (users: 0, kaizens: 0, migrations: 24).
-- Geçici teşhis scriptleri (`qa_repair.php`, debug hookları vs.) diskten temizlenmiştir.
+#### [NEW] `resources/views/auth/reset-password.blade.php`
+- Token, e-posta, yeni şifre ve onay formu.
+
+### 3. TDD ve Security Tests
+
+Testler ilk commit'te "test-only" (RED) olarak eklenecek.
+
+#### [NEW] `tests/Feature/Auth/ActiveSessionSecurityTest.php`
+- Pasif kullanıcının HTML ve JSON isteklerinde engellenmesi, session/CSRF iptali.
+- Guest kullanıcının ve aktif kullanıcının etkilenmemesi.
+- Rate-limit, role bypass denemesi vb. testler.
+
+#### [NEW] `tests/Feature/Auth/PasswordResetTest.php`
+- Reset form erişimi.
+- Kullanıcı enumeration (Bilinmeyen/Pasif/Aktif e-postalara aynı UI yanıtı).
+- Mail fake ile pasif hesaba gönderilmediğinin ve aktif hesaba gönderildiğinin doğrulanması.
+- Rate limiter testi.
+- Hatalı/süresi geçmiş/yeniden kullanılan token reddi.
+- Başarılı sıfırlama sonrası parolanın hashlenmesi ve diğer cihaz/oturumların kapanması.
+
+## Verification Plan
+
+### Automated Tests
+```bash
+php artisan test --database=sqlite
+php artisan test --env=testing # MySQL kaizenflow_test veritabanı (dev/qa db izolasyonu)
+```
+- Testlerin tümünün %100 passing olması beklenecektir.
+
+### Commit Akışı
+1. **RED**: Testlerin yalnız yazılıp commiti.
+2. **GREEN**: Yukarıdaki controller, request, middleware ve view dosyalarının uygulanıp commiti.
+3. **STYLE**: Gerekiyorsa formatlama.
+4. **DOCS**: Bu `implementation_plan.md` dosyasının commitlenmesi.
