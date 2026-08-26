@@ -4,6 +4,7 @@ namespace Tests\Feature\Auth;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Tests\TestCase;
@@ -26,12 +27,12 @@ class PasswordResetSessionInvalidationTest extends TestCase
         ]);
         $response1->assertRedirect('/');
         $this->assertAuthenticatedAs($user);
-        
+
         // Save the current session data (cookie) to simulate another browser
         $sessionCookie = $response1->getCookie(config('session.cookie'));
 
         // Flush test client session to simulate a different device/guest
-        \Illuminate\Support\Facades\Auth::logout();
+        Auth::logout();
         $this->flushSession();
         $this->assertGuest();
 
@@ -45,16 +46,16 @@ class PasswordResetSessionInvalidationTest extends TestCase
         ]);
 
         $response2->assertRedirect('/login');
-        
+
         // Step 3: Try to use the old session cookie from device 1
         // We set the cookie manually on the request
         $response3 = $this->withUnencryptedCookies([
-            config('session.cookie') => $sessionCookie->getValue()
+            config('session.cookie') => $sessionCookie->getValue(),
         ])->get('/kaizens');
 
         // It should redirect to login because AuthenticateSession invalidated it
         $response3->assertRedirect('/login');
-        
+
         // And the user should be a guest now
         $this->assertGuest();
     }

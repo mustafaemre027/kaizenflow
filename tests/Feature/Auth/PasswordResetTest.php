@@ -74,7 +74,7 @@ class PasswordResetTest extends TestCase
 
         // 5 requests allowed per minute for IP + Email combination
         $email = 'test@example.com';
-        
+
         for ($i = 0; $i < 5; $i++) {
             $this->post('/forgot-password', ['email' => $email]);
         }
@@ -82,12 +82,12 @@ class PasswordResetTest extends TestCase
         $response = $this->post('/forgot-password', ['email' => $email]);
 
         $response->assertStatus(429); // Too many requests
-        
+
         // Assert rate limiter key uses hmac-sha256
         $normalizedEmail = strtolower(trim($email));
-        $expectedHash = hash_hmac('sha256', $normalizedEmail . '|' . request()->ip(), config('app.key'));
-        
-        $this->assertTrue(RateLimiter::tooManyAttempts('password-reset-link:' . $expectedHash, 5));
+        $expectedHash = hash_hmac('sha256', $normalizedEmail.'|'.request()->ip(), config('app.key'));
+
+        $this->assertTrue(RateLimiter::tooManyAttempts('password-reset-link:'.$expectedHash, 5));
     }
 
     public function test_reset_password_screen_can_be_rendered(): void
