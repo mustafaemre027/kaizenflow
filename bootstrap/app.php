@@ -1,6 +1,7 @@
 <?php
 
 use App\Exceptions\DomainException;
+use App\Http\Middleware\ActiveUserMiddleware;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -14,7 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
-            'active-user' => \App\Http\Middleware\ActiveUserMiddleware::class,
+            'active-user' => ActiveUserMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Enums\UserRole;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -13,7 +14,7 @@ class ActiveSessionSecurityTest extends TestCase
     public function test_inactive_user_is_redirected_to_login_and_logged_out_on_html_request(): void
     {
         $user = User::factory()->create(['is_active' => false]);
-        
+
         // Authenticate the user and set a session
         $this->actingAs($user);
         session()->put('foo', 'bar');
@@ -23,10 +24,10 @@ class ActiveSessionSecurityTest extends TestCase
 
         $response->assertRedirect('/login');
         $response->assertSessionHasErrors('email');
-        
+
         // Assert session is invalidated (foo is gone)
         $this->assertNull(session('foo'));
-        
+
         // Assert user is logged out
         $this->assertGuest();
     }
@@ -59,9 +60,9 @@ class ActiveSessionSecurityTest extends TestCase
     {
         $user = User::factory()->create([
             'is_active' => false,
-            'role' => \App\Enums\UserRole::ADMIN,
+            'role' => UserRole::ADMIN,
         ]);
-        
+
         $this->actingAs($user);
 
         $response = $this->get('/kaizens');
@@ -78,7 +79,7 @@ class ActiveSessionSecurityTest extends TestCase
         // Logout should still work and redirect to home or login normally, not with the "inactive account" error necessarily, but if it does, it's fine as long as it succeeds to log them out.
         // Actually, if we exclude logout from active-user, it should hit the controller and redirect to '/'.
         $response = $this->post('/logout');
-        
+
         // Default logout redirects to '/'
         $response->assertRedirect('/');
         $this->assertGuest();
