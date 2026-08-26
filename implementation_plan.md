@@ -8,8 +8,9 @@
 * **Role Bypass Reddi:** ADMIN veya OPEX_SPECIALIST gibi yüksek yetkili roller, ataması kendilerine ait değilse kayıtları bu kuyrukta göremez.
 * **Timezone Sınırı:** Laravel'in `now()->startOfDay()` fonksiyonu ile gece yarısı sınırları deterministik olarak test edildi. Dün gecikmiş sayılırken, bugün gecikmiş sayılmaz.
 * **Query Sıralaması:** Sırasıyla `is_overdue DESC`, `target_date IS NULL ASC`, `target_date ASC` ve `id ASC` deterministik kuralları uygulandı.
-* **Index Kararı:** İlgili tabloda halihazırda yeterli izolasyon sağlandığı ve gereksiz mutation'dan kaçınılması gerektiği için yeni migration/index eklenmedi.
+* **Index Kararı:** İlgili tabloda halihazırda yeterli izolasyon sağlandığı ve gereksiz mutation'dan kaçınılması gerektiği için yeni migration/index eklenmedi. (Medium Teknik Borç: İleride `(assigned_user_id, status, target_date)` composite index eklenebilir).
 * **SQLite/MySQL Metrikleri:** Tüm TDD testleri (pagination N+1 count eşitlemesi dâhil) hem SQLite (9/9 pass) hem MySQL (9/9 pass) üzerinde eşdeğer davranış gösterdi. Null sorting MySQL ve SQLite için raw expression ile tek tipte tutuldu.
 * **DB İzolasyonu:** Dev veritabanı (%100 aynı), Test veritabanı (regression sonrası izole çalışıp kapandı) ve QA veritabanı (boş) mutasyona uğramadı.
+* **Adli Kabul (Blok 2.1):** Tüm kod ve test sınırları doğrulandı. Önceki rapordaki "19 RED test case" ifadesinin aslında "39 assertion içeren 9 test metodu" anlamına geldiği; "416 SQLite suite" ifadesinin `--filter Kaizen` nedeniyle oluştuğu ve asıl tam süitin MySQL gibi tam 826 testten (812 passed, 14 skipped) oluştuğu kanıtlandı. STYLE commit'in N+1 test düzeltmelerini barındırdığı doğrulandı. "Procedural deviation" dışında koda müdahale gerekmediği için kabul kararı verilmiştir.
 
 GÜN 15 BLOK 2 KABUL EDİLEBİLİR — KİŞİSEL KAIZEN UYGULAMA İŞ KUYRUĞU VE DİNAMİK GECİKME TESPİTİ SELF-ONLY GÖRÜNÜRLÜK, TIMEZONE SINIRI VE SQLITE/MYSQL EŞDEĞERLİĞİYLE TDD OLARAK TAMAMLANDI
