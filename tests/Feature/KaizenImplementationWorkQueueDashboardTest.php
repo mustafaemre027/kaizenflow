@@ -154,4 +154,72 @@ class KaizenImplementationWorkQueueDashboardTest extends TestCase
         // We'll assert < 5 to allow for session/user lookup, but ensure it's not O(N)
         $this->assertTrue(count($queries) < 5, 'N+1 or multiple queries detected for dashboard summary.');
     }
+
+    public function test_actor_injection_is_rejected(): void
+    {
+        $user = User::factory()->create(['is_active' => true]);
+        $otherUser = User::factory()->create(['is_active' => true]);
+
+        // other user has 5 active kaizens
+        Kaizen::factory()->count(5)->create([
+            'assigned_user_id' => $otherUser->id,
+            'status' => KaizenStatus::IN_PROGRESS,
+            'target_date' => null,
+        ]);
+
+        // try to inject via query params
+        $response = $this->actingAs($user)->get($this->route . '?user_id=' . $otherUser->id . '&actor_user_id=' . $otherUser->id . '&assigned_user_id=' . $otherUser->id);
+        
+        $response->assertOk();
+        $summary = $response->original->getData()['workQueueSummary'];
+        
+        // Should still be 0 because current user has 0
+        $this->assertEquals(0, $summary['active_count']);
+        // The HTML must not contain the other user's kaizen count
+        $response->assertDontSee('>5<', false);
+    }
+
+    public function test_html_xss_escaping(): void
+    {
+        $user = User::factory()->create(['is_active' => true]);
+        
+        // Test that no kaizen title is leaked in dashboard (especially XSS payload)
+        Kaizen::factory()->create([
+            'assigned_user_id' => $user->id,
+            'status' => KaizenStatus::IN_PROGRESS,
+            'title' => '<script>alert("dashboard-xss")</script>',
+        ]);
+
+        $response = $this->actingAs($user)->get($this->route)->assertOk();
+        
+        // Assert that raw script tag is not present
+        $response->assertDontSee('<script>alert("dashboard-xss")</script>', false);
+    }
+
+    public function test_accessible_h1_and_links(): void
+    {
+        $user = User::factory()->create(['is_active' => true]);
+        $response = $this->actingAs($user)->get($this->route)->assertOk();
+
+        $content = $response->getContent();
+        
+        // Exactly one H1 tag
+        $this->assertEquals(1, substr_count(strtolower($content), '<h1'));
+        
+        // Has accessible Uygulama İşlerim link
+        $expectedUrl = route('implementation.work-queue.index');
+        $response->assertSee('href="' . $expectedUrl . '"', false);
+        $response->assertSee('Uygulama İşlerim');
+    }
+
+    public function test_responsive_dom_classes(): void
+    {
+        $user = User::factory()->create(['is_active' => true]);
+        $response = $this->actingAs($user)->get($this->route)->assertOk();
+
+        // Must use responsive col-12 for mobile and col-md-* for desktop
+        $response->assertSee('col-12 col-md-4', false);
+        // Should not use fixed width hacks
+        $response->assertDontSee('overflow-x: hidden', false);
+    }
 }
