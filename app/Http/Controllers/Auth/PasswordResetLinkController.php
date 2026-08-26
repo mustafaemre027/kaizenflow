@@ -31,8 +31,9 @@ class PasswordResetLinkController extends Controller
             'email' => ['required', 'email'],
         ]);
 
-        $hashedEmail = md5($request->email);
-        $key = 'password-reset-link:'.$hashedEmail.'|'.$request->ip();
+        $normalizedEmail = strtolower(trim($request->email));
+        $hashedEmail = hash_hmac('sha256', $normalizedEmail . '|' . $request->ip(), config('app.key'));
+        $key = 'password-reset-link:' . $hashedEmail;
 
         if (RateLimiter::tooManyAttempts($key, 5)) {
             return response('Too Many Attempts.', 429);
