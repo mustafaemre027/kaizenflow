@@ -22,7 +22,7 @@ class KaizenImplementationWorkQueueSummaryQuery
         $terminalValues = array_map(fn (KaizenStatus $s) => $s->value, $terminalStatuses);
 
         $today = now()->startOfDay()->format('Y-m-d');
-        $todayLike = $today . '%';
+        $todayLike = $today.'%';
 
         $result = Kaizen::query()
             ->where('assigned_user_id', $actor->id)

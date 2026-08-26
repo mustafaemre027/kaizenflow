@@ -67,12 +67,12 @@ class KaizenImplementationWorkQueueDashboardTest extends TestCase
         // Today: 1
 
         $response = $this->actingAs($user)->get($this->route)->assertOk();
-        
+
         $response->assertSee('Uygulama İşlerim');
-        
+
         // Use exact view data boundaries
         $response->assertViewHas('workQueueSummary');
-        
+
         $summary = $response->original->getData()['workQueueSummary'];
         $this->assertEquals(4, $summary['active_count']);
         $this->assertEquals(1, $summary['overdue_count']);
@@ -91,7 +91,7 @@ class KaizenImplementationWorkQueueDashboardTest extends TestCase
         ]);
 
         $response = $this->actingAs($admin)->get($this->route)->assertOk();
-        
+
         $summary = $response->original->getData()['workQueueSummary'];
         $this->assertEquals(0, $summary['active_count']);
         $this->assertEquals(0, $summary['overdue_count']);
@@ -115,7 +115,7 @@ class KaizenImplementationWorkQueueDashboardTest extends TestCase
         ]);
 
         $response = $this->actingAs($user)->get($this->route)->assertOk();
-        
+
         $summary = $response->original->getData()['workQueueSummary'];
         $this->assertEquals(0, $summary['active_count']);
         $this->assertEquals(0, $summary['overdue_count']);
