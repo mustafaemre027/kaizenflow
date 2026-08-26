@@ -27,7 +27,36 @@
             @endguest
         </div>
 
-        <div class="kf-capability-strip">
+        @auth
+            @if(isset($workQueueSummary))
+            <div class="card mt-4 mb-2 border-0 shadow-sm rounded-4" style="max-width: 500px; background: rgba(255,255,255,0.95); backdrop-filter: blur(10px);">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+                        <h2 class="h5 mb-0 fw-bold text-dark">Uygulama İşlerim</h2>
+                        <a href="{{ route('implementation.work-queue.index') }}" class="btn btn-sm kf-btn-primary">
+                            Tümünü Gör
+                        </a>
+                    </div>
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <div class="display-6 mb-1 fw-bold" style="color: var(--kf-primary);">{{ $workQueueSummary['active_count'] }}</div>
+                            <div class="text-muted small fw-semibold">Aktif Görev</div>
+                        </div>
+                        <div class="col-4 border-start">
+                            <div class="display-6 mb-1 text-danger fw-bold">{{ $workQueueSummary['overdue_count'] }}</div>
+                            <div class="text-muted small fw-semibold">Gecikmiş</div>
+                        </div>
+                        <div class="col-4 border-start">
+                            <div class="display-6 mb-1 text-warning fw-bold">{{ $workQueueSummary['today_count'] }}</div>
+                            <div class="text-muted small fw-semibold">Bugün</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @endif
+        @endauth
+
+        <div class="kf-capability-strip mt-4">
             <div class="kf-capability-item">
                 <h4>Güvenli Erişim</h4>
                 <p>Session tabanlı güvenli kullanıcı girişi ile verilerinizi koruyun.</p>

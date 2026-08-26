@@ -13,10 +13,15 @@ use App\Http\Controllers\Settings\CategoryController;
 use App\Http\Controllers\Settings\DepartmentController;
 use App\Http\Controllers\Settings\ReferenceDataController;
 use Illuminate\Support\Facades\Route;
+use App\Queries\KaizenImplementationWorkQueueSummaryQuery;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::get('/', function (KaizenImplementationWorkQueueSummaryQuery $query) {
+    if (auth()->check() && ! auth()->user()->is_active) {
+        abort(403);
+    }
+    $workQueueSummary = auth()->check() ? $query->execute(auth()->user()) : null;
+    return view('welcome', compact('workQueueSummary'));
+})->name('home');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'create'])->name('login');
