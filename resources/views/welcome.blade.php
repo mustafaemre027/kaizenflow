@@ -38,15 +38,15 @@
                         </a>
                     </div>
                     <div class="row text-center">
-                        <div class="col-4">
+                        <div class="col-12 col-md-4">
                             <div class="display-6 mb-1 fw-bold" style="color: var(--kf-primary);">{{ $workQueueSummary['active_count'] }}</div>
                             <div class="text-muted small fw-semibold">Aktif Görev</div>
                         </div>
-                        <div class="col-4 border-start">
+                        <div class="col-12 col-md-4 border-start border-md-start">
                             <div class="display-6 mb-1 text-danger fw-bold">{{ $workQueueSummary['overdue_count'] }}</div>
                             <div class="text-muted small fw-semibold">Gecikmiş</div>
                         </div>
-                        <div class="col-4 border-start">
+                        <div class="col-12 col-md-4 border-start border-md-start">
                             <div class="display-6 mb-1 text-warning fw-bold">{{ $workQueueSummary['today_count'] }}</div>
                             <div class="text-muted small fw-semibold">Bugün</div>
                         </div>
