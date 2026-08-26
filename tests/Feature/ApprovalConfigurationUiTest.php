@@ -198,7 +198,7 @@ class ApprovalConfigurationUiTest extends TestCase
     {
         $this->actingAs($this->inactiveUser)
             ->get('/settings/approval-configurations/create')
-            ->assertForbidden();
+            ->assertRedirect('/login');
     }
 
     // 7. Route Order / 8. IDOR
