@@ -2,10 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Enums\KaizenStatus;
+use App\Enums\UserRole;
+use App\Models\AuditLog;
 use App\Models\Kaizen;
 use App\Models\User;
-use App\Enums\KaizenStatus;
-use App\Models\AuditLog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
@@ -15,6 +16,7 @@ class KaizenImplementationWorkQueueHttpTest extends TestCase
     use RefreshDatabase;
 
     private string $route = '/implementation/work-queue';
+
     private string $routeName = 'implementation.work-queue.index';
 
     public function test_guest_cannot_access_queue(): void
@@ -29,7 +31,7 @@ class KaizenImplementationWorkQueueHttpTest extends TestCase
         $kaizen = Kaizen::factory()->create([
             'assigned_user_id' => $user->id,
             'status' => KaizenStatus::IN_PROGRESS,
-            'target_date' => now()->addDays(5)->format('Y-m-d')
+            'target_date' => now()->addDays(5)->format('Y-m-d'),
         ]);
 
         $this->actingAs($user)
@@ -63,7 +65,7 @@ class KaizenImplementationWorkQueueHttpTest extends TestCase
 
     public function test_admin_cannot_bypass_self_only_boundary(): void
     {
-        $admin = User::factory()->create(['is_active' => true, 'role' => \App\Enums\UserRole::ADMIN]);
+        $admin = User::factory()->create(['is_active' => true, 'role' => UserRole::ADMIN]);
 
         $otherUser = User::factory()->create(['is_active' => true]);
         $otherKaizen = Kaizen::factory()->create([
@@ -87,7 +89,7 @@ class KaizenImplementationWorkQueueHttpTest extends TestCase
         ]);
 
         $this->actingAs($user)
-            ->get($this->route . '?assigned_user_id=' . $otherUser->id)
+            ->get($this->route.'?assigned_user_id='.$otherUser->id)
             ->assertOk()
             ->assertDontSee($otherKaizen->code);
     }
@@ -164,12 +166,12 @@ class KaizenImplementationWorkQueueHttpTest extends TestCase
     public function test_terminal_records_are_not_visible(): void
     {
         $user = User::factory()->create(['is_active' => true]);
-        
+
         $completed = Kaizen::factory()->create([
             'assigned_user_id' => $user->id,
             'status' => KaizenStatus::COMPLETED,
         ]);
-        
+
         $rejected = Kaizen::factory()->create([
             'assigned_user_id' => $user->id,
             'status' => KaizenStatus::REJECTED,
@@ -185,7 +187,7 @@ class KaizenImplementationWorkQueueHttpTest extends TestCase
     public function test_deterministic_ordering_is_preserved_in_html(): void
     {
         $user = User::factory()->create(['is_active' => true]);
-        
+
         $nullDate = Kaizen::factory()->create(['assigned_user_id' => $user->id, 'status' => KaizenStatus::IN_PROGRESS, 'target_date' => null]);
         $future = Kaizen::factory()->create(['assigned_user_id' => $user->id, 'status' => KaizenStatus::IN_PROGRESS, 'target_date' => now()->addDays(5)->format('Y-m-d')]);
         $overdue1 = Kaizen::factory()->create(['assigned_user_id' => $user->id, 'status' => KaizenStatus::IN_PROGRESS, 'target_date' => now()->subDays(5)->format('Y-m-d')]);
@@ -213,19 +215,19 @@ class KaizenImplementationWorkQueueHttpTest extends TestCase
 
         $response = $this->actingAs($user)->get($this->route)->assertOk();
         $response->assertSee('page=2');
-        
+
         // Find how many codes are in the page
         $kaizens = Kaizen::orderBy('id', 'asc')->get();
-        
-        foreach($kaizens->take(15) as $k) {
+
+        foreach ($kaizens->take(15) as $k) {
             $response->assertSee($k->code);
         }
-        foreach($kaizens->skip(15) as $k) {
+        foreach ($kaizens->skip(15) as $k) {
             $response->assertDontSee($k->code);
         }
 
-        $response2 = $this->actingAs($user)->get($this->route . '?page=2')->assertOk();
-        foreach($kaizens->skip(15) as $k) {
+        $response2 = $this->actingAs($user)->get($this->route.'?page=2')->assertOk();
+        foreach ($kaizens->skip(15) as $k) {
             $response2->assertSee($k->code);
         }
     }
@@ -240,11 +242,11 @@ class KaizenImplementationWorkQueueHttpTest extends TestCase
 
         // Boot and execute query to measure DB interactions
         $this->actingAs($user);
-        
+
         DB::enableQueryLog();
         $this->get($this->route)->assertOk();
         $queries = DB::getQueryLog();
-        
+
         // 1 query for kaizens, 1 for creators, 1 for assigned, 1 for categories, 1 for departments = ~5 queries
         // Make sure it's strictly less than 10 (since N=10)
         if (count($queries) >= 10) {
@@ -276,9 +278,9 @@ class KaizenImplementationWorkQueueHttpTest extends TestCase
         ]);
 
         $auditCountBefore = AuditLog::count();
-        
+
         $this->actingAs($user)->get($this->route)->assertOk();
-        
+
         $this->assertEquals($auditCountBefore, AuditLog::count());
     }
 
@@ -302,10 +304,10 @@ class KaizenImplementationWorkQueueHttpTest extends TestCase
 
         $response = $this->actingAs($user)->get($this->route)->assertOk();
         $html = $response->getContent();
-        
+
         $this->assertEquals(1, substr_count(strtolower($html), '<h1'));
         $this->assertStringContainsString('Uygulama İşlerim', $html);
-        
+
         // Check for time tag with datetime
         $response->assertSee('<time datetime="', false);
     }
@@ -323,7 +325,7 @@ class KaizenImplementationWorkQueueHttpTest extends TestCase
         ]);
 
         $response = $this->actingAs($user)->get($this->route)->assertOk();
-        
+
         $response->assertSee(route('kaizens.show', $visible));
         $response->assertDontSee(route('kaizens.show', $hidden));
     }

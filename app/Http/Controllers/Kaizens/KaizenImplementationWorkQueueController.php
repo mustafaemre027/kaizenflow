@@ -10,8 +10,7 @@ class KaizenImplementationWorkQueueController extends Controller
 {
     public function __construct(
         private readonly KaizenImplementationWorkQueueQuery $query
-    ) {
-    }
+    ) {}
 
     public function index(Request $request)
     {
