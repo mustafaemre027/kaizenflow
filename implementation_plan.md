@@ -45,3 +45,26 @@ GÜN 15 BLOK 4 KABUL EDİLEBİLİR — KİŞİSEL İŞ KUYRUĞU DASHBOARD ÖZET�
 - **Erişilebilirlik ve DOM Sözleşmesi:** Tek `<h1` kuralı, rotası `route('implementation.work-queue.index')` olan okunabilir `Uygulama İşlerim` butonu ve Bootstrap'ın native responsive (`col-12 col-md-4`) grid davranışları spesifik test metotları ile koruma altına alınmıştır.
 
 GÜN 15 BLOK 4.1.1 KABUL EDİLEBİLİR — DASHBOARD ACTOR-INJECTION, XSS, ERİŞİLEBİLİR HTML VE RESPONSIVE DOM SÖZLEŞMELERİ KALICI TESTLERLE KAPATILDI
+
+## Gün 15 / Blok 5.1 - Manuel QA Kabulü ve Onarımı
+
+### QA Sonuçları (Gerçek Tarayıcı)
+Kişisel uygulama iş kuyruğu dashboard modülü `kaizenflow_qa` ortamında başarıyla doğrulanmıştır:
+- `worker@test.com` için beklenen tüm sayısal değerler doğru hesaplanmıştır (Aktif: 4, Gecikmiş: 1, Bugün: 1).
+- Kuyruk sıralaması, gecikmiş hedefler önde olacak şekilde doğru çalışmaktadır.
+- Tamamlanan, reddedilen ve diğer kullanıcılara ait görevler (Other User Secret Task) kati surette gizlenmiştir (Self-Only Security).
+- `admincanary@test.com` dashboard sayıları 0/0/0 olarak doğrulanmıştır (Admin rolü ile bypass yapılmamıştır).
+- Tablet ve mobil (360/768px) ekranlarda dashboard responsive kurallarına uymakta ve okunaklılığını korumaktadır.
+
+### Kök Neden (Root Cause) Analizi
+**Yanlış Canlı DB:** Blok 5.0.1 - 5.0.2 sırasında tespit edilen login fail-closed hatasının kök nedeni, QA Launcher tarafından oluşturulan `ServeCommand` (php artisan serve) child process'inin Laravel 11 `Dotenv`'in mutable davranışı sebebiyle `kaizenflow` (Dev) veritabanına bağlanmasıdır. Bu sapma, `launcher.php` dosyasının `proc_open` ile child process'e doğrudan injection yapması (Dotenv overriding'in .env.qa bypass'ı ile engellenmesi) suretiyle repository dosyaları (.env vs.) değiştirilmeden düzeltilmiştir.
+
+### Dev DB Session Sapması
+Sunucu yanlış veritabanına baktığı süre boyunca, yalnızca oturum açma denemelerine ait session verileri `kaizenflow.sessions` tablosuna yazılmıştır (Temporary session-only drift).
+**DOMAIN DATA IMMUTABLE; TEMPORARY SESSION-ONLY DRIFT DETECTED AND CLEANED.**
+İlgili QA teşebbüslerine ait session'lar, strict IP (127.0.0.1) ve time bounding ile tespit edilmiş ve ana dev DB üzerinden güvenle silinmiştir (Count: 17). Domain data (users/kaizens vs.) bütünüyle immutable kalmıştır.
+
+### Cleanup Durumu
+- Port 8010 listener process (Task-1590 PID) güvenle sonlandırılmıştır.
+- `kaizenflow_qa` veritabanı `migrate:fresh --force` ile sıfırlanmış, exact zeroing doğrulanmıştır (users: 0, kaizens: 0, migrations: 24).
+- Geçici teşhis scriptleri (`qa_repair.php`, debug hookları vs.) diskten temizlenmiştir.
