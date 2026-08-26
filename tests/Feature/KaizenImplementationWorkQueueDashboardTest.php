@@ -168,11 +168,11 @@ class KaizenImplementationWorkQueueDashboardTest extends TestCase
         ]);
 
         // try to inject via query params
-        $response = $this->actingAs($user)->get($this->route . '?user_id=' . $otherUser->id . '&actor_user_id=' . $otherUser->id . '&assigned_user_id=' . $otherUser->id);
-        
+        $response = $this->actingAs($user)->get($this->route.'?user_id='.$otherUser->id.'&actor_user_id='.$otherUser->id.'&assigned_user_id='.$otherUser->id);
+
         $response->assertOk();
         $summary = $response->original->getData()['workQueueSummary'];
-        
+
         // Should still be 0 because current user has 0
         $this->assertEquals(0, $summary['active_count']);
         // The HTML must not contain the other user's kaizen count
@@ -182,7 +182,7 @@ class KaizenImplementationWorkQueueDashboardTest extends TestCase
     public function test_html_xss_escaping(): void
     {
         $user = User::factory()->create(['is_active' => true]);
-        
+
         // Test that no kaizen title is leaked in dashboard (especially XSS payload)
         Kaizen::factory()->create([
             'assigned_user_id' => $user->id,
@@ -191,7 +191,7 @@ class KaizenImplementationWorkQueueDashboardTest extends TestCase
         ]);
 
         $response = $this->actingAs($user)->get($this->route)->assertOk();
-        
+
         // Assert that raw script tag is not present
         $response->assertDontSee('<script>alert("dashboard-xss")</script>', false);
     }
@@ -202,13 +202,13 @@ class KaizenImplementationWorkQueueDashboardTest extends TestCase
         $response = $this->actingAs($user)->get($this->route)->assertOk();
 
         $content = $response->getContent();
-        
+
         // Exactly one H1 tag
         $this->assertEquals(1, substr_count(strtolower($content), '<h1'));
-        
+
         // Has accessible Uygulama İşlerim link
         $expectedUrl = route('implementation.work-queue.index');
-        $response->assertSee('href="' . $expectedUrl . '"', false);
+        $response->assertSee('href="'.$expectedUrl.'"', false);
         $response->assertSee('Uygulama İşlerim');
     }
 
