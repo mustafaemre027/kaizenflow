@@ -17,7 +17,7 @@ use App\Http\Controllers\Settings\ReferenceDataController;
 use App\Queries\KaizenImplementationWorkQueueSummaryQuery;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['active-user'])->get('/', function (KaizenImplementationWorkQueueSummaryQuery $query) {
+Route::middleware(['auth.session', 'active-user'])->get('/', function (KaizenImplementationWorkQueueSummaryQuery $query) {
     $workQueueSummary = auth()->check() ? $query->execute(auth()->user()) : null;
 
     return view('welcome', compact('workQueueSummary'));
@@ -36,7 +36,7 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
 
-    Route::middleware('active-user')->group(function () {
+    Route::middleware(['auth', 'auth.session', 'active-user'])->group(function () {
         Route::get('/kaizens', [KaizenController::class, 'index'])->name('kaizens.index');
         Route::get('/approvals', [ApprovalController::class, 'index'])->name('approvals.index');
         Route::get('/history', [HistoryController::class, 'index'])->name('history.index');

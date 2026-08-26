@@ -70,6 +70,7 @@ class PasswordResetSessionInvalidationTest extends TestCase
 
         // 8. Yeni parola ile girişin başarılı, eski parola ile girişin başarısız olduğunu doğrula.
         \Illuminate\Support\Facades\Auth::logout();
+        session()->flush(); // Clear url.intended
         $this->post('/login', ['email' => $user->email, 'password' => 'old-password'])
             ->assertSessionHasErrors('email');
             
