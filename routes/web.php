@@ -35,8 +35,13 @@ Route::middleware('guest')->group(function () {
 
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
+    Route::middleware(['auth.session', 'active-user'])->group(function () {
+        Route::get('/email/verify', [\App\Http\Controllers\Auth\EmailVerificationController::class, 'show'])->name('verification.notice');
+        Route::post('/email/verify', [\App\Http\Controllers\Auth\EmailVerificationController::class, 'verify'])->name('verification.verify');
+        Route::post('/email/verification-notification', [\App\Http\Controllers\Auth\EmailVerificationController::class, 'resend'])->name('verification.send');
+    });
 
-    Route::middleware(['auth', 'auth.session', 'active-user'])->group(function () {
+    Route::middleware(['auth', 'auth.session', 'active-user', 'email-verified'])->group(function () {
         Route::get('/kaizens', [KaizenController::class, 'index'])->name('kaizens.index');
         Route::get('/approvals', [ApprovalController::class, 'index'])->name('approvals.index');
         Route::get('/history', [HistoryController::class, 'index'])->name('history.index');

@@ -16,8 +16,9 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
-            'active-user' => ActiveUserMiddleware::class,
-            'auth.session' => AuthenticateSession::class,
+            'active-user' => \App\Http\Middleware\ActiveUserMiddleware::class,
+            'auth.session' => \Illuminate\Session\Middleware\AuthenticateSession::class,
+            'email-verified' => \App\Http\Middleware\EnsureEmailIsVerified::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
