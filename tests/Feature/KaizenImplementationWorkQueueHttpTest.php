@@ -45,7 +45,7 @@ class KaizenImplementationWorkQueueHttpTest extends TestCase
     public function test_inactive_user_gets_403_fail_closed(): void
     {
         $user = User::factory()->create(['is_active' => false]);
-        $this->actingAs($user)->get($this->route)->assertForbidden();
+        $this->actingAs($user)->get($this->route)->assertRedirect('/login');
     }
 
     public function test_cannot_see_kaizens_assigned_to_others(): void

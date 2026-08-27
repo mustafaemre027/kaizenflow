@@ -1,7 +1,10 @@
 <?php
 
 use App\Http\Controllers\ApprovalController;
+use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\NewPasswordController;
+use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\HistoryController;
 use App\Http\Controllers\KaizenApprovalActionController;
 use App\Http\Controllers\KaizenAttachmentController;
@@ -15,10 +18,7 @@ use App\Http\Controllers\Settings\ReferenceDataController;
 use App\Queries\KaizenImplementationWorkQueueSummaryQuery;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function (KaizenImplementationWorkQueueSummaryQuery $query) {
-    if (auth()->check() && ! auth()->user()->is_active) {
-        abort(403);
-    }
+Route::middleware(['auth.session', 'active-user'])->get('/', function (KaizenImplementationWorkQueueSummaryQuery $query) {
     $workQueueSummary = auth()->check() ? $query->execute(auth()->user()) : null;
 
     return view('welcome', compact('workQueueSummary'));
@@ -27,57 +27,70 @@ Route::get('/', function (KaizenImplementationWorkQueueSummaryQuery $query) {
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'create'])->name('login');
     Route::post('/login', [LoginController::class, 'store'])->name('login.store');
+
+    Route::get('/forgot-password', [PasswordResetLinkController::class, 'create'])->name('password.request');
+    Route::post('/forgot-password', [PasswordResetLinkController::class, 'store'])->name('password.email');
+    Route::get('/reset-password/{token}', [NewPasswordController::class, 'create'])->name('password.reset');
+    Route::post('/reset-password', [NewPasswordController::class, 'store'])->name('password.update');
 });
 
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
-    Route::get('/kaizens', [KaizenController::class, 'index'])->name('kaizens.index');
-    Route::get('/approvals', [ApprovalController::class, 'index'])->name('approvals.index');
-    Route::get('/history', [HistoryController::class, 'index'])->name('history.index');
-    Route::get('/implementation/work-queue', [KaizenImplementationWorkQueueController::class, 'index'])->name('implementation.work-queue.index');
+    Route::middleware(['auth.session', 'active-user'])->group(function () {
+        Route::get('/email/verify', [EmailVerificationController::class, 'show'])->name('verification.notice');
+        Route::post('/email/verify', [EmailVerificationController::class, 'verify'])->name('verification.verify');
+        Route::post('/email/verification-notification', [EmailVerificationController::class, 'resend'])->name('verification.send');
+    });
 
-    // Implementation Execution Routes
-    Route::post('/kaizens/{kaizen}/implementation/assign', [KaizenImplementationController::class, 'assign'])->name('kaizens.implementation.assign');
-    Route::post('/kaizens/{kaizen}/implementation/start', [KaizenImplementationController::class, 'start'])->name('kaizens.implementation.start');
-    Route::post('/kaizens/{kaizen}/implementation/complete', [KaizenImplementationController::class, 'complete'])->name('kaizens.implementation.complete');
+    Route::middleware(['auth', 'auth.session', 'active-user', 'email-verified'])->group(function () {
+        Route::get('/kaizens', [KaizenController::class, 'index'])->name('kaizens.index');
+        Route::get('/approvals', [ApprovalController::class, 'index'])->name('approvals.index');
+        Route::get('/history', [HistoryController::class, 'index'])->name('history.index');
+        Route::get('/implementation/work-queue', [KaizenImplementationWorkQueueController::class, 'index'])->name('implementation.work-queue.index');
 
-    Route::get('/kaizens/create', [KaizenController::class, 'create'])->name('kaizens.create');
-    Route::get('/kaizens/{kaizen}/edit', [KaizenController::class, 'edit'])->name('kaizens.edit');
-    Route::get('/kaizens/{kaizen}', [KaizenController::class, 'show'])->name('kaizens.show');
-    Route::post('/kaizens', [KaizenController::class, 'store'])->name('kaizens.store');
-    Route::patch('/kaizens/{kaizen}', [KaizenController::class, 'update'])->name('kaizens.update');
-    Route::post('/kaizens/{kaizen}/submit', [KaizenController::class, 'submit'])->name('kaizens.submit');
-    Route::post('/kaizens/{kaizen}/workflow/approve', [KaizenApprovalActionController::class, 'approve'])->name('kaizens.workflow.approve');
-    Route::post('/kaizens/{kaizen}/workflow/request-revision', [KaizenApprovalActionController::class, 'requestRevision'])->name('kaizens.workflow.request-revision');
-    Route::post('/kaizens/{kaizen}/workflow/reject', [KaizenApprovalActionController::class, 'reject'])->name('kaizens.workflow.reject');
+        // Implementation Execution Routes
+        Route::post('/kaizens/{kaizen}/implementation/assign', [KaizenImplementationController::class, 'assign'])->name('kaizens.implementation.assign');
+        Route::post('/kaizens/{kaizen}/implementation/start', [KaizenImplementationController::class, 'start'])->name('kaizens.implementation.start');
+        Route::post('/kaizens/{kaizen}/implementation/complete', [KaizenImplementationController::class, 'complete'])->name('kaizens.implementation.complete');
 
-    Route::get('/kaizens/{kaizen}/attachments/{attachment}', [KaizenAttachmentController::class, 'show'])->name('kaizens.attachments.show');
-    Route::get('/kaizens/{kaizen}/attachments/{attachment}/download', [KaizenAttachmentController::class, 'download'])->name('kaizens.attachments.download');
+        Route::get('/kaizens/create', [KaizenController::class, 'create'])->name('kaizens.create');
+        Route::get('/kaizens/{kaizen}/edit', [KaizenController::class, 'edit'])->name('kaizens.edit');
+        Route::get('/kaizens/{kaizen}', [KaizenController::class, 'show'])->name('kaizens.show');
+        Route::post('/kaizens', [KaizenController::class, 'store'])->name('kaizens.store');
+        Route::patch('/kaizens/{kaizen}', [KaizenController::class, 'update'])->name('kaizens.update');
+        Route::post('/kaizens/{kaizen}/submit', [KaizenController::class, 'submit'])->name('kaizens.submit');
+        Route::post('/kaizens/{kaizen}/workflow/approve', [KaizenApprovalActionController::class, 'approve'])->name('kaizens.workflow.approve');
+        Route::post('/kaizens/{kaizen}/workflow/request-revision', [KaizenApprovalActionController::class, 'requestRevision'])->name('kaizens.workflow.request-revision');
+        Route::post('/kaizens/{kaizen}/workflow/reject', [KaizenApprovalActionController::class, 'reject'])->name('kaizens.workflow.reject');
 
-    Route::prefix('settings')->name('settings.')->group(function () {
-        Route::get('/reference-data', [ReferenceDataController::class, 'index'])->name('reference-data.index');
+        Route::get('/kaizens/{kaizen}/attachments/{attachment}', [KaizenAttachmentController::class, 'show'])->name('kaizens.attachments.show');
+        Route::get('/kaizens/{kaizen}/attachments/{attachment}/download', [KaizenAttachmentController::class, 'download'])->name('kaizens.attachments.download');
 
-        Route::get('/approval-configurations', [ApprovalConfigurationController::class, 'index'])->name('approval-configurations.index');
-        Route::get('/approval-configurations/create', [ApprovalConfigurationController::class, 'create'])->name('approval-configurations.create');
-        Route::get('/approval-configurations/{id}', [ApprovalConfigurationController::class, 'show'])->name('approval-configurations.show')->where('id', '[0-9]+');
-        Route::get('/approval-configurations/{id}/edit', [ApprovalConfigurationController::class, 'edit'])->name('approval-configurations.edit')->where('id', '[0-9]+');
-        Route::post('/approval-configurations', [ApprovalConfigurationController::class, 'store'])->name('approval-configurations.store');
-        Route::patch('/approval-configurations/{id}', [ApprovalConfigurationController::class, 'update'])->name('approval-configurations.update');
-        Route::post('/approval-configurations/{id}/publish', [ApprovalConfigurationController::class, 'publish'])->name('approval-configurations.publish');
-        Route::post('/approval-configurations/{id}/default', [ApprovalConfigurationController::class, 'setDefault'])->name('approval-configurations.set-default');
-        Route::post('/approval-configurations/{id}/deactivate', [ApprovalConfigurationController::class, 'deactivate'])->name('approval-configurations.deactivate');
-        Route::patch('/approval-configurations/{workflowId}/stages/{stageId}/approver-rule', [ApprovalConfigurationController::class, 'mutateApproverRule'])
-            ->name('approval-configurations.stages.approver-rule')
-            ->where(['workflowId' => '[0-9]+', 'stageId' => '[0-9]+']);
+        Route::prefix('settings')->name('settings.')->group(function () {
+            Route::get('/reference-data', [ReferenceDataController::class, 'index'])->name('reference-data.index');
 
-        Route::get('/categories/{category}/edit', [CategoryController::class, 'edit'])->name('categories.edit');
-        Route::post('/categories', [CategoryController::class, 'store'])->name('categories.store');
-        Route::patch('/categories/{category}', [CategoryController::class, 'update'])->name('categories.update');
-        Route::patch('/categories/{category}/status', [CategoryController::class, 'toggleStatus'])->name('categories.status');
+            Route::get('/approval-configurations', [ApprovalConfigurationController::class, 'index'])->name('approval-configurations.index');
+            Route::get('/approval-configurations/create', [ApprovalConfigurationController::class, 'create'])->name('approval-configurations.create');
+            Route::get('/approval-configurations/{id}', [ApprovalConfigurationController::class, 'show'])->name('approval-configurations.show')->where('id', '[0-9]+');
+            Route::get('/approval-configurations/{id}/edit', [ApprovalConfigurationController::class, 'edit'])->name('approval-configurations.edit')->where('id', '[0-9]+');
+            Route::post('/approval-configurations', [ApprovalConfigurationController::class, 'store'])->name('approval-configurations.store');
+            Route::patch('/approval-configurations/{id}', [ApprovalConfigurationController::class, 'update'])->name('approval-configurations.update');
+            Route::post('/approval-configurations/{id}/publish', [ApprovalConfigurationController::class, 'publish'])->name('approval-configurations.publish');
+            Route::post('/approval-configurations/{id}/default', [ApprovalConfigurationController::class, 'setDefault'])->name('approval-configurations.set-default');
+            Route::post('/approval-configurations/{id}/deactivate', [ApprovalConfigurationController::class, 'deactivate'])->name('approval-configurations.deactivate');
+            Route::patch('/approval-configurations/{workflowId}/stages/{stageId}/approver-rule', [ApprovalConfigurationController::class, 'mutateApproverRule'])
+                ->name('approval-configurations.stages.approver-rule')
+                ->where(['workflowId' => '[0-9]+', 'stageId' => '[0-9]+']);
 
-        Route::get('/departments/{department}/edit', [DepartmentController::class, 'edit'])->name('departments.edit');
-        Route::post('/departments', [DepartmentController::class, 'store'])->name('departments.store');
-        Route::patch('/departments/{department}', [DepartmentController::class, 'update'])->name('departments.update');
-        Route::patch('/departments/{department}/status', [DepartmentController::class, 'toggleStatus'])->name('departments.status');
+            Route::get('/categories/{category}/edit', [CategoryController::class, 'edit'])->name('categories.edit');
+            Route::post('/categories', [CategoryController::class, 'store'])->name('categories.store');
+            Route::patch('/categories/{category}', [CategoryController::class, 'update'])->name('categories.update');
+            Route::patch('/categories/{category}/status', [CategoryController::class, 'toggleStatus'])->name('categories.status');
+
+            Route::get('/departments/{department}/edit', [DepartmentController::class, 'edit'])->name('departments.edit');
+            Route::post('/departments', [DepartmentController::class, 'store'])->name('departments.store');
+            Route::patch('/departments/{department}', [DepartmentController::class, 'update'])->name('departments.update');
+            Route::patch('/departments/{department}/status', [DepartmentController::class, 'toggleStatus'])->name('departments.status');
+        });
     });
 });

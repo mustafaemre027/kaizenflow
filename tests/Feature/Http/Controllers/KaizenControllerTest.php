@@ -97,7 +97,7 @@ class KaizenControllerTest extends TestCase
         $this->user->save();
 
         $response = $this->actingAs($this->user)->get(route('kaizens.create'));
-        $response->assertStatus(403);
+        $response->assertRedirect('/login');
     }
 
     // ==========================================

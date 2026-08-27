@@ -61,6 +61,12 @@
                 <form method="POST" action="{{ route('login.store') }}" novalidate>
                     @csrf
 
+                    @if (session('status'))
+                        <div class="alert alert-success mb-4 text-sm text-green-600" role="alert">
+                            {{ session('status') }}
+                        </div>
+                    @endif
+
                     <div class="mb-4">
                         <label for="email" class="kf-auth-label">E-posta Adresi</label>
                         <input id="email" type="email" class="form-control kf-auth-field @error('email') is-invalid @enderror" name="email" value="{{ old('email') }}" required autocomplete="username" autofocus>
@@ -72,8 +78,12 @@
                     </div>
 
                     <div class="mb-4">
-                        <label for="password" class="kf-auth-label">Parola</label>
-                        <input id="password" type="password" class="form-control kf-auth-field @error('password') is-invalid @enderror" name="password" required autocomplete="current-password">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <label for="password" class="kf-auth-label mb-0">Parola</label>
+                            <a href="{{ route('password.request') }}" class="text-sm text-decoration-none">Şifremi unuttum</a>
+                        </div>
+                        <input id="password" type="password" class="form-control kf-auth-field mt-2 @error('password') is-invalid @enderror" name="password" required autocomplete="current-password">
+
                         @error('password')
                             <div class="invalid-feedback">
                                 {{ $message }}

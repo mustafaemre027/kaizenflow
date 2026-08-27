@@ -1,0 +1,201 @@
+<?php
+
+namespace Tests\Feature\Auth;
+
+use App\Models\User;
+use App\Notifications\CustomResetPasswordNotification;
+use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\RateLimiter;
+use Tests\TestCase;
+
+class PasswordResetTest extends TestCase
+{
+    use RefreshDatabase;
+
+    public function test_forgot_password_screen_can_be_rendered(): void
+    {
+        $response = $this->get('/forgot-password');
+
+        $response->assertStatus(200);
+    }
+
+    public function test_active_user_receives_reset_email_and_neutral_response(): void
+    {
+        Notification::fake();
+
+        $user = User::factory()->create(['is_active' => true]);
+
+        $response = $this->from('/forgot-password')->post('/forgot-password', [
+            'email' => $user->email,
+        ]);
+
+        $response->assertRedirect('/forgot-password');
+        $response->assertSessionHas('status');
+
+        $this->get('/forgot-password')
+            ->assertSee('E-postanızı kontrol edin')
+            ->assertSee('Girdiğiniz e-posta adresi bir hesapla eşleşiyorsa şifre sıfırlama bağlantısı kısa süre içinde gönderilecektir. Gelen kutunuzu ve gereksiz e-posta klasörünü kontrol edin.')
+            ->assertSee('Giriş ekranına dön')
+            ->assertDontSee('<form', false);
+
+        Notification::assertSentTo($user, CustomResetPasswordNotification::class);
+    }
+
+    public function test_inactive_user_does_not_receive_email_but_gets_neutral_response(): void
+    {
+        Notification::fake();
+
+        $user = User::factory()->create(['is_active' => false]);
+
+        $response = $this->from('/forgot-password')->post('/forgot-password', [
+            'email' => $user->email,
+        ]);
+
+        $response->assertRedirect('/forgot-password');
+        $response->assertSessionHas('status');
+
+        Notification::assertNotSentTo($user, ResetPassword::class);
+    }
+
+    public function test_unknown_email_gets_neutral_response(): void
+    {
+        Notification::fake();
+
+        $response = $this->from('/forgot-password')->post('/forgot-password', [
+            'email' => 'unknown@example.com',
+        ]);
+
+        $response->assertRedirect('/forgot-password');
+        $response->assertSessionHas('status');
+
+        Notification::assertNothingSent();
+    }
+
+    public function test_rate_limiting_is_applied_and_email_is_hashed_in_limiter_key_with_hmac_sha256(): void
+    {
+        Notification::fake();
+
+        // 5 requests allowed per minute for IP + Email combination
+        $email = 'test@example.com';
+
+        for ($i = 0; $i < 5; $i++) {
+            $this->from('/forgot-password')->post('/forgot-password', ['email' => $email]);
+        }
+
+        $response = $this->from('/forgot-password')->post('/forgot-password', ['email' => $email]);
+
+        $response->assertRedirect('/forgot-password');
+        $response->assertSessionHasErrors(['email']);
+        $this->assertEquals('Çok fazla sıfırlama isteği gönderdiniz. Lütfen bir dakika sonra tekrar deneyin.', session('errors')->first('email'));
+
+        // Assert rate limiter key uses hmac-sha256
+        $normalizedEmail = strtolower(trim($email));
+        $expectedHash = hash_hmac('sha256', $normalizedEmail.'|'.request()->ip(), config('app.key'));
+
+        $this->assertTrue(RateLimiter::tooManyAttempts('password-reset-link:'.$expectedHash, 5));
+    }
+
+    public function test_reset_password_screen_can_be_rendered(): void
+    {
+        $response = $this->get('/reset-password/fake-token?email=test@example.com');
+
+        $response->assertStatus(200);
+        $response->assertSee('test@example.com');
+        $response->assertSee('fake-token');
+    }
+
+    public function test_password_can_be_reset_with_valid_token_and_previous_sessions_invalidated(): void
+    {
+        $user = User::factory()->create(['is_active' => true]);
+
+        $token = Password::broker()->createToken($user);
+
+        $response = $this->post('/reset-password', [
+            'token' => $token,
+            'email' => $user->email,
+            'password' => 'NewPass123!',
+            'password_confirmation' => 'NewPass123!',
+        ]);
+
+        $response->assertRedirect('/login');
+        $response->assertSessionHas('status');
+
+        $this->assertEquals($user->email, session()->getOldInput('email'));
+        $this->assertNull(session()->getOldInput('password'));
+
+        $user->refresh();
+        $this->assertTrue(Hash::check('NewPass123!', $user->password));
+
+        // Token single use check
+        $this->assertDatabaseMissing('password_reset_tokens', [
+            'email' => $user->email,
+        ]);
+    }
+
+    public function test_invalid_token_is_rejected(): void
+    {
+        $user = User::factory()->create(['is_active' => true]);
+
+        $response = $this->post('/reset-password', [
+            'token' => 'invalid-token',
+            'email' => $user->email,
+            'password' => 'NewPass123!',
+            'password_confirmation' => 'NewPass123!',
+        ]);
+
+        $response->assertSessionHasErrors(['email']);
+        $this->assertEquals('Bu şifre sıfırlama bağlantısı geçersiz veya süresi dolmuş. Lütfen yeni bir bağlantı talep edin.', session('errors')->first('email'));
+        $this->assertFalse(Hash::check('NewPass123!', $user->password));
+    }
+
+    public function test_password_validation_rules_apply(): void
+    {
+        $user = User::factory()->create(['is_active' => true]);
+        $token = Password::broker()->createToken($user);
+
+        $response = $this->post('/reset-password', [
+            'token' => $token,
+            'email' => $user->email,
+            'password' => 'weak',
+            'password_confirmation' => 'weak',
+        ]);
+
+        $response->assertSessionHasErrors(['password']);
+        $this->assertEquals('Yeni parola en az 8 karakter olmalıdır.', session('errors')->first('password'));
+    }
+
+    public function test_password_reset_required_fields_validation_message(): void
+    {
+        $response = $this->post('/reset-password', [
+            'token' => '',
+            'email' => '',
+            'password' => '',
+            'password_confirmation' => '',
+        ]);
+
+        $response->assertSessionHasErrors(['email', 'password', 'token']);
+        $this->assertEquals('Bu alanın doldurulması zorunludur.', session('errors')->first('email'));
+        $this->assertEquals('Bu alanın doldurulması zorunludur.', session('errors')->first('password'));
+        $this->assertEquals('Bu alanın doldurulması zorunludur.', session('errors')->first('token'));
+    }
+
+    public function test_password_reset_confirmed_validation_message(): void
+    {
+        $user = User::factory()->create(['is_active' => true]);
+        $token = Password::broker()->createToken($user);
+
+        $response = $this->post('/reset-password', [
+            'token' => $token,
+            'email' => $user->email,
+            'password' => 'NewPass123!',
+            'password_confirmation' => 'Mismatch123!',
+        ]);
+
+        $response->assertSessionHasErrors(['password']);
+        $this->assertEquals('Yeni parola ile parola tekrarı eşleşmiyor.', session('errors')->first('password'));
+    }
+}

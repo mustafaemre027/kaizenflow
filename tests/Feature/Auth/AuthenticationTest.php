@@ -124,7 +124,7 @@ class AuthenticationTest extends TestCase
 
         $this->assertGuest();
         $response->assertInvalid(['email']);
-        $this->assertStringContainsString('seconds', session('errors')->first('email'));
+        $this->assertStringContainsString('saniye', session('errors')->first('email'));
     }
 
     public function test_default_redirect_works_after_login(): void
