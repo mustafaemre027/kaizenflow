@@ -160,7 +160,7 @@ class EmailVerificationBackendTest extends TestCase
 
     public function test_otp_validity_is_exactly_10_minutes_and_expired_otp_is_rejected()
     {
-        $this->freezeTime();
+        $this->travelTo(now()->startOfSecond());
         Notification::fake();
         $user = User::factory()->unverified()->create();
         
@@ -168,7 +168,7 @@ class EmailVerificationBackendTest extends TestCase
         $issueAction->execute($user);
 
         $record = EmailVerificationCode::where('user_id', $user->id)->first();
-        $this->assertTrue($record->expires_at->equalTo(now()->addMinutes(10)));
+        $this->assertTrue($record->expires_at->equalTo(now()->addMinutes(10)->startOfSecond()));
 
         $code = '';
         Notification::assertSentTo($user, EmailVerificationCodeNotification::class, function ($notification) use (&$code) {
@@ -316,13 +316,16 @@ class EmailVerificationBackendTest extends TestCase
             'expires_at' => now()->addMinutes(10),
         ]);
 
-        DB::shouldReceive('transaction')->andThrow(new \Exception('DB failure'));
+        $listener = function () { throw new \Exception('DB failure'); };
+        \Illuminate\Support\Facades\Event::listen('eloquent.saving: App\Models\User', $listener);
 
         $action = new VerifyEmailVerificationCode();
         
         try {
             $action->execute($user, $code);
         } catch (\Exception $e) {}
+
+        \Illuminate\Support\Facades\Event::forget('eloquent.saving: App\Models\User');
 
         $this->assertDatabaseHas('email_verification_codes', ['user_id' => $user->id]);
         $this->assertNull($user->fresh()->email_verified_at);
