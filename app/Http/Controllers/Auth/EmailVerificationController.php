@@ -38,7 +38,7 @@ class EmailVerificationController extends Controller
             $verifyAction->execute($request->user(), $request->validated('code'));
         } catch (DomainException $e) {
             return back()->withErrors([
-                'code' => 'The provided verification code is invalid, expired, or you have exceeded the maximum attempts.',
+                'code' => __('auth.failed_otp'),
             ]);
         }
 

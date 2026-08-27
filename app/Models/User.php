@@ -93,4 +93,9 @@ class User extends Authenticatable
     {
         return $this->hasOne(EmailVerificationCode::class);
     }
+
+    public function sendPasswordResetNotification($token): void
+    {
+        $this->notify(new \App\Notifications\CustomResetPasswordNotification($token));
+    }
 }

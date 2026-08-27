@@ -36,11 +36,11 @@ class EmailVerificationCodeNotification extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('Your Email Verification Code')
-            ->greeting('Hello!')
-            ->line('Your email verification code is: '.$this->code)
-            ->line('This code is valid for 10 minutes.')
-            ->line('If you did not request this code, no further action is required.');
+            ->subject('KaizenFlow E-posta Doğrulama Kodu')
+            ->greeting('Merhaba,')
+            ->line('E-posta doğrulama kodunuz: **'.$this->code.'**')
+            ->line('Bu kod 10 dakika geçerlidir.')
+            ->line('Lütfen bu kodu kimseyle paylaşmayın.');
     }
 
     /**
