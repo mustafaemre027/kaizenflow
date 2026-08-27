@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Enums\UserRole;
 use App\Models\EmailVerificationCode;
 use App\Models\User;
 use App\Notifications\EmailVerificationCodeNotification;
@@ -96,7 +97,7 @@ class EmailVerificationHttpTest extends TestCase
 
     public function test_admin_cannot_bypass_verification_rule()
     {
-        $admin = User::factory()->unverified()->withRole(\App\Enums\UserRole::ADMIN)->create();
+        $admin = User::factory()->unverified()->withRole(UserRole::ADMIN)->create();
 
         $response = $this->actingAs($admin)->get(route('kaizens.index'));
 
@@ -117,9 +118,9 @@ class EmailVerificationHttpTest extends TestCase
     {
         Notification::fake();
         $user = User::factory()->unverified()->create();
-        
+
         $this->actingAs($user)->post(route('verification.send'));
-        
+
         $code = EmailVerificationCode::where('user_id', $user->id)->first();
         // Since plaintext is not in DB, we must extract from notification
         $plaintextOtp = '';
@@ -128,6 +129,7 @@ class EmailVerificationHttpTest extends TestCase
             $property = $reflection->getProperty('code');
             $property->setAccessible(true);
             $plaintextOtp = $property->getValue($notification);
+
             return true;
         });
 
@@ -142,7 +144,7 @@ class EmailVerificationHttpTest extends TestCase
     public function test_invalid_otp_gives_generic_error()
     {
         $user = User::factory()->unverified()->create();
-        
+
         $response = $this->actingAs($user)->post(route('verification.verify'), [
             'code' => '000000',
         ]);
@@ -155,9 +157,9 @@ class EmailVerificationHttpTest extends TestCase
     {
         Notification::fake();
         $user = User::factory()->unverified()->create();
-        
+
         $this->actingAs($user)->post(route('verification.send'));
-        
+
         $this->travel(601)->seconds();
 
         $response = $this->actingAs($user)->post(route('verification.verify'), [
@@ -195,7 +197,7 @@ class EmailVerificationHttpTest extends TestCase
     public function test_actor_user_injection_fields_are_rejected_with_422()
     {
         $user = User::factory()->unverified()->create();
-        
+
         $response = $this->actingAs($user)->postJson(route('verification.verify'), [
             'code' => '123456',
             'user_id' => 999,
@@ -210,7 +212,7 @@ class EmailVerificationHttpTest extends TestCase
         Notification::fake();
         $user1 = User::factory()->unverified()->create();
         $user2 = User::factory()->unverified()->create();
-        
+
         $this->actingAs($user1)->post(route('verification.send'));
 
         $plaintextOtp = '';
@@ -219,6 +221,7 @@ class EmailVerificationHttpTest extends TestCase
             $property = $reflection->getProperty('code');
             $property->setAccessible(true);
             $plaintextOtp = $property->getValue($notification);
+
             return true;
         });
 
@@ -234,15 +237,16 @@ class EmailVerificationHttpTest extends TestCase
     {
         Notification::fake();
         $user = User::factory()->unverified()->create();
-        
+
         $response = $this->actingAs($user)->post(route('verification.send'));
-        
+
         $plaintextOtp = '';
         Notification::assertSentTo($user, EmailVerificationCodeNotification::class, function ($notification) use (&$plaintextOtp) {
             $reflection = new \ReflectionClass($notification);
             $property = $reflection->getProperty('code');
             $property->setAccessible(true);
             $plaintextOtp = $property->getValue($notification);
+
             return true;
         });
 
@@ -282,8 +286,8 @@ class EmailVerificationHttpTest extends TestCase
         $response = $this->actingAs($user)->get(route('verification.notice'));
 
         $response->assertSee('name="_token"', false)
-                 ->assertDontSee('<form method="GET"', false)
-                 ->assertSee('method="POST"', false);
+            ->assertDontSee('<form method="GET"', false)
+            ->assertSee('method="POST"', false);
     }
 
     public function test_guest_login_and_password_reset_routes_are_not_broken()

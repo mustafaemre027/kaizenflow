@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ApprovalController;
+use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
@@ -36,9 +37,9 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
     Route::middleware(['auth.session', 'active-user'])->group(function () {
-        Route::get('/email/verify', [\App\Http\Controllers\Auth\EmailVerificationController::class, 'show'])->name('verification.notice');
-        Route::post('/email/verify', [\App\Http\Controllers\Auth\EmailVerificationController::class, 'verify'])->name('verification.verify');
-        Route::post('/email/verification-notification', [\App\Http\Controllers\Auth\EmailVerificationController::class, 'resend'])->name('verification.send');
+        Route::get('/email/verify', [EmailVerificationController::class, 'show'])->name('verification.notice');
+        Route::post('/email/verify', [EmailVerificationController::class, 'verify'])->name('verification.verify');
+        Route::post('/email/verification-notification', [EmailVerificationController::class, 'resend'])->name('verification.send');
     });
 
     Route::middleware(['auth', 'auth.session', 'active-user', 'email-verified'])->group(function () {
