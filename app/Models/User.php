@@ -87,4 +87,9 @@ class User extends Authenticatable
             ->whereIn('action', array_map(fn ($a) => $a->value, WorkflowAction::reviewActions()))
             ->exists();
     }
+
+    public function emailVerificationCode(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(EmailVerificationCode::class);
+    }
 }
