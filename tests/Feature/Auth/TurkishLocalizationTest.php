@@ -150,6 +150,27 @@ class TurkishLocalizationTest extends TestCase
         );
     }
 
+    public function test_password_reset_email_rendered_content()
+    {
+        $user = User::factory()->create([
+            'email' => 'test@example.com',
+            'is_active' => true,
+        ]);
+
+        $notification = new CustomResetPasswordNotification('dummy-token');
+        $mail = $notification->toMail($user);
+
+        // Render HTML
+        $html = $mail->render();
+        $this->assertStringNotContainsString('Laravel', $html);
+        $this->assertStringNotContainsString(':actionText', $html);
+        $this->assertStringNotContainsString('All rights reserved', $html);
+        $this->assertStringContainsString('KaizenFlow', $html);
+        $this->assertStringContainsString('Şifremi Sıfırla', $html);
+        $this->assertStringContainsString('butonuna tıklamakta sorun yaşıyorsanız', $html);
+        $this->assertStringContainsString('Tüm hakları saklıdır', $html);
+    }
+
     public function test_otp_email_content()
     {
         $user = User::factory()->unverified()->create([

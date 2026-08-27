@@ -46,7 +46,7 @@ Saygılarımızla,<br>
 {{-- Subcopy --}}
 @isset($actionText)
 <x-slot:subcopy>
-":actionText" butonuna tıklamakta sorun yaşıyorsanız, aşağıdaki URL'yi kopyalayıp
+"{{ $actionText }}" butonuna tıklamakta sorun yaşıyorsanız, aşağıdaki URL'yi kopyalayıp
 web tarayıcınıza yapıştırın: <span class="break-all">[{{ $displayableActionUrl }}]({{ $actionUrl }})</span>
 </x-slot:subcopy>
 @endisset
