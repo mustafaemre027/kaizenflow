@@ -35,7 +35,7 @@ class PasswordResetTest extends TestCase
         $response->assertRedirect('/login');
         $response->assertSessionHas('status');
 
-        Notification::assertSentTo($user, ResetPassword::class);
+        Notification::assertSentTo($user, \App\Notifications\CustomResetPasswordNotification::class);
     }
 
     public function test_inactive_user_does_not_receive_email_but_gets_neutral_response(): void

@@ -60,6 +60,11 @@ class TurkishLocalizationTest extends TestCase
 
     public function test_invalid_token_message()
     {
+        $user = User::factory()->create([
+            'email' => 'test@example.com',
+            'is_active' => true,
+        ]);
+
         $response = $this->post(route('password.update'), [
             'token' => 'invalid-token',
             'email' => 'test@example.com',
@@ -126,19 +131,22 @@ class TurkishLocalizationTest extends TestCase
             'email' => 'test@example.com',
         ]);
 
-        Notification::assertSentTo($user, function (\Illuminate\Notifications\Notification $notification) use ($user) {
-            // Need to make sure it's the custom KaizenFlow ResetPassword Notification or overridden toMail
-            if (method_exists($notification, 'toMail')) {
-                $mailData = $notification->toMail($user);
-                
-                return $mailData->subject === 'KaizenFlow Şifre Sıfırlama'
-                    && in_array('Merhaba,', $mailData->introLines)
-                    && $mailData->actionText === 'Şifremi Sıfırla'
-                    && in_array('Bu bağlantı 60 dakika geçerlidir.', $mailData->introLines ?? $mailData->outroLines)
-                    && in_array('Şifre sıfırlama talebinde bulunmadıysanız herhangi bir işlem yapmanıza gerek yoktur.', $mailData->outroLines);
+        Notification::assertSentTo(
+            $user, 
+            \App\Notifications\CustomResetPasswordNotification::class, 
+            function (\App\Notifications\CustomResetPasswordNotification $notification) use ($user) {
+                if (method_exists($notification, 'toMail')) {
+                    $mailData = $notification->toMail($user);
+                    
+                    return $mailData->subject === 'KaizenFlow Şifre Sıfırlama'
+                        && $mailData->greeting === 'Merhaba,'
+                        && $mailData->actionText === 'Şifremi Sıfırla'
+                        && in_array('Bu bağlantı 60 dakika geçerlidir.', $mailData->outroLines)
+                        && in_array('Şifre sıfırlama talebinde bulunmadıysanız herhangi bir işlem yapmanıza gerek yoktur.', $mailData->outroLines);
+                }
+                return false;
             }
-            return false;
-        });
+        );
     }
 
     public function test_otp_email_content()
@@ -155,6 +163,6 @@ class TurkishLocalizationTest extends TestCase
         $this->assertEquals('Merhaba,', $mailData->greeting);
         $this->assertStringContainsString('123456', $mailData->introLines[0]);
         $this->assertContains('Bu kod 10 dakika geçerlidir.', $mailData->introLines);
-        $this->assertContains('Lütfen bu kodu kimseyle paylaşmayın.', $mailData->outroLines);
+        $this->assertContains('Lütfen bu kodu kimseyle paylaşmayın.', $mailData->introLines);
     }
 }

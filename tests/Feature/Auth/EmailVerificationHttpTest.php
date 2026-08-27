@@ -168,7 +168,7 @@ class EmailVerificationHttpTest extends TestCase
 
         $response->assertSessionHasErrors('code');
         $errorMessage = session('errors')->get('code')[0];
-        $this->assertStringContainsString('The provided verification code is invalid, expired, or you have exceeded the maximum attempts.', $errorMessage);
+        $this->assertStringContainsString(__('auth.failed_otp'), $errorMessage);
     }
 
     public function test_resend_is_delegated_to_action()
