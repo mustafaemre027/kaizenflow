@@ -1,9 +1,9 @@
 <?php
 
 return [
-    'reset' => 'Şifreniz başarıyla yenilendi. Yeni şifrenizle giriş yapabilirsiniz.',
-    'sent' => 'E-posta adresiniz sistemimizde kayıtlıysa şifre sıfırlama bağlantısı gönderildi.',
-    'throttled' => 'Lütfen tekrar denemeden önce bekleyin.',
-    'token' => 'Bu şifre sıfırlama bağlantısı geçersiz veya süresi dolmuş.',
-    'user' => 'E-posta adresiniz sistemimizde kayıtlıysa şifre sıfırlama bağlantısı gönderildi.',
+    'reset' => 'Şifreniz başarıyla değiştirildi. Yeni şifrenizle giriş yapabilirsiniz.',
+    'sent' => 'Girdiğiniz e-posta adresi bir hesapla eşleşiyorsa şifre sıfırlama bağlantısı kısa süre içinde gönderilecektir. Gelen kutunuzu ve gereksiz e-posta klasörünü kontrol edin.',
+    'throttled' => 'Çok fazla sıfırlama isteği gönderdiniz. Lütfen bir dakika sonra tekrar deneyin.',
+    'token' => 'Bu şifre sıfırlama bağlantısı geçersiz veya süresi dolmuş. Lütfen yeni bir bağlantı talep edin.',
+    'user' => 'Girdiğiniz e-posta adresi bir hesapla eşleşiyorsa şifre sıfırlama bağlantısı kısa süre içinde gönderilecektir. Gelen kutunuzu ve gereksiz e-posta klasörünü kontrol edin.',
 ];

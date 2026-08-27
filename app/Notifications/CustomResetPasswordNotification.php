@@ -43,10 +43,10 @@ class CustomResetPasswordNotification extends Notification
         return (new MailMessage)
             ->subject('KaizenFlow Şifre Sıfırlama')
             ->greeting('Merhaba,')
-            ->line('Şifrenizi sıfırlamak için aşağıdaki bağlantıya tıklayın.')
+            ->line('Hesabınız için bir şifre sıfırlama talebi aldık.')
             ->action('Şifremi Sıfırla', $url)
-            ->line('Bu bağlantı 60 dakika geçerlidir.')
-            ->line('Şifre sıfırlama talebinde bulunmadıysanız herhangi bir işlem yapmanıza gerek yoktur.')
+            ->line('Bu bağlantı 60 dakika boyunca geçerlidir.')
+            ->line('Bu talebi siz oluşturmadıysanız herhangi bir işlem yapmanız gerekmez.')
             ->salutation('Saygılarımızla, KaizenFlow');
     }
 }

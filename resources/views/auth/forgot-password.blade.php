@@ -33,32 +33,38 @@
 
                 @if (session('status'))
                     <div class="alert alert-success mb-4 text-sm" role="alert">
-                        {{ session('status') }}
+                        <h4 class="alert-heading font-weight-bold mb-2">E-postanızı kontrol edin</h4>
+                        <p class="mb-0">{{ session('status') }}</p>
                     </div>
-                @endif
-
-                <form method="POST" action="{{ route('password.email') }}" novalidate>
-                    @csrf
-
-                    <div class="mb-4">
-                        <label for="email" class="kf-auth-label">E-posta Adresi</label>
-                        <input id="email" type="email" class="form-control kf-auth-field @error('email') is-invalid @enderror" name="email" value="{{ old('email') }}" required autofocus>
-                        @error('email')
-                            <div class="invalid-feedback">
-                                {{ $message }}
-                            </div>
-                        @enderror
-                    </div>
-
                     <div class="kf-auth-actions d-flex flex-column gap-3 mt-4">
-                        <button type="submit" class="kf-auth-submit">
-                            Sıfırlama Bağlantısı Gönder
-                        </button>
-                        <a href="{{ route('login') }}" class="text-center text-sm text-decoration-none">
+                        <a href="{{ route('login') }}" class="kf-auth-submit text-center text-decoration-none">
                             Giriş ekranına dön
                         </a>
                     </div>
-                </form>
+                @else
+                    <form method="POST" action="{{ route('password.email') }}" novalidate>
+                        @csrf
+
+                        <div class="mb-4">
+                            <label for="email" class="kf-auth-label">E-posta Adresi</label>
+                            <input id="email" type="email" class="form-control kf-auth-field @error('email') is-invalid @enderror" name="email" value="{{ old('email') }}" required autofocus>
+                            @error('email')
+                                <div class="invalid-feedback">
+                                    {{ $message }}
+                                </div>
+                            @enderror
+                        </div>
+
+                        <div class="kf-auth-actions d-flex flex-column gap-3 mt-4">
+                            <button type="submit" class="kf-auth-submit">
+                                Sıfırlama Bağlantısı Gönder
+                            </button>
+                            <a href="{{ route('login') }}" class="text-center text-sm text-decoration-none">
+                                Giriş ekranına dön
+                            </a>
+                        </div>
+                    </form>
+                @endif
             </div>
         </div>
 

@@ -36,7 +36,7 @@ class PasswordResetLinkController extends Controller
         $key = 'password-reset-link:'.$hashedEmail;
 
         if (RateLimiter::tooManyAttempts($key, 5)) {
-            return response('Too Many Attempts.', 429);
+            return back()->withErrors(['email' => __('passwords.throttled')]);
         }
 
         RateLimiter::hit($key, 60); // 1 minute decay
@@ -52,7 +52,6 @@ class PasswordResetLinkController extends Controller
                 $request->only('email')
             );
         }
-
-        return redirect()->route('login')->with('status', __($status));
+        return back()->with('status', __($status));
     }
 }

@@ -29,12 +29,12 @@ class TurkishLocalizationTest extends TestCase
 
     public function test_neutral_password_reset_message()
     {
-        $response = $this->post(route('password.email'), [
+        $response = $this->from('/forgot-password')->post(route('password.email'), [
             'email' => 'unknown@example.com',
         ]);
 
         $response->assertRedirect('/forgot-password');
-        $response->assertSessionHas('status', 'E-posta adresiniz sistemimizde kayıtlıysa şifre sıfırlama bağlantısı kısa süre içinde gönderilecektir. Gelen kutunuzu ve gereksiz e-posta klasörünü kontrol edin.');
+        $response->assertSessionHas('status', 'Girdiğiniz e-posta adresi bir hesapla eşleşiyorsa şifre sıfırlama bağlantısı kısa süre içinde gönderilecektir. Gelen kutunuzu ve gereksiz e-posta klasörünü kontrol edin.');
     }
 
     public function test_successful_password_reset_message()
