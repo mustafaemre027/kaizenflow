@@ -2,6 +2,7 @@
 
 use App\Exceptions\DomainException;
 use App\Http\Middleware\ActiveUserMiddleware;
+use App\Http\Middleware\EnsureEmailIsVerified;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -16,9 +17,9 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
-            'active-user' => \App\Http\Middleware\ActiveUserMiddleware::class,
-            'auth.session' => \Illuminate\Session\Middleware\AuthenticateSession::class,
-            'email-verified' => \App\Http\Middleware\EnsureEmailIsVerified::class,
+            'active-user' => ActiveUserMiddleware::class,
+            'auth.session' => AuthenticateSession::class,
+            'email-verified' => EnsureEmailIsVerified::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

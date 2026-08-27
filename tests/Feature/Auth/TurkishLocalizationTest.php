@@ -3,13 +3,12 @@
 namespace Tests\Feature\Auth;
 
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Password;
-use Illuminate\Support\Facades\Notification;
+use App\Notifications\CustomResetPasswordNotification;
 use App\Notifications\EmailVerificationCodeNotification;
-use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Password;
 use Tests\TestCase;
-use App\Enums\UserRole;
 
 class TurkishLocalizationTest extends TestCase
 {
@@ -132,18 +131,19 @@ class TurkishLocalizationTest extends TestCase
         ]);
 
         Notification::assertSentTo(
-            $user, 
-            \App\Notifications\CustomResetPasswordNotification::class, 
-            function (\App\Notifications\CustomResetPasswordNotification $notification) use ($user) {
+            $user,
+            CustomResetPasswordNotification::class,
+            function (CustomResetPasswordNotification $notification) use ($user) {
                 if (method_exists($notification, 'toMail')) {
                     $mailData = $notification->toMail($user);
-                    
+
                     return $mailData->subject === 'KaizenFlow Şifre Sıfırlama'
                         && $mailData->greeting === 'Merhaba,'
                         && $mailData->actionText === 'Şifremi Sıfırla'
                         && in_array('Bu bağlantı 60 dakika geçerlidir.', $mailData->outroLines)
                         && in_array('Şifre sıfırlama talebinde bulunmadıysanız herhangi bir işlem yapmanıza gerek yoktur.', $mailData->outroLines);
                 }
+
                 return false;
             }
         );

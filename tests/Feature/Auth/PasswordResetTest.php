@@ -3,6 +3,7 @@
 namespace Tests\Feature\Auth;
 
 use App\Models\User;
+use App\Notifications\CustomResetPasswordNotification;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
@@ -35,7 +36,7 @@ class PasswordResetTest extends TestCase
         $response->assertRedirect('/login');
         $response->assertSessionHas('status');
 
-        Notification::assertSentTo($user, \App\Notifications\CustomResetPasswordNotification::class);
+        Notification::assertSentTo($user, CustomResetPasswordNotification::class);
     }
 
     public function test_inactive_user_does_not_receive_email_but_gets_neutral_response(): void
