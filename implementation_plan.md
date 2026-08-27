@@ -197,3 +197,13 @@ php artisan test --env=testing # MySQL kaizenflow_test veritabanÄ± (dev/qa db iz
 2. **GREEN**: YukarÄ±daki controller, request, middleware ve view dosyalarÄ±nÄ±n uygulanÄ±p commiti.
 3. **STYLE**: Gerekiyorsa formatlama.
 4. **DOCS**: Bu `implementation_plan.md` dosyasÄ±nÄ±n commitlenmesi.
+
+ # #   B l o k   4      E m a i l   O T P   H T T P   A k 1_1  v e   M i d d l e w a r e   E n t e g r a s y o n u 
+ 
+ H T T P   k a t m a n 1  b a _a r 1y l a   e k l e n d i : 
+ -   M i d d l e w a r e   ( E n s u r e E m a i l I s V e r i f i e d )   o l u _t u r u l d u   v e   ' e m a i l - v e r i f i e d '   o l a r a k   k a y d e d i l d i . 
+ -   O T P   D o r u l a m a   A r a y ü z ü   ( v e r i f y - e m a i l . b l a d e . p h p )   r e s p o n s i v e   v e   e r i _i l e b i l i r   o l a r a k   e k l e n d i . 
+ -   R a t e - l i m i t ,   r e s e n d   v e   g ü v e n l i k   ( X S S ,   p l a i n t e x t   g i z l e m e )   m e k a n i z m a l a r 1  F o r m   R e q u e s t   v e   C o n t r o l l e r   s 1n 1r l a r 1n d a   d e v r e y e   a l 1n d 1. 
+ -   T ü m   R E D   t e s t l e r   g e ç e r e k   t e s t   m a t r i s i   t a m a m l a n d 1. 
+  
+ 
