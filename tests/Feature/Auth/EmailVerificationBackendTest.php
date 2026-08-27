@@ -8,9 +8,11 @@ use App\Models\EmailVerificationCode;
 use App\Models\User;
 use App\Notifications\EmailVerificationCodeNotification;
 use DomainException;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
@@ -27,6 +29,7 @@ class EmailVerificationBackendTest extends TestCase
         $reflection = new \ReflectionClass($notification);
         $property = $reflection->getProperty('code');
         $property->setAccessible(true);
+
         return $property->getValue($notification);
     }
 
@@ -34,7 +37,7 @@ class EmailVerificationBackendTest extends TestCase
     {
         $this->assertTrue(Schema::hasTable('email_verification_codes'));
         $this->assertTrue(Schema::hasColumns('email_verification_codes', [
-            'id', 'user_id', 'code_hash', 'attempts', 'expires_at', 'created_at', 'updated_at'
+            'id', 'user_id', 'code_hash', 'attempts', 'expires_at', 'created_at', 'updated_at',
         ]));
     }
 
@@ -49,7 +52,7 @@ class EmailVerificationBackendTest extends TestCase
             'attempts' => 0,
         ]);
 
-        $this->expectException(\Illuminate\Database\QueryException::class);
+        $this->expectException(QueryException::class);
         $this->expectExceptionMessageMatches('/UNIQUE constraint failed|Duplicate entry/');
 
         EmailVerificationCode::create([
@@ -64,19 +67,19 @@ class EmailVerificationBackendTest extends TestCase
     {
         Notification::fake();
         $user = User::factory()->unverified()->create();
-        
-        $action = new IssueEmailVerificationCode();
+
+        $action = new IssueEmailVerificationCode;
         $action->execute($user);
 
         Notification::assertSentTo($user, EmailVerificationCodeNotification::class, function ($notification) use ($user) {
             $code = $this->extractOtpFromNotification($notification);
-            
+
             $this->assertMatchesRegularExpression('/^[0-9]{6}$/', $code);
 
             $record = EmailVerificationCode::where('user_id', $user->id)->first();
             $this->assertNotNull($record);
             $this->assertNotEquals($code, $record->code_hash);
-            
+
             $expectedHash = hash_hmac('sha256', "email-verification|{$user->id}|{$code}", config('app.key'));
             $this->assertTrue(hash_equals($expectedHash, $record->code_hash));
 
@@ -88,17 +91,17 @@ class EmailVerificationBackendTest extends TestCase
     {
         Notification::fake();
         $user = User::factory()->unverified()->create();
-        
+
         $originalKey = config('app.key');
         Config::set('app.key', '');
 
-        $action = new IssueEmailVerificationCode();
+        $action = new IssueEmailVerificationCode;
 
         try {
             $action->execute($user);
             $this->fail('Expected exception was not thrown.');
         } catch (\Exception $e) {
-            $this->assertStringNotContainsString('123456', $e->getMessage()); 
+            $this->assertStringNotContainsString('123456', $e->getMessage());
         }
 
         Notification::assertNothingSent();
@@ -112,7 +115,7 @@ class EmailVerificationBackendTest extends TestCase
         $user = User::factory()->unverified()->create();
         $code = '123456';
         $hash = hash_hmac('sha256', "email-verification|{$user->id}|{$code}", config('app.key'));
-        
+
         EmailVerificationCode::create([
             'user_id' => $user->id,
             'code_hash' => $hash,
@@ -122,8 +125,8 @@ class EmailVerificationBackendTest extends TestCase
         $originalKey = config('app.key');
         Config::set('app.key', '');
 
-        $action = new VerifyEmailVerificationCode();
-        
+        $action = new VerifyEmailVerificationCode;
+
         $this->expectException(\Exception::class);
         $action->execute($user, $code);
 
@@ -134,14 +137,14 @@ class EmailVerificationBackendTest extends TestCase
     {
         Notification::fake();
         $user = User::factory()->unverified()->inactive()->create();
-        
-        $issueAction = new IssueEmailVerificationCode();
+
+        $issueAction = new IssueEmailVerificationCode;
         $this->expectException(DomainException::class);
         $issueAction->execute($user);
 
         Notification::assertNothingSent();
 
-        $verifyAction = new VerifyEmailVerificationCode();
+        $verifyAction = new VerifyEmailVerificationCode;
         $this->expectException(DomainException::class);
         $verifyAction->execute($user, '123456');
     }
@@ -150,8 +153,8 @@ class EmailVerificationBackendTest extends TestCase
     {
         Notification::fake();
         $user = User::factory()->create(); // verified by default
-        
-        $action = new IssueEmailVerificationCode();
+
+        $action = new IssueEmailVerificationCode;
         $this->expectException(DomainException::class);
         $action->execute($user);
 
@@ -163,8 +166,8 @@ class EmailVerificationBackendTest extends TestCase
         $this->travelTo(now()->startOfSecond());
         Notification::fake();
         $user = User::factory()->unverified()->create();
-        
-        $issueAction = new IssueEmailVerificationCode();
+
+        $issueAction = new IssueEmailVerificationCode;
         $issueAction->execute($user);
 
         $record = EmailVerificationCode::where('user_id', $user->id)->first();
@@ -173,12 +176,13 @@ class EmailVerificationBackendTest extends TestCase
         $code = '';
         Notification::assertSentTo($user, EmailVerificationCodeNotification::class, function ($notification) use (&$code) {
             $code = $this->extractOtpFromNotification($notification);
+
             return true;
         });
 
         $this->travel(601)->seconds();
 
-        $verifyAction = new VerifyEmailVerificationCode();
+        $verifyAction = new VerifyEmailVerificationCode;
         $this->expectException(DomainException::class);
         $verifyAction->execute($user, $code);
     }
@@ -188,8 +192,8 @@ class EmailVerificationBackendTest extends TestCase
         $this->freezeTime();
         Notification::fake();
         $user = User::factory()->unverified()->create();
-        
-        $action = new IssueEmailVerificationCode();
+
+        $action = new IssueEmailVerificationCode;
         $action->execute($user);
 
         $this->travel(30)->seconds();
@@ -197,14 +201,14 @@ class EmailVerificationBackendTest extends TestCase
         try {
             $action->execute($user);
             $this->fail('Should rate limit within 60 seconds.');
-        } catch (\Illuminate\Http\Exceptions\ThrottleRequestsException $e) {
+        } catch (ThrottleRequestsException $e) {
             $this->assertTrue(true);
         }
 
         $this->travel(31)->seconds();
-        
+
         $action->execute($user);
-        
+
         $this->assertEquals(1, EmailVerificationCode::where('user_id', $user->id)->count());
     }
 
@@ -213,7 +217,7 @@ class EmailVerificationBackendTest extends TestCase
         $user = User::factory()->unverified()->create();
         $code = '111111';
         $hash = hash_hmac('sha256', "email-verification|{$user->id}|{$code}", config('app.key'));
-        
+
         EmailVerificationCode::create([
             'user_id' => $user->id,
             'code_hash' => $hash,
@@ -221,19 +225,21 @@ class EmailVerificationBackendTest extends TestCase
             'attempts' => 0,
         ]);
 
-        $action = new VerifyEmailVerificationCode();
-        
+        $action = new VerifyEmailVerificationCode;
+
         for ($i = 1; $i <= 4; $i++) {
             try {
                 $action->execute($user, '000000');
-            } catch (DomainException $e) {}
-            
+            } catch (DomainException $e) {
+            }
+
             $this->assertEquals($i, EmailVerificationCode::where('user_id', $user->id)->value('attempts'));
         }
 
         try {
             $action->execute($user, '000000');
-        } catch (DomainException $e) {}
+        } catch (DomainException $e) {
+        }
 
         $this->expectException(DomainException::class);
         $action->execute($user, $code);
@@ -244,14 +250,14 @@ class EmailVerificationBackendTest extends TestCase
         $user = User::factory()->unverified()->create();
         $code = '123456';
         $hash = hash_hmac('sha256', "email-verification|{$user->id}|{$code}", config('app.key'));
-        
+
         EmailVerificationCode::create([
             'user_id' => $user->id,
             'code_hash' => $hash,
             'expires_at' => now()->addMinutes(10),
         ]);
 
-        $action = new VerifyEmailVerificationCode();
+        $action = new VerifyEmailVerificationCode;
         $action->execute($user, $code);
 
         $this->assertNotNull($user->fresh()->email_verified_at);
@@ -260,9 +266,9 @@ class EmailVerificationBackendTest extends TestCase
 
     public function test_verification_is_idempotent()
     {
-        $user = User::factory()->create(); 
-        $action = new VerifyEmailVerificationCode();
-        
+        $user = User::factory()->create();
+        $action = new VerifyEmailVerificationCode;
+
         try {
             $action->execute($user, '123456');
         } catch (DomainException $e) {
@@ -276,18 +282,18 @@ class EmailVerificationBackendTest extends TestCase
     {
         $user1 = User::factory()->unverified()->create();
         $user2 = User::factory()->unverified()->create();
-        
+
         $code = '123456';
         $hash1 = hash_hmac('sha256', "email-verification|{$user1->id}|{$code}", config('app.key'));
-        
+
         EmailVerificationCode::create([
             'user_id' => $user1->id,
             'code_hash' => $hash1,
             'expires_at' => now()->addMinutes(10),
         ]);
 
-        $action = new VerifyEmailVerificationCode();
-        
+        $action = new VerifyEmailVerificationCode;
+
         $this->expectException(DomainException::class);
         $action->execute($user2, $code);
     }
@@ -296,11 +302,11 @@ class EmailVerificationBackendTest extends TestCase
     {
         $user1 = User::factory()->unverified()->create();
         $user2 = User::factory()->unverified()->create();
-        
+
         $code = '123456';
         $hash1 = hash_hmac('sha256', "email-verification|{$user1->id}|{$code}", config('app.key'));
         $hash2 = hash_hmac('sha256', "email-verification|{$user2->id}|{$code}", config('app.key'));
-        
+
         $this->assertNotEquals($hash1, $hash2);
     }
 
@@ -309,23 +315,26 @@ class EmailVerificationBackendTest extends TestCase
         $user = User::factory()->unverified()->create();
         $code = '123456';
         $hash = hash_hmac('sha256', "email-verification|{$user->id}|{$code}", config('app.key'));
-        
+
         EmailVerificationCode::create([
             'user_id' => $user->id,
             'code_hash' => $hash,
             'expires_at' => now()->addMinutes(10),
         ]);
 
-        $listener = function () { throw new \Exception('DB failure'); };
-        \Illuminate\Support\Facades\Event::listen('eloquent.saving: App\Models\User', $listener);
+        $listener = function () {
+            throw new \Exception('DB failure');
+        };
+        Event::listen('eloquent.saving: App\Models\User', $listener);
 
-        $action = new VerifyEmailVerificationCode();
-        
+        $action = new VerifyEmailVerificationCode;
+
         try {
             $action->execute($user, $code);
-        } catch (\Exception $e) {}
+        } catch (\Exception $e) {
+        }
 
-        \Illuminate\Support\Facades\Event::forget('eloquent.saving: App\Models\User');
+        Event::forget('eloquent.saving: App\Models\User');
 
         $this->assertDatabaseHas('email_verification_codes', ['user_id' => $user->id]);
         $this->assertNull($user->fresh()->email_verified_at);

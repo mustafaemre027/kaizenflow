@@ -7,9 +7,9 @@ use App\Models\User;
 use App\Notifications\EmailVerificationCodeNotification;
 use App\Support\OtpHashHelper;
 use DomainException;
+use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Http\Exceptions\ThrottleRequestsException;
 
 class IssueEmailVerificationCode
 {
@@ -30,8 +30,8 @@ class IssueEmailVerificationCode
         }
 
         // RateLimiter based on HMAC-SHA256 (no sensitive info in key)
-        $rateLimiterKey = hash_hmac('sha256', 'resend-otp|' . $user->id, $appKey);
-        
+        $rateLimiterKey = hash_hmac('sha256', 'resend-otp|'.$user->id, $appKey);
+
         if (RateLimiter::tooManyAttempts($rateLimiterKey, 1)) {
             throw new ThrottleRequestsException('Too many attempts.');
         }
