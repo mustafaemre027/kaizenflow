@@ -207,3 +207,11 @@ php artisan test --env=testing # MySQL kaizenflow_test veritabanÄ± (dev/qa db iz
  -   T ü m   R E D   t e s t l e r   g e ç e r e k   t e s t   m a t r i s i   t a m a m l a n d 1. 
   
  
+ # #   B l o k   4 . 1      O T P   H T T P   A d l i   K a b u l 
+ -   B ü t ü n   r o t a l a r d a   ( v e r i f y   d a h i l )   d o r u   m i d d l e w a r e   z i n c i r i   d o r u l a n d 1  ( O T P   i ç i n   a u t h ,   a u t h . s e s s i o n ,   a c t i v e - u s e r ;   0ç   k 1s 1m l a r   i ç i n   e k   o l a r a k   e m a i l - v e r i f i e d ) . 
+ -   X S S   s 1z 1n t 1  t e s t l e r i   ( < s c r i p t >   p a y l o a d ' 1  e s c a p e   e d i l m i _  o l a r a k   & l t ; s c r i p t & g t ;   f o r m a t 1n d a )   d o r u l a n d 1. 
+ -   C S R F   t o k e n   t e s t i   @ c s r f   y e r i n e   d o r u   r e n d e r   e d i l m i _  < i n p u t   n a m e = " _ t o k e n "   b e k l e y e c e k   _e k i l d e   d ü z e l t i l d i . 
+ -   S Q L i t e   m e m o r y   v e   g e r ç e k   M y S Q L   k a i z e n f l o w _ t e s t   ü z e r i n d e   9 1 1   ( 8 9 7   P a s s e d ,   1 4   S k i p p e d )   t e s t   b a _a r 1y l a   g e ç t i . 
+ -   A r a y ü z   ( v e r i f y - e m a i l . b l a d e . p h p )   e r i _i l e b i l i r l i k   ( h 1 ,   i d ,   l a b e l )   v e   m a s k e l e m e   k u r a l l a r 1n a   u y g u n   o l a r a k   d o r u l a n d 1. 
+  
+ 
