@@ -33,8 +33,8 @@ class TurkishLocalizationTest extends TestCase
             'email' => 'unknown@example.com',
         ]);
 
-        $response->assertRedirect(route('login'));
-        $response->assertSessionHas('status', 'E-posta adresiniz sistemimizde kayıtlıysa şifre sıfırlama bağlantısı gönderildi.');
+        $response->assertRedirect('/forgot-password');
+        $response->assertSessionHas('status', 'E-posta adresiniz sistemimizde kayıtlıysa şifre sıfırlama bağlantısı kısa süre içinde gönderilecektir. Gelen kutunuzu ve gereksiz e-posta klasörünü kontrol edin.');
     }
 
     public function test_successful_password_reset_message()
@@ -54,7 +54,7 @@ class TurkishLocalizationTest extends TestCase
         ]);
 
         $response->assertRedirect(route('login'));
-        $response->assertSessionHas('status', 'Şifreniz başarıyla yenilendi. Yeni şifrenizle giriş yapabilirsiniz.');
+        $response->assertSessionHas('status', 'Şifreniz başarıyla değiştirildi. Yeni şifrenizle giriş yapabilirsiniz.');
     }
 
     public function test_invalid_token_message()
@@ -73,7 +73,7 @@ class TurkishLocalizationTest extends TestCase
 
         $response->assertSessionHasErrors('email');
         $this->assertEquals(
-            'Bu şifre sıfırlama bağlantısı geçersiz veya süresi dolmuş.',
+            'Bu şifre sıfırlama bağlantısı geçersiz veya süresi dolmuş. Lütfen yeni bir bağlantı talep edin.',
             session('errors')->first('email')
         );
     }
@@ -140,8 +140,9 @@ class TurkishLocalizationTest extends TestCase
                     return $mailData->subject === 'KaizenFlow Şifre Sıfırlama'
                         && $mailData->greeting === 'Merhaba,'
                         && $mailData->actionText === 'Şifremi Sıfırla'
-                        && in_array('Bu bağlantı 60 dakika geçerlidir.', $mailData->outroLines)
-                        && in_array('Şifre sıfırlama talebinde bulunmadıysanız herhangi bir işlem yapmanıza gerek yoktur.', $mailData->outroLines);
+                        && in_array('Hesabınız için bir şifre sıfırlama talebi aldık.', $mailData->introLines)
+                        && in_array('Bu bağlantı 60 dakika boyunca geçerlidir.', $mailData->outroLines)
+                        && in_array('Bu talebi siz oluşturmadıysanız herhangi bir işlem yapmanız gerekmez.', $mailData->outroLines);
                 }
 
                 return false;

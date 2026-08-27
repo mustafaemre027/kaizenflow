@@ -33,8 +33,14 @@ class PasswordResetTest extends TestCase
             'email' => $user->email,
         ]);
 
-        $response->assertRedirect('/login');
+        $response->assertRedirect('/forgot-password');
         $response->assertSessionHas('status');
+
+        $this->get('/forgot-password')
+             ->assertSee('E-postanızı kontrol edin')
+             ->assertSee('Girdiğiniz e-posta adresi bir hesapla eşleşiyorsa şifre sıfırlama bağlantısı kısa süre içinde gönderilecektir. Gelen kutunuzu ve gereksiz e-posta klasörünü kontrol edin.')
+             ->assertSee('Giriş ekranına dön')
+             ->assertDontSee('<form', false);
 
         Notification::assertSentTo($user, CustomResetPasswordNotification::class);
     }
@@ -49,7 +55,7 @@ class PasswordResetTest extends TestCase
             'email' => $user->email,
         ]);
 
-        $response->assertRedirect('/login');
+        $response->assertRedirect('/forgot-password');
         $response->assertSessionHas('status');
 
         Notification::assertNotSentTo($user, ResetPassword::class);
@@ -63,7 +69,7 @@ class PasswordResetTest extends TestCase
             'email' => 'unknown@example.com',
         ]);
 
-        $response->assertRedirect('/login');
+        $response->assertRedirect('/forgot-password');
         $response->assertSessionHas('status');
 
         Notification::assertNothingSent();
@@ -82,7 +88,9 @@ class PasswordResetTest extends TestCase
 
         $response = $this->post('/forgot-password', ['email' => $email]);
 
-        $response->assertStatus(429); // Too many requests
+        $response->assertRedirect('/forgot-password');
+        $response->assertSessionHasErrors(['email']);
+        $this->assertEquals('Çok fazla sıfırlama isteği gönderdiniz. Lütfen bir dakika sonra tekrar deneyin.', session('errors')->first('email'));
 
         // Assert rate limiter key uses hmac-sha256
         $normalizedEmail = strtolower(trim($email));
@@ -137,6 +145,7 @@ class PasswordResetTest extends TestCase
         ]);
 
         $response->assertSessionHasErrors(['email']);
+        $this->assertEquals('Bu şifre sıfırlama bağlantısı geçersiz veya süresi dolmuş. Lütfen yeni bir bağlantı talep edin.', session('errors')->first('email'));
         $this->assertFalse(Hash::check('NewPass123!', $user->password));
     }
 
