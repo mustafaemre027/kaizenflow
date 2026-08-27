@@ -176,7 +176,7 @@ class EmailVerificationBackendTest extends TestCase
             return true;
         });
 
-        $this->travel(10)->minutes()->addSecond();
+        $this->travel(601)->seconds();
 
         $verifyAction = new VerifyEmailVerificationCode();
         $this->expectException(DomainException::class);
