@@ -316,4 +316,4 @@ class EmailVerificationHttpTest extends TestCase
 
         $response->assertRedirect(route('home'));
     }
-}
+} 
