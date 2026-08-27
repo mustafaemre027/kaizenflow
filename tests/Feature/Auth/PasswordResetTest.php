@@ -167,4 +167,35 @@ class PasswordResetTest extends TestCase
         $response->assertSessionHasErrors(['password']);
         $this->assertEquals('Yeni parola en az 8 karakter olmalıdır.', session('errors')->first('password'));
     }
+
+    public function test_password_reset_required_fields_validation_message(): void
+    {
+        $response = $this->post('/reset-password', [
+            'token' => '',
+            'email' => '',
+            'password' => '',
+            'password_confirmation' => '',
+        ]);
+
+        $response->assertSessionHasErrors(['email', 'password', 'token']);
+        $this->assertEquals('Bu alanın doldurulması zorunludur.', session('errors')->first('email'));
+        $this->assertEquals('Bu alanın doldurulması zorunludur.', session('errors')->first('password'));
+        $this->assertEquals('Bu alanın doldurulması zorunludur.', session('errors')->first('token'));
+    }
+
+    public function test_password_reset_confirmed_validation_message(): void
+    {
+        $user = User::factory()->create(['is_active' => true]);
+        $token = Password::broker()->createToken($user);
+
+        $response = $this->post('/reset-password', [
+            'token' => $token,
+            'email' => $user->email,
+            'password' => 'NewPass123!',
+            'password_confirmation' => 'Mismatch123!',
+        ]);
+
+        $response->assertSessionHasErrors(['password']);
+        $this->assertEquals('Yeni parola ile parola tekrarı eşleşmiyor.', session('errors')->first('password'));
+    }
 }
