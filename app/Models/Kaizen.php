@@ -99,4 +99,9 @@ class Kaizen extends Model
     {
         return $this->hasMany(KaizenAttachment::class)->orderBy('sort_order');
     }
+
+    public function benefits(): HasMany
+    {
+        return $this->hasMany(KaizenBenefit::class);
+    }
 }

@@ -856,15 +856,17 @@ class KaizenControllerTest extends TestCase
         $this->assertEquals(KaizenStatus::SUBMITTED, $kaizen->fresh()->status);
     }
 
-    public function test_submit_expected_benefit_regression(): void
+    public function test_submit_with_null_expected_benefit_succeeds(): void
     {
+        // Product decision: benefit entry is optional.
+        // Submitting a Kaizen with null expected_benefit must succeed.
         $this->user->role = UserRole::EMPLOYEE;
         $this->user->save();
 
         $kaizen = Kaizen::factory()->create([
             'creator_user_id' => $this->user->id,
             'status' => KaizenStatus::DRAFT,
-            'expected_benefit' => null, // empty expected_benefit
+            'expected_benefit' => null,
         ]);
 
         $this->artisan('db:seed', ['--class' => 'ApprovalWorkflowSeeder']);
@@ -873,11 +875,9 @@ class KaizenControllerTest extends TestCase
             ->post(route('kaizens.submit', $kaizen));
 
         $response->assertStatus(302);
-        // It should fail business validation in SubmitKaizen action, throwing ValidationException
-        // ValidationException is automatically caught by Laravel and redirects back with errors
-        $response->assertSessionHasErrors();
+        $response->assertSessionHasNoErrors();
 
-        $this->assertEquals(KaizenStatus::DRAFT, $kaizen->fresh()->status);
+        $this->assertEquals(KaizenStatus::SUBMITTED, $kaizen->fresh()->status);
     }
 
     public function test_resubmit_loop(): void
