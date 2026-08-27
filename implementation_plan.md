@@ -214,3 +214,23 @@ HTTP katman1 ba_ar1yla eklendi:
 - SQLite memory ve ger�ek MySQL kaizenflow_test �zerinde 911 (897 Passed, 14 Skipped) test ba_ar1yla ge�ti.
 - Aray�z (verify-email.blade.php) eri_ilebilirlik (h1, id, label) ve maskeleme kurallar1na uygun olarak doruland1.
 
+## Kabul Sonucu
+**GÜN 16 BLOK 3.1 KABUL EDİLEBİLİR — EMAIL OTP BACKEND (SQLITE VE MYSQL ÜZERİNDE DOĞRULANDI, EKSİKSİZ UYGULANDI)**
+
+**GÜN 16 BLOK 4.1 KABUL EDİLEBİLİR — EMAIL OTP HTTP ADLİ KABUL (XSS VE MIDDLEWARE ZİNCİRİ DOĞRULANDI)**
+
+**GÜN 16 BLOK 5.2 KABUL EDİLEBİLİR — NİHAİ QA KABULÜ, CLEANUP VE TAM REGRESYON (KULLANICI ONAYLI)**
+
+## Manuel E2E Test (QA) Sonuçları:
+- Şifre sıfırlama talebi aynı sayfada nötr mesaj gösteriyor.
+- Mailpit’e Türkçe ve KaizenFlow markalı e-posta geliyor. (Yerel ortam, canlıda gerçek SMTP kullanılacaktır).
+- E-postada Laravel, :actionText veya İngilizce sistem metni kalmıyor.
+- Reset bağlantısı yeni parola formunu açıyor.
+- required, min ve confirmed hataları düzgün Türkçe gösteriliyor.
+- Başarılı işlemden sonra giriş ekranında e-posta dolu, parola boş geliyor.
+- Yeni parolayla giriş yapılabiliyor.
+- Kullanılmış reset bağlantısının tekrar kullanımı reddediliyor.
+- OTP gönderme, doğrulama ve korunan rotaya erişim başarılı.
+- Mobil/masaüstü görünümleri kabul edildi.
+
+Tüm regression testleri, kod kalite kapıları (Pint, npm build, composer validate) yeşildir. QA ortamı (MySQL kaizenflow_qa ve Mailpit logları) başarılı bir şekilde temizlenmiştir.
