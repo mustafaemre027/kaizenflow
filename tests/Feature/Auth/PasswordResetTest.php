@@ -29,7 +29,7 @@ class PasswordResetTest extends TestCase
 
         $user = User::factory()->create(['is_active' => true]);
 
-        $response = $this->post('/forgot-password', [
+        $response = $this->from('/forgot-password')->post('/forgot-password', [
             'email' => $user->email,
         ]);
 
@@ -37,10 +37,10 @@ class PasswordResetTest extends TestCase
         $response->assertSessionHas('status');
 
         $this->get('/forgot-password')
-             ->assertSee('E-postanızı kontrol edin')
-             ->assertSee('Girdiğiniz e-posta adresi bir hesapla eşleşiyorsa şifre sıfırlama bağlantısı kısa süre içinde gönderilecektir. Gelen kutunuzu ve gereksiz e-posta klasörünü kontrol edin.')
-             ->assertSee('Giriş ekranına dön')
-             ->assertDontSee('<form', false);
+            ->assertSee('E-postanızı kontrol edin')
+            ->assertSee('Girdiğiniz e-posta adresi bir hesapla eşleşiyorsa şifre sıfırlama bağlantısı kısa süre içinde gönderilecektir. Gelen kutunuzu ve gereksiz e-posta klasörünü kontrol edin.')
+            ->assertSee('Giriş ekranına dön')
+            ->assertDontSee('<form', false);
 
         Notification::assertSentTo($user, CustomResetPasswordNotification::class);
     }
@@ -51,7 +51,7 @@ class PasswordResetTest extends TestCase
 
         $user = User::factory()->create(['is_active' => false]);
 
-        $response = $this->post('/forgot-password', [
+        $response = $this->from('/forgot-password')->post('/forgot-password', [
             'email' => $user->email,
         ]);
 
@@ -65,7 +65,7 @@ class PasswordResetTest extends TestCase
     {
         Notification::fake();
 
-        $response = $this->post('/forgot-password', [
+        $response = $this->from('/forgot-password')->post('/forgot-password', [
             'email' => 'unknown@example.com',
         ]);
 
@@ -83,10 +83,10 @@ class PasswordResetTest extends TestCase
         $email = 'test@example.com';
 
         for ($i = 0; $i < 5; $i++) {
-            $this->post('/forgot-password', ['email' => $email]);
+            $this->from('/forgot-password')->post('/forgot-password', ['email' => $email]);
         }
 
-        $response = $this->post('/forgot-password', ['email' => $email]);
+        $response = $this->from('/forgot-password')->post('/forgot-password', ['email' => $email]);
 
         $response->assertRedirect('/forgot-password');
         $response->assertSessionHasErrors(['email']);

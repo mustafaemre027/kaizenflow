@@ -52,6 +52,7 @@ class PasswordResetLinkController extends Controller
                 $request->only('email')
             );
         }
+
         return back()->with('status', __($status));
     }
 }
