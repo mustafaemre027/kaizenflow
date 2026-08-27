@@ -123,7 +123,7 @@ class PasswordResetTest extends TestCase
 
         $response->assertRedirect('/login');
         $response->assertSessionHas('status');
-        
+
         $this->assertEquals($user->email, session()->getOldInput('email'));
         $this->assertNull(session()->getOldInput('password'));
 
