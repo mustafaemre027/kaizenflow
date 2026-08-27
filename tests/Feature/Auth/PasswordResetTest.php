@@ -123,6 +123,9 @@ class PasswordResetTest extends TestCase
 
         $response->assertRedirect('/login');
         $response->assertSessionHas('status');
+        
+        $this->assertEquals($user->email, session()->getOldInput('email'));
+        $this->assertNull(session()->getOldInput('password'));
 
         $user->refresh();
         $this->assertTrue(Hash::check('NewPass123!', $user->password));
@@ -162,5 +165,6 @@ class PasswordResetTest extends TestCase
         ]);
 
         $response->assertSessionHasErrors(['password']);
+        $this->assertEquals('Yeni parola en az 8 karakter olmalıdır.', session('errors')->first('password'));
     }
 }
