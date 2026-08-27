@@ -198,20 +198,19 @@ php artisan test --env=testing # MySQL kaizenflow_test veritabanÄ± (dev/qa db iz
 3. **STYLE**: Gerekiyorsa formatlama.
 4. **DOCS**: Bu `implementation_plan.md` dosyasÄ±nÄ±n commitlenmesi.
 
- # #   B l o k   4      E m a i l   O T P   H T T P   A k 1_1  v e   M i d d l e w a r e   E n t e g r a s y o n u 
- 
- H T T P   k a t m a n 1  b a _a r 1y l a   e k l e n d i : 
- -   M i d d l e w a r e   ( E n s u r e E m a i l I s V e r i f i e d )   o l u _t u r u l d u   v e   ' e m a i l - v e r i f i e d '   o l a r a k   k a y d e d i l d i . 
- -   O T P   D o r u l a m a   A r a y ü z ü   ( v e r i f y - e m a i l . b l a d e . p h p )   r e s p o n s i v e   v e   e r i _i l e b i l i r   o l a r a k   e k l e n d i . 
- -   R a t e - l i m i t ,   r e s e n d   v e   g ü v e n l i k   ( X S S ,   p l a i n t e x t   g i z l e m e )   m e k a n i z m a l a r 1  F o r m   R e q u e s t   v e   C o n t r o l l e r   s 1n 1r l a r 1n d a   d e v r e y e   a l 1n d 1. 
- -   T ü m   R E D   t e s t l e r   g e ç e r e k   t e s t   m a t r i s i   t a m a m l a n d 1. 
-  
- 
- # #   B l o k   4 . 1      O T P   H T T P   A d l i   K a b u l 
- -   B ü t ü n   r o t a l a r d a   ( v e r i f y   d a h i l )   d o r u   m i d d l e w a r e   z i n c i r i   d o r u l a n d 1  ( O T P   i ç i n   a u t h ,   a u t h . s e s s i o n ,   a c t i v e - u s e r ;   0ç   k 1s 1m l a r   i ç i n   e k   o l a r a k   e m a i l - v e r i f i e d ) . 
- -   X S S   s 1z 1n t 1  t e s t l e r i   ( < s c r i p t >   p a y l o a d ' 1  e s c a p e   e d i l m i _  o l a r a k   & l t ; s c r i p t & g t ;   f o r m a t 1n d a )   d o r u l a n d 1. 
- -   C S R F   t o k e n   t e s t i   @ c s r f   y e r i n e   d o r u   r e n d e r   e d i l m i _  < i n p u t   n a m e = " _ t o k e n "   b e k l e y e c e k   _e k i l d e   d ü z e l t i l d i . 
- -   S Q L i t e   m e m o r y   v e   g e r ç e k   M y S Q L   k a i z e n f l o w _ t e s t   ü z e r i n d e   9 1 1   ( 8 9 7   P a s s e d ,   1 4   S k i p p e d )   t e s t   b a _a r 1y l a   g e ç t i . 
- -   A r a y ü z   ( v e r i f y - e m a i l . b l a d e . p h p )   e r i _i l e b i l i r l i k   ( h 1 ,   i d ,   l a b e l )   v e   m a s k e l e m e   k u r a l l a r 1n a   u y g u n   o l a r a k   d o r u l a n d 1. 
-  
- 
+## Blok 4   Email OTP HTTP Ak1_1 ve Middleware Entegrasyonu
+
+HTTP katman1 ba_ar1yla eklendi:
+- Middleware (EnsureEmailIsVerified) olu_turuldu ve 'email-verified' olarak kaydedildi.
+- OTP Dorulama Arayüzü (verify-email.blade.php) responsive ve eri_ilebilir olarak eklendi.
+- Rate-limit, resend ve güvenlik (XSS, plaintext gizleme) mekanizmalar1 Form Request ve Controller s1n1rlar1nda devreye al1nd1.
+- Tüm RED testler geçerek test matrisi tamamland1.
+
+
+## Blok 4.1   OTP HTTP Adli Kabul
+- Bütün rotalarda (verify dahil) doru middleware zinciri doruland1 (OTP için auth, auth.session, active-user; 0ç k1s1mlar için ek olarak email-verified).
+- XSS s1z1nt1 testleri (<script> payload'1 escape edilmi_ olarak &lt;script&gt; format1nda) doruland1.
+- CSRF token testi @csrf yerine doru render edilmi_ <input name="_token" bekleyecek _ekilde düzeltildi.
+- SQLite memory ve gerçek MySQL kaizenflow_test üzerinde 911 (897 Passed, 14 Skipped) test ba_ar1yla geçti.
+- Arayüz (verify-email.blade.php) eri_ilebilirlik (h1, id, label) ve maskeleme kurallar1na uygun olarak doruland1.
+
