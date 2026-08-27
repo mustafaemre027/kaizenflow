@@ -96,7 +96,7 @@ class EmailVerificationHttpTest extends TestCase
 
     public function test_admin_cannot_bypass_verification_rule()
     {
-        $admin = User::factory()->unverified()->admin()->create();
+        $admin = User::factory()->unverified()->withRole(\App\Enums\UserRole::ADMIN)->create();
 
         $response = $this->actingAs($admin)->get(route('kaizens.index'));
 
@@ -258,8 +258,8 @@ class EmailVerificationHttpTest extends TestCase
 
         $response = $this->actingAs($user)->get(route('verification.notice'));
 
-        $response->assertDontSee('<script>');
-        $response->assertSee('&lt;script&gt;');
+        $response->assertDontSee('<script>', false);
+        $response->assertSee('&lt;script&gt;', false);
     }
 
     public function test_blade_preserves_single_h1_and_accessible_form()
@@ -281,9 +281,9 @@ class EmailVerificationHttpTest extends TestCase
 
         $response = $this->actingAs($user)->get(route('verification.notice'));
 
-        $response->assertSee('@csrf', false)
-                 ->assertDontSee('<form method="GET"')
-                 ->assertSee('method="POST"');
+        $response->assertSee('name="_token"', false)
+                 ->assertDontSee('<form method="GET"', false)
+                 ->assertSee('method="POST"', false);
     }
 
     public function test_guest_login_and_password_reset_routes_are_not_broken()
