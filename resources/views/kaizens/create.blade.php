@@ -191,12 +191,12 @@
                                 @if($matchedType)
                                     <div class="kf-benefit-row border rounded p-3 mb-2 bg-light" data-benefit-row>
                                         <div class="d-flex justify-content-between align-items-center mb-2">
-                                            <span class="fw-medium text-dark">{{ e($matchedType->name) }}
+                                            <span class="fw-medium text-dark">{{ $matchedType->name }}
                                                 @if($matchedType->unit_label)
-                                                    <span class="text-muted small">({{ e($matchedType->unit_label) }})</span>
+                                                    <span class="text-muted small">({{ $matchedType->unit_label }})</span>
                                                 @endif
                                             </span>
-                                            <button type="button" class="btn btn-sm btn-outline-danger kf-remove-benefit-row" aria-label="{{ e($matchedType->name) }} fayda satırını kaldır">Kaldır</button>
+                                            <button type="button" class="btn btn-sm btn-outline-danger kf-remove-benefit-row" aria-label="{{ $matchedType->name }} fayda satırını kaldır">Kaldır</button>
                                         </div>
                                         <input type="hidden" name="benefits[{{ $idx }}][benefit_type_id]" value="{{ $matchedType->id }}">
                                         <div class="row g-2">
@@ -248,10 +248,10 @@
                                 <option value="">-- Fayda türü seçin --</option>
                                 @foreach($benefitTypes as $type)
                                     <option value="{{ $type->id }}"
-                                        data-name="{{ e($type->name) }}"
-                                        data-unit="{{ e($type->unit_label ?? '') }}"
+                                        data-name="{{ $type->name }}"
+                                        data-unit="{{ $type->unit_label ?? '' }}"
                                         {{ in_array($type->id, $usedTypeIds, true) ? 'disabled' : '' }}>
-                                        {{ e($type->name) }}{{ $type->unit_label ? ' ('.$type->unit_label.')' : '' }}
+                                        {{ $type->name }}{{ $type->unit_label ? ' ('.$type->unit_label.')' : '' }}
                                     </option>
                                 @endforeach
                             </select>

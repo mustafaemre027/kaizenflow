@@ -11,26 +11,29 @@ use Illuminate\Support\Facades\DB;
 
 class CompleteKaizenImplementation
 {
-    public function execute(Kaizen $kaizen, User $actor, ?string $actualResult): Kaizen
+    public function execute(Kaizen $kaizen, User $actor, ?string $actualResult, array $benefitsPayload = []): Kaizen
     {
         if (! $actor->can('completeImplementation', $kaizen)) {
             throw new AuthorizationException('You are not authorized to complete implementation for this Kaizen.');
         }
 
         if ($kaizen->status !== KaizenStatus::IN_PROGRESS) {
-            throw new \Exception('Only IN_PROGRESS Kaizens can be completed.');
+            throw new \DomainException('Only IN_PROGRESS Kaizens can be completed.');
         }
 
         if (trim((string) $actualResult) === '') {
             throw new \InvalidArgumentException('Kaizen actual result is required and cannot be empty.');
         }
 
-        return DB::transaction(function () use ($kaizen, $actor, $actualResult) {
+        return DB::transaction(function () use ($kaizen, $actor, $actualResult, $benefitsPayload) {
             $lockedKaizen = Kaizen::where('id', $kaizen->id)->lockForUpdate()->first();
 
             if ($lockedKaizen->status !== KaizenStatus::IN_PROGRESS) {
-                throw new \Exception('Only IN_PROGRESS Kaizens can be completed.');
+                throw new \DomainException('Only IN_PROGRESS Kaizens can be completed.');
             }
+
+            $syncAction = app(SyncRealizedKaizenBenefits::class);
+            $syncAction->execute($actor, $lockedKaizen, $benefitsPayload);
 
             $lockedKaizen->status = KaizenStatus::COMPLETED;
             $lockedKaizen->completed_at = now();

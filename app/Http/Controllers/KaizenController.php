@@ -163,12 +163,18 @@ class KaizenController extends Controller
             }
         }
 
+        $activeBenefitTypes = collect();
+        if ($kaizen->status === KaizenStatus::IN_PROGRESS && request()->user()->can('completeImplementation', $kaizen)) {
+            $activeBenefitTypes = BenefitType::active()->orderBy('name')->get();
+        }
+
         return view('kaizens.show', compact(
             'kaizen',
             'workflowTimeline',
             'currentSituationAttachments',
             'proposedSituationAttachments',
-            'implementationCandidates'
+            'implementationCandidates',
+            'activeBenefitTypes'
         ));
     }
 

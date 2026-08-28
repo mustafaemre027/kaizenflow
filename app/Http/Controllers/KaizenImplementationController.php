@@ -51,7 +51,8 @@ class KaizenImplementationController extends Controller
         $action->execute(
             $kaizen,
             $request->user(),
-            $request->validated('actual_result')
+            $request->validated('actual_result'),
+            $request->validated('benefits') ?? []
         );
 
         return redirect()->route('kaizens.show', $kaizen)

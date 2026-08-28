@@ -156,22 +156,17 @@ class SyncExpectedKaizenBenefitsTest extends TestCase
     // CREATE — Scenario 6: duplicate type — last entry wins (dedup via array key)
     // -----------------------------------------------------------------------
 
-    public function test_create_6_duplicate_type_deduped_last_wins(): void
+    public function test_create_6_duplicate_type_rejected(): void
     {
         $actor = $this->actor();
         $kaizen = $this->draftKaizen($actor);
         $type = BenefitType::factory()->create();
 
+        $this->expectException(ValidationException::class);
+
         $this->sync()->execute($actor, $kaizen, [
             ['benefit_type_id' => $type->id, 'expected_value' => '1', 'expected_note' => 'birinci'],
             ['benefit_type_id' => $type->id, 'expected_value' => '2', 'expected_note' => 'ikinci'],
-        ]);
-
-        $this->assertDatabaseCount('kaizen_benefits', 1);
-        $this->assertDatabaseHas('kaizen_benefits', [
-            'kaizen_id' => $kaizen->id,
-            'benefit_type_id' => $type->id,
-            'expected_note' => 'ikinci',
         ]);
     }
 
@@ -518,11 +513,9 @@ class SyncExpectedKaizenBenefitsTest extends TestCase
         $response->assertOk();
         // The raw script tag must NOT appear unescaped in the response body
         $response->assertDontSee('<script>alert(1)</script>', false);
-        // e() produces &lt; which in the response body stream appears as the literal string &lt;
-        // When Laravel assertSee escapes the needle (default), it would double-encode.
-        // With escape=false we search for the literal HTML-entity string in the response body.
-        // The response body contains "&amp;lt;script&amp;gt;" because Blade double-encodes e() output.
-        $this->assertStringContainsString('&amp;lt;script&amp;gt;', $response->getContent());
+        // Blade's {{ }} automatically escapes, so `<` becomes `&lt;`.
+        // We removed the redundant `e()` call to fix double-escaping.
+        $this->assertStringContainsString('&lt;script&gt;', $response->getContent());
     }
 
     // -----------------------------------------------------------------------

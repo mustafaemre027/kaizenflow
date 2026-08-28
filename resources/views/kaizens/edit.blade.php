@@ -251,16 +251,16 @@
                                 <div class="kf-benefit-row border rounded p-3 mb-2 bg-light" data-benefit-row data-type-id="{{ $type->id }}">
                                     <div class="d-flex justify-content-between align-items-center mb-2">
                                         <span class="fw-medium text-dark">
-                                            {{ e($type->name) }}
+                                            {{ $type->name }}
                                             @if($type->unit_label)
-                                                <span class="text-muted small">({{ e($type->unit_label) }})</span>
+                                                <span class="text-muted small">({{ $type->unit_label }})</span>
                                             @endif
                                             @if(!$type->is_active)
                                                 <span class="badge bg-secondary ms-1" title="Bu fayda türü pasif edilmiştir">Pasif</span>
                                             @endif
                                         </span>
                                         @if($type->is_active)
-                                            <button type="button" class="btn btn-sm btn-outline-danger kf-remove-benefit-row" aria-label="{{ e($type->name) }} fayda satırını kaldır">Kaldır</button>
+                                            <button type="button" class="btn btn-sm btn-outline-danger kf-remove-benefit-row" aria-label="{{ $type->name }} fayda satırını kaldır">Kaldır</button>
                                         @else
                                             {{-- Inactive linked: cannot be removed via UI to preserve historical record --}}
                                             <span class="text-muted small fst-italic">Tarihsel kayıt</span>
@@ -318,9 +318,9 @@
                                     <option value="">-- Fayda türü seçin --</option>
                                     @foreach($pickableTypes as $type)
                                         <option value="{{ $type->id }}"
-                                            data-name="{{ e($type->name) }}"
-                                            data-unit="{{ e($type->unit_label ?? '') }}">
-                                            {{ e($type->name) }}{{ $type->unit_label ? ' ('.$type->unit_label.')' : '' }}
+                                            data-name="{{ $type->name }}"
+                                            data-unit="{{ $type->unit_label ?? '' }}">
+                                            {{ $type->name }}{{ $type->unit_label ? ' ('.$type->unit_label.')' : '' }}
                                         </option>
                                     @endforeach
                                 </select>
