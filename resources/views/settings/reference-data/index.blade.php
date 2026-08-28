@@ -22,6 +22,7 @@
 @endif
 
 <!-- KATEGORİLER BÖLÜMÜ -->
+@can('viewAny', App\Models\Category::class)
 <div class="kf-panel mb-5">
     <div class="kf-panel-header d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
         <div>
@@ -170,9 +171,11 @@
         @endif
     </div>
 </div>
+@endcan
 
 
 <!-- DEPARTMANLAR BÖLÜMÜ -->
+@can('viewAny', App\Models\Department::class)
 <div class="kf-panel mb-5">
     <div class="kf-panel-header d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
         <div>
@@ -335,4 +338,164 @@
         @endif
     </div>
 </div>
+@endcan
+
+<!-- FAYDA TÜRLERİ BÖLÜMÜ -->
+@can('viewAny', App\Models\BenefitType::class)
+<div class="kf-panel mb-5">
+    <div class="kf-panel-header d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+        <div>
+            <h2 class="kf-panel-title fs-4 mb-1">Fayda Türleri</h2>
+            <p class="text-muted small mb-0">Kaizen gerçekleşme raporlarında seçilebilecek fayda metriklerini yönetin.</p>
+        </div>
+        <div class="d-flex gap-3 text-sm">
+            <div class="text-center px-3 border-end">
+                <div class="text-muted small fw-medium">Toplam</div>
+                <div class="fs-5 fw-bold">{{ $benefitTypes->total() }}</div>
+            </div>
+            <div class="text-center px-3 border-end">
+                <div class="text-muted small fw-medium">Aktif</div>
+                <div class="fs-5 fw-bold text-success">{{ App\Models\BenefitType::where('is_active', true)->count() }}</div>
+            </div>
+            <div class="text-center px-3">
+                <div class="text-muted small fw-medium">Pasif</div>
+                <div class="fs-5 fw-bold text-secondary">{{ App\Models\BenefitType::where('is_active', false)->count() }}</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="kf-panel-body p-0">
+        <!-- CREATE FAYDA TÜRÜ -->
+        @can('create', App\Models\BenefitType::class)
+        <div class="bg-light border-bottom p-4">
+            <form action="{{ route('settings.benefit-types.store') }}" method="POST">
+                @csrf
+                <div class="row g-3">
+                    <div class="col-md-5">
+                        <label class="form-label small fw-medium text-dark">Fayda Türü Adı</label>
+                        <input type="text" name="name" class="form-control @error('name') is-invalid @enderror" value="{{ old('name') }}" required>
+                        @error('name')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small fw-medium text-dark">Birim <span class="text-muted fw-normal">(Opsiyonel)</span></label>
+                        <input type="text" name="unit_label" class="form-control @error('unit_label') is-invalid @enderror" value="{{ old('unit_label') }}">
+                        <div class="form-text mt-1" style="font-size: 0.75rem;">Örn. saat, TL, adet, %, kWh.</div>
+                        @error('unit_label')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                    <div class="col-12 text-end mt-3">
+                        <button type="submit" class="btn btn-primary px-4">Fayda Türü Ekle</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+        @endcan
+
+        <!-- SEARCH & FİLTRE FAYDA TÜRÜ -->
+        <div class="p-4 border-bottom">
+            <form action="{{ route('settings.reference-data.index') }}" method="GET" class="row g-2 align-items-center">
+                @if(request()->filled('category_q')) <input type="hidden" name="category_q" value="{{ request('category_q') }}"> @endif
+                @if(request()->filled('category_status')) <input type="hidden" name="category_status" value="{{ request('category_status') }}"> @endif
+                @if(request()->filled('category_page')) <input type="hidden" name="category_page" value="{{ request('category_page') }}"> @endif
+                
+                @if(request()->filled('department_q')) <input type="hidden" name="department_q" value="{{ request('department_q') }}"> @endif
+                @if(request()->filled('department_status')) <input type="hidden" name="department_status" value="{{ request('department_status') }}"> @endif
+                @if(request()->filled('department_page')) <input type="hidden" name="department_page" value="{{ request('department_page') }}"> @endif
+
+                <div class="col-md-5">
+                    <input type="text" name="benefit_type_q" class="form-control" placeholder="Fayda türü ara..." value="{{ request('benefit_type_q') }}">
+                </div>
+                <div class="col-md-3">
+                    <select name="benefit_type_status" class="form-select">
+                        <option value="">Tümü</option>
+                        <option value="active" {{ request('benefit_type_status') === 'active' ? 'selected' : '' }}>Aktif</option>
+                        <option value="inactive" {{ request('benefit_type_status') === 'inactive' ? 'selected' : '' }}>Pasif</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-secondary w-100">Filtrele</button>
+                </div>
+                <div class="col-md-2">
+                    <a href="{{ route('settings.reference-data.index', request()->except(['benefit_type_q', 'benefit_type_status', 'benefit_type_page'])) }}" class="btn btn-light w-100 border">Temizle</a>
+                </div>
+            </form>
+        </div>
+
+        <!-- LİSTE FAYDA TÜRÜ -->
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" style="min-width: 850px;">
+                <thead class="table-light">
+                    <tr>
+                        <th class="px-4 py-3">Ad</th>
+                        <th class="py-3">Birim</th>
+                        <th class="py-3">Durum</th>
+                        <th class="py-3 text-center">Kaizen Kullanımı</th>
+                        <th class="py-3">Son Güncelleme</th>
+                        <th class="px-4 py-3 text-end">İşlemler</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($benefitTypes as $benefitType)
+                    <tr>
+                        <td class="px-4 py-3 fw-medium text-dark">
+                            {{ $benefitType->name }}
+                        </td>
+                        <td class="py-3">
+                            @if($benefitType->unit_label)
+                                <span class="badge bg-light text-dark border">{{ $benefitType->unit_label }}</span>
+                            @else
+                                <span class="text-muted small">-</span>
+                            @endif
+                        </td>
+                        <td class="py-3">
+                            @if($benefitType->is_active)
+                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25" aria-label="Durum: Aktif">Aktif</span>
+                            @else
+                                <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25" aria-label="Durum: Pasif">Pasif</span>
+                            @endif
+                        </td>
+                        <td class="py-3 text-center">
+                            <span class="badge bg-light text-secondary border px-2 py-1">{{ $benefitType->kaizen_benefits_count }}</span>
+                        </td>
+                        <td class="py-3 text-muted small">{{ $benefitType->updated_at->format('d.m.Y H:i') }}</td>
+                        <td class="px-4 py-3 text-end">
+                            <div class="d-flex justify-content-end gap-2">
+                                @can('update', $benefitType)
+                                    <a href="{{ route('settings.benefit-types.edit', $benefitType) }}" class="btn btn-sm btn-outline-secondary">Düzenle</a>
+                                    <form action="{{ route('settings.benefit-types.status', $benefitType) }}" method="POST" class="d-inline">
+                                        @csrf
+                                        @method('PATCH')
+                                        @if($benefitType->is_active)
+                                            <button type="submit" class="btn btn-sm btn-outline-warning" onclick="return confirm('Bu fayda türünü pasife almak istediğinize emin misiniz? Mevcut Kaizen kayıtlarında görünmeye devam eder, ancak yenilerde seçilemez.')">Pasife Al</button>
+                                        @else
+                                            <button type="submit" class="btn btn-sm btn-outline-success">Aktifleştir</button>
+                                        @endif
+                                    </form>
+                                @endcan
+                            </div>
+                        </td>
+                    </tr>
+                    @empty
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-5">
+                            @if(request('benefit_type_q') || request('benefit_type_status'))
+                                Aramanıza uygun fayda türü bulunamadı.
+                            @else
+                                Henüz fayda türü tanımlanmadı.
+                            @endif
+                        </td>
+                    </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+        
+        @if($benefitTypes->hasPages())
+        <div class="p-4 border-top">
+            {{ $benefitTypes->links() }}
+        </div>
+        @endif
+    </div>
+</div>
+@endcan
+
 @endsection

@@ -91,6 +91,12 @@ Route::middleware('auth')->group(function () {
             Route::post('/departments', [DepartmentController::class, 'store'])->name('departments.store');
             Route::patch('/departments/{department}', [DepartmentController::class, 'update'])->name('departments.update');
             Route::patch('/departments/{department}/status', [DepartmentController::class, 'toggleStatus'])->name('departments.status');
+
+            Route::get('/benefit-types/create', [\App\Http\Controllers\Settings\BenefitTypeController::class, 'create'])->name('benefit-types.create');
+            Route::post('/benefit-types', [\App\Http\Controllers\Settings\BenefitTypeController::class, 'store'])->name('benefit-types.store');
+            Route::get('/benefit-types/{benefitType}/edit', [\App\Http\Controllers\Settings\BenefitTypeController::class, 'edit'])->name('benefit-types.edit');
+            Route::patch('/benefit-types/{benefitType}', [\App\Http\Controllers\Settings\BenefitTypeController::class, 'update'])->name('benefit-types.update');
+            Route::patch('/benefit-types/{benefitType}/status', [\App\Http\Controllers\Settings\BenefitTypeController::class, 'toggleStatus'])->name('benefit-types.status');
         });
     });
 });

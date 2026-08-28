@@ -1,0 +1,22 @@
+<?php
+
+namespace App\Http\Requests\Settings;
+
+use App\Models\BenefitType;
+use Illuminate\Foundation\Http\FormRequest;
+
+class StoreBenefitTypeRequest extends FormRequest
+{
+    public function authorize(): bool
+    {
+        return $this->user()->can('create', BenefitType::class);
+    }
+
+    public function rules(): array
+    {
+        return [
+            'name' => ['required', 'string', 'max:255'],
+            'unit_label' => ['nullable', 'string', 'max:50'],
+        ];
+    }
+}
