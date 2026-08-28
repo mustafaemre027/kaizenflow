@@ -44,7 +44,13 @@ class UpdateKaizenDraftRequest extends FormRequest
             // Structured expected benefits (optional array; empty array = clear all)
             'benefits' => ['nullable', 'array'],
             'benefits.*.benefit_type_id' => ['required_with:benefits.*', 'integer', 'distinct'],
-            'benefits.*.expected_value' => ['nullable', 'numeric', 'min:0', 'max:999999999999999'],
+            'benefits.*.expected_value' => [
+                'nullable',
+                'numeric',
+                'min:0',
+                'max:99999999999.9999',
+                'regex:/^\d{1,11}(\.\d{1,4})?$/',
+            ],
             'benefits.*.expected_note' => ['nullable', 'string', 'max:2000'],
 
             'current_situation_images' => [

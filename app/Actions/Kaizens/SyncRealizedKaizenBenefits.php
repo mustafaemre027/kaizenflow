@@ -126,8 +126,10 @@ class SyncRealizedKaizenBenefits
             return null;
         }
 
-        if (! is_numeric($str)) {
-            return null;
+        if (! is_numeric($str) || $str < 0 || $str > 99999999999.9999 || ! preg_match('/^\d{1,11}(\.\d{1,4})?$/', $str)) {
+            throw ValidationException::withMessages([
+                'benefits' => 'Geçersiz sayısal değer girildi.',
+            ]);
         }
 
         return $str;

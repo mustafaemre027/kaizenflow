@@ -540,4 +540,37 @@ class SyncExpectedKaizenBenefitsTest extends TestCase
         $this->assertDatabaseHas('kaizens', ['title' => 'Benefit olmadan Kaizen testi']);
         $this->assertDatabaseCount('kaizen_benefits', 0);
     }
+
+    // -----------------------------------------------------------------------
+    // DECIMAL VALIDATION MATRIX
+    // -----------------------------------------------------------------------
+
+    public function test_decimal_validation_matrix(): void
+    {
+        $actor = $this->actor();
+        $kaizen = $this->draftKaizen($actor);
+        $type = BenefitType::factory()->create();
+
+        // Pass cases
+        $passValues = ['0', '1', '1.1', '1.1234', '99999999999.9999'];
+        foreach ($passValues as $val) {
+            $this->sync()->execute($actor, $kaizen, [
+                ['benefit_type_id' => $type->id, 'expected_value' => $val, 'expected_note' => null],
+            ]);
+            $this->assertDatabaseHas('kaizen_benefits', ['kaizen_id' => $kaizen->id, 'expected_value' => $val]);
+        }
+
+        // Action-level Reject cases (Direct Action Invocation)
+        $rejectValues = ['99999999999.99999', '100000000000.0000', '-1', 'abc', '1.12345'];
+        foreach ($rejectValues as $val) {
+            try {
+                $this->sync()->execute($actor, $kaizen, [
+                    ['benefit_type_id' => $type->id, 'expected_value' => $val, 'expected_note' => null],
+                ]);
+                $this->fail("Value $val should have thrown ValidationException in action.");
+            } catch (ValidationException $e) {
+                $this->assertArrayHasKey('benefits', $e->errors());
+            }
+        }
+    }
 }

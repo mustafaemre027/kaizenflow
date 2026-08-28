@@ -80,10 +80,12 @@
                     @method('PATCH')
                     
                     @if($benefitType->is_active)
+                        <input type="hidden" name="is_active" value="0">
                         <button type="submit" class="btn btn-outline-warning w-100" onclick="return confirm('Bu fayda türünü pasife almak istediğinize emin misiniz?')">
                             Pasife Al
                         </button>
                     @else
+                        <input type="hidden" name="is_active" value="1">
                         <button type="submit" class="btn btn-outline-success w-100">
                             Aktifleştir
                         </button>

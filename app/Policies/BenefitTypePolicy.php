@@ -23,11 +23,13 @@ class BenefitTypePolicy
 
     public function create(User $user): bool
     {
-        return $this->resolver->allowsSystem($user, UserCapability::ORGANIZATION_MANAGE);
+        return $this->resolver->allowsSystem($user, UserCapability::ORGANIZATION_VIEW) &&
+               $this->resolver->allowsSystem($user, UserCapability::ORGANIZATION_MANAGE);
     }
 
     public function update(User $user, BenefitType $benefitType): bool
     {
-        return $this->resolver->allowsSystem($user, UserCapability::ORGANIZATION_MANAGE);
+        return $this->resolver->allowsSystem($user, UserCapability::ORGANIZATION_VIEW) &&
+               $this->resolver->allowsSystem($user, UserCapability::ORGANIZATION_MANAGE);
     }
 }

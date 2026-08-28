@@ -465,8 +465,10 @@
                                         @csrf
                                         @method('PATCH')
                                         @if($benefitType->is_active)
+                                            <input type="hidden" name="is_active" value="0">
                                             <button type="submit" class="btn btn-sm btn-outline-warning" onclick="return confirm('Bu fayda türünü pasife almak istediğinize emin misiniz? Mevcut Kaizen kayıtlarında görünmeye devam eder, ancak yenilerde seçilemez.')">Pasife Al</button>
                                         @else
+                                            <input type="hidden" name="is_active" value="1">
                                             <button type="submit" class="btn btn-sm btn-outline-success">Aktifleştir</button>
                                         @endif
                                     </form>

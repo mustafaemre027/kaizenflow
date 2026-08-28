@@ -376,7 +376,7 @@ class BenefitTypeManagementTest extends TestCase
         $user = $this->getManagerUser();
         $bt = BenefitType::create(['name' => 'To Deactivate', 'is_active' => true]);
 
-        $response = $this->actingAs($user)->patch(route('settings.benefit-types.status', $bt));
+        $response = $this->actingAs($user)->patch(route('settings.benefit-types.status', $bt), ['is_active' => false]);
         $response->assertRedirect();
 
         $this->assertFalse($bt->fresh()->is_active);
@@ -399,7 +399,7 @@ class BenefitTypeManagementTest extends TestCase
             'realized_note' => 'test',
         ]);
 
-        $this->actingAs($user)->patch(route('settings.benefit-types.status', $bt));
+        $this->actingAs($user)->patch(route('settings.benefit-types.status', $bt), ['is_active' => false]);
 
         $this->assertFalse($bt->fresh()->is_active);
 
@@ -420,7 +420,7 @@ class BenefitTypeManagementTest extends TestCase
         $user = $this->getManagerUser();
         $bt = BenefitType::create(['name' => 'To Reactivate', 'is_active' => false]);
 
-        $response = $this->actingAs($user)->patch(route('settings.benefit-types.status', $bt));
+        $response = $this->actingAs($user)->patch(route('settings.benefit-types.status', $bt), ['is_active' => true]);
         $response->assertRedirect();
 
         $this->assertTrue($bt->fresh()->is_active);
@@ -429,20 +429,26 @@ class BenefitTypeManagementTest extends TestCase
     // 31. reactivated record becomes selectable again
     // (Handled by action logic implicitly)
 
-    // 32. repeated activate/deactivate safe no-op
-    public function test_repeated_activate_deactivate_safe_no_op()
+    // 32. idempotent activate/deactivate safe no-op
+    public function test_idempotent_activate_deactivate_safe_no_op()
     {
         $user = $this->getManagerUser();
         $bt = BenefitType::create(['name' => 'Repeater', 'is_active' => true]);
 
-        $this->actingAs($user)->patch(route('settings.benefit-types.status', $bt));
+        $this->actingAs($user)->patch(route('settings.benefit-types.status', $bt), ['is_active' => false]);
         $this->assertFalse($bt->fresh()->is_active);
 
-        $this->actingAs($user)->patch(route('settings.benefit-types.status', $bt));
+        // Idempotent: sending false again
+        $this->actingAs($user)->patch(route('settings.benefit-types.status', $bt), ['is_active' => false]);
+        $this->assertFalse($bt->fresh()->is_active);
+
+        // Reactivate
+        $this->actingAs($user)->patch(route('settings.benefit-types.status', $bt), ['is_active' => true]);
         $this->assertTrue($bt->fresh()->is_active);
 
-        $this->actingAs($user)->patch(route('settings.benefit-types.status', $bt));
-        $this->assertFalse($bt->fresh()->is_active);
+        // Idempotent: sending true again
+        $this->actingAs($user)->patch(route('settings.benefit-types.status', $bt), ['is_active' => true]);
+        $this->assertTrue($bt->fresh()->is_active);
     }
 
     // =========================================================================

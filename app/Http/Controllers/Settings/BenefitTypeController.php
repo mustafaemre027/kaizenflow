@@ -3,14 +3,14 @@
 namespace App\Http\Controllers\Settings;
 
 use App\Actions\Settings\BenefitTypes\CreateBenefitType;
-use App\Actions\Settings\BenefitTypes\ToggleBenefitTypeStatus;
+use App\Actions\Settings\BenefitTypes\SetBenefitTypeStatus;
 use App\Actions\Settings\BenefitTypes\UpdateBenefitType;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Settings\SetBenefitTypeStatusRequest;
 use App\Http\Requests\Settings\StoreBenefitTypeRequest;
 use App\Http\Requests\Settings\UpdateBenefitTypeRequest;
 use App\Models\BenefitType;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
-use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 
 class BenefitTypeController extends Controller
@@ -57,13 +57,14 @@ class BenefitTypeController extends Controller
         }
     }
 
-    public function toggleStatus(Request $request, BenefitType $benefitType, ToggleBenefitTypeStatus $action)
+    public function toggleStatus(SetBenefitTypeStatusRequest $request, BenefitType $benefitType, SetBenefitTypeStatus $action)
     {
         $this->authorize('update', $benefitType);
 
-        $action->execute($benefitType);
+        $isActive = $request->validated('is_active');
+        $action->execute($benefitType, $isActive);
 
-        $statusMessage = $benefitType->is_active ? 'Fayda türü aktifleştirildi.' : 'Fayda türü pasife alındı.';
+        $statusMessage = $isActive ? 'Fayda türü aktifleştirildi.' : 'Fayda türü pasife alındı.';
 
         return back()->with('status', $statusMessage);
     }

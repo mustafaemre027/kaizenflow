@@ -22,8 +22,19 @@ class CompleteKaizenImplementationRequest extends FormRequest
                 }
             }],
             'benefits' => ['nullable', 'array'],
-            'benefits.*.benefit_type_id' => ['nullable', 'integer'],
-            'benefits.*.realized_value' => ['nullable', 'string', 'max:50'],
+            'benefits.*.benefit_type_id' => [
+                'nullable',
+                'integer',
+                'distinct',
+                'required_with:benefits.*.realized_value,benefits.*.realized_note',
+            ],
+            'benefits.*.realized_value' => [
+                'nullable',
+                'numeric',
+                'min:0',
+                'max:99999999999.9999',
+                'regex:/^\d{1,11}(\.\d{1,4})?$/',
+            ],
             'benefits.*.realized_note' => ['nullable', 'string', 'max:5000'],
         ];
     }
