@@ -9,9 +9,7 @@ use App\Services\UserCapabilityResolver;
 
 class BenefitTypePolicy
 {
-    public function __construct(private UserCapabilityResolver $resolver)
-    {
-    }
+    public function __construct(private UserCapabilityResolver $resolver) {}
 
     public function viewAny(User $user): bool
     {

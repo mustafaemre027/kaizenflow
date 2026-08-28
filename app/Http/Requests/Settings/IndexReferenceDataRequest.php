@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Settings;
 
+use App\Models\BenefitType;
 use App\Models\Category;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -10,8 +11,8 @@ class IndexReferenceDataRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('viewAny', Category::class) 
-            || $this->user()->can('viewAny', \App\Models\BenefitType::class);
+        return $this->user()->can('viewAny', Category::class)
+            || $this->user()->can('viewAny', BenefitType::class);
     }
 
     public function rules(): array

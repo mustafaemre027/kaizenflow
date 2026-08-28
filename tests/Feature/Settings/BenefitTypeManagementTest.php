@@ -5,6 +5,7 @@ namespace Tests\Feature\Settings;
 use App\Enums\UserCapability;
 use App\Enums\UserRole;
 use App\Models\BenefitType;
+use App\Models\Kaizen;
 use App\Models\KaizenBenefit;
 use App\Models\User;
 use App\Models\UserSystemCapabilityGrant;
@@ -80,7 +81,7 @@ class BenefitTypeManagementTest extends TestCase
         $response->assertStatus(403);
 
         $responsePost = $this->actingAs($user)->post(route('settings.benefit-types.store'), [
-            'name' => 'New Benefit'
+            'name' => 'New Benefit',
         ]);
         $responsePost->assertStatus(403);
     }
@@ -97,7 +98,7 @@ class BenefitTypeManagementTest extends TestCase
         $response->assertStatus(403);
 
         $responsePatch = $this->actingAs($user)->patch(route('settings.benefit-types.update', $bt), [
-            'name' => 'Changed'
+            'name' => 'Changed',
         ]);
         $responsePatch->assertStatus(403);
     }
@@ -125,13 +126,13 @@ class BenefitTypeManagementTest extends TestCase
 
         $responseStore = $this->actingAs($user)->post(route('settings.benefit-types.store'), [
             'name' => 'New Benefit',
-            'unit_label' => 'Saat'
+            'unit_label' => 'Saat',
         ]);
-        
+
         $responseStore->assertRedirect();
         $this->assertDatabaseHas('benefit_types', [
             'name' => 'New Benefit',
-            'unit_label' => 'Saat'
+            'unit_label' => 'Saat',
         ]);
     }
 
@@ -140,10 +141,10 @@ class BenefitTypeManagementTest extends TestCase
     {
         $admin = User::factory()->create(['role' => UserRole::ADMIN]);
         $manager = User::factory()->create(['role' => UserRole::MANAGER]);
-        
+
         $this->grantSystemCapability($admin, UserCapability::ORGANIZATION_VIEW);
         $this->grantSystemCapability($admin, UserCapability::ORGANIZATION_MANAGE);
-        
+
         $this->grantSystemCapability($manager, UserCapability::ORGANIZATION_VIEW);
         $this->grantSystemCapability($manager, UserCapability::ORGANIZATION_MANAGE);
 
@@ -175,6 +176,7 @@ class BenefitTypeManagementTest extends TestCase
         $user = User::factory()->create(['role' => UserRole::EMPLOYEE]);
         $this->grantSystemCapability($user, UserCapability::ORGANIZATION_VIEW);
         $this->grantSystemCapability($user, UserCapability::ORGANIZATION_MANAGE);
+
         return $user;
     }
 
@@ -184,7 +186,7 @@ class BenefitTypeManagementTest extends TestCase
         $user = $this->getManagerUser();
         $response = $this->actingAs($user)->post(route('settings.benefit-types.store'), [
             'name' => 'Enerji Tasarrufu',
-            'unit_label' => 'kWh'
+            'unit_label' => 'kWh',
         ]);
         $response->assertSessionHasNoErrors();
         $this->assertDatabaseHas('benefit_types', ['name' => 'Enerji Tasarrufu', 'unit_label' => 'kWh']);
@@ -207,7 +209,7 @@ class BenefitTypeManagementTest extends TestCase
         $user = $this->getManagerUser();
         $response = $this->actingAs($user)->post(route('settings.benefit-types.store'), [
             'name' => 'Morale',
-            'unit_label' => '   '
+            'unit_label' => '   ',
         ]);
         $response->assertSessionHasNoErrors();
         $this->assertDatabaseHas('benefit_types', ['name' => 'Morale', 'unit_label' => null]);
@@ -219,7 +221,7 @@ class BenefitTypeManagementTest extends TestCase
         $user = $this->getManagerUser();
         $response = $this->actingAs($user)->post(route('settings.benefit-types.store'), [
             'name' => '   Trimmed Name   ',
-            'unit_label' => 'pcs'
+            'unit_label' => 'pcs',
         ]);
         $response->assertSessionHasNoErrors();
         $this->assertDatabaseHas('benefit_types', ['name' => 'Trimmed Name']);
@@ -267,7 +269,7 @@ class BenefitTypeManagementTest extends TestCase
     {
         $user = $this->getManagerUser();
         $maliciousName = '<script>alert(1)</script>';
-        
+
         $this->actingAs($user)->post(route('settings.benefit-types.store'), [
             'name' => $maliciousName,
         ]);
@@ -287,7 +289,7 @@ class BenefitTypeManagementTest extends TestCase
             'name' => 'Valid',
             'id' => 999,
             'is_active' => false,
-            'kaizen_benefits' => 'injection'
+            'kaizen_benefits' => 'injection',
         ]);
 
         $bt = BenefitType::first();
@@ -302,7 +304,7 @@ class BenefitTypeManagementTest extends TestCase
         $this->actingAs($user)->post(route('settings.benefit-types.store'), [
             'name' => 'New Active',
         ]);
-        
+
         $this->assertTrue(BenefitType::where('name', 'New Active')->first()->is_active);
     }
 
@@ -317,10 +319,10 @@ class BenefitTypeManagementTest extends TestCase
         $bt = BenefitType::create(['name' => 'Old Name']);
 
         $response = $this->actingAs($user)->patch(route('settings.benefit-types.update', $bt), [
-            'name' => 'New Name'
+            'name' => 'New Name',
         ]);
         $response->assertRedirect();
-        
+
         $this->assertEquals('New Name', $bt->fresh()->name);
     }
 
@@ -332,9 +334,9 @@ class BenefitTypeManagementTest extends TestCase
 
         $this->actingAs($user)->patch(route('settings.benefit-types.update', $bt), [
             'name' => 'Name',
-            'unit_label' => 'New'
+            'unit_label' => 'New',
         ]);
-        
+
         $this->assertEquals('New', $bt->fresh()->unit_label);
     }
 
@@ -346,10 +348,10 @@ class BenefitTypeManagementTest extends TestCase
         $bt = BenefitType::create(['name' => 'Another']);
 
         $response = $this->actingAs($user)->patch(route('settings.benefit-types.update', $bt), [
-            'name' => 'existing'
+            'name' => 'existing',
         ]);
         $response->assertSessionHasErrors(['name']);
-        
+
         $this->assertEquals('Another', $bt->fresh()->name);
     }
 
@@ -361,10 +363,10 @@ class BenefitTypeManagementTest extends TestCase
 
         $response = $this->actingAs($user)->patch(route('settings.benefit-types.update', $bt), [
             'name' => 'Same',
-            'unit_label' => 'Unit'
+            'unit_label' => 'Unit',
         ]);
         $response->assertRedirect();
-        
+
         $this->assertEquals('Same', $bt->fresh()->name);
     }
 
@@ -376,7 +378,7 @@ class BenefitTypeManagementTest extends TestCase
 
         $response = $this->actingAs($user)->patch(route('settings.benefit-types.status', $bt));
         $response->assertRedirect();
-        
+
         $this->assertFalse($bt->fresh()->is_active);
     }
 
@@ -386,21 +388,21 @@ class BenefitTypeManagementTest extends TestCase
     {
         $user = $this->getManagerUser();
         $bt = BenefitType::create(['name' => 'Metric', 'is_active' => true]);
-        $kaizen = \App\Models\Kaizen::factory()->create();
-        
+        $kaizen = Kaizen::factory()->create();
+
         $kb = KaizenBenefit::create([
             'kaizen_id' => $kaizen->id,
             'benefit_type_id' => $bt->id,
             'expected_value' => '100',
             'expected_note' => 'test',
             'realized_value' => '90',
-            'realized_note' => 'test'
+            'realized_note' => 'test',
         ]);
 
         $this->actingAs($user)->patch(route('settings.benefit-types.status', $bt));
-        
+
         $this->assertFalse($bt->fresh()->is_active);
-        
+
         $kb->refresh();
         $this->assertEquals('100.0000', $kb->expected_value);
         $this->assertEquals('90.0000', $kb->realized_value);
@@ -420,7 +422,7 @@ class BenefitTypeManagementTest extends TestCase
 
         $response = $this->actingAs($user)->patch(route('settings.benefit-types.status', $bt));
         $response->assertRedirect();
-        
+
         $this->assertTrue($bt->fresh()->is_active);
     }
 
@@ -435,10 +437,10 @@ class BenefitTypeManagementTest extends TestCase
 
         $this->actingAs($user)->patch(route('settings.benefit-types.status', $bt));
         $this->assertFalse($bt->fresh()->is_active);
-        
+
         $this->actingAs($user)->patch(route('settings.benefit-types.status', $bt));
         $this->assertTrue($bt->fresh()->is_active);
-        
+
         $this->actingAs($user)->patch(route('settings.benefit-types.status', $bt));
         $this->assertFalse($bt->fresh()->is_active);
     }
@@ -452,9 +454,9 @@ class BenefitTypeManagementTest extends TestCase
     {
         $user = User::factory()->create(['role' => UserRole::EMPLOYEE]);
         $this->grantSystemCapability($user, UserCapability::ORGANIZATION_VIEW); // missing MANAGE
-        
+
         $bt = BenefitType::create(['name' => 'Existing']);
-        
+
         $response = $this->actingAs($user)->get(route('settings.benefit-types.edit', $bt));
         $response->assertForbidden();
     }
@@ -500,7 +502,7 @@ class BenefitTypeManagementTest extends TestCase
         $user = $this->getManagerUser();
         $response = $this->actingAs($user)->post(route('settings.benefit-types.store'), [
             'name' => '',
-            'unit_label' => 'Saat'
+            'unit_label' => 'Saat',
         ]);
         $response->assertSessionHasErrors(['name']);
         // Session should have 'old' input

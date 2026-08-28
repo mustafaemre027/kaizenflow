@@ -11,15 +11,15 @@ class UpdateBenefitType
     public function execute(BenefitType $benefitType, array $data): BenefitType
     {
         $name = trim($data['name']);
-        
+
         if (empty($name)) {
             throw ValidationException::withMessages([
                 'name' => 'Fayda türü adı boş olamaz.',
             ]);
         }
-        
+
         $canonicalName = Str::lower($name);
-        
+
         if (BenefitType::whereRaw('LOWER(name) = ?', [$canonicalName])
             ->where('id', '!=', $benefitType->id)
             ->exists()) {

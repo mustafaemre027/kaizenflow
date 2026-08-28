@@ -11,15 +11,15 @@ class CreateBenefitType
     public function execute(array $data): BenefitType
     {
         $name = trim($data['name']);
-        
+
         if (empty($name)) {
             throw ValidationException::withMessages([
                 'name' => 'Fayda türü adı boş olamaz.',
             ]);
         }
-        
+
         $canonicalName = Str::lower($name);
-        
+
         if (BenefitType::whereRaw('LOWER(name) = ?', [$canonicalName])->exists()) {
             throw ValidationException::withMessages([
                 'name' => 'Bu isimde bir fayda türü zaten mevcut.',

@@ -9,7 +9,7 @@ class ToggleBenefitTypeStatus
     public function execute(BenefitType $benefitType): BenefitType
     {
         $benefitType->update([
-            'is_active' => !$benefitType->is_active,
+            'is_active' => ! $benefitType->is_active,
         ]);
 
         return $benefitType;
