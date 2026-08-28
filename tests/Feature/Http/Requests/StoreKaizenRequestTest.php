@@ -39,7 +39,6 @@ class StoreKaizenRequestTest extends TestCase
             'title' => 'Valid Title',
             'current_situation' => 'Current situation is bad.',
             'proposed_situation' => 'Proposed situation is good.',
-            'expected_benefit' => 'Expected benefit is high.',
             'priority' => KaizenPriority::MEDIUM->value,
             'target_date' => Carbon::tomorrow()->format('Y-m-d'),
             'current_situation_images' => [UploadedFile::fake()->create('current.jpg', 10, 'image/jpeg')],
@@ -84,7 +83,6 @@ class StoreKaizenRequestTest extends TestCase
             'title' => 'Valid Title',
             'current_situation' => 'Current situation is bad.',
             'proposed_situation' => 'Proposed situation is good.',
-            'expected_benefit' => 'Expected benefit is high.',
             'current_situation_images' => [UploadedFile::fake()->create('current.jpg', 10, 'image/jpeg')],
             'proposed_situation_images' => [UploadedFile::fake()->create('proposed.jpg', 10, 'image/jpeg')],
         ]);
@@ -100,7 +98,6 @@ class StoreKaizenRequestTest extends TestCase
             'title' => 'Valid Title',
             'current_situation' => 'Current situation is bad.',
             'proposed_situation' => 'Proposed situation is good.',
-            'expected_benefit' => 'Expected benefit is high.',
             'current_situation_images' => [UploadedFile::fake()->create('current.jpg', 10, 'image/jpeg')],
             'proposed_situation_images' => [UploadedFile::fake()->create('proposed.jpg', 10, 'image/jpeg')],
         ]);
@@ -118,7 +115,6 @@ class StoreKaizenRequestTest extends TestCase
             'title' => 'Val', // less than 5
             'current_situation' => 'Current situation is bad.',
             'proposed_situation' => 'Proposed situation is good.',
-            'expected_benefit' => 'Expected benefit is high.',
             'current_situation_images' => [UploadedFile::fake()->create('current.jpg', 10, 'image/jpeg')],
             'proposed_situation_images' => [UploadedFile::fake()->create('proposed.jpg', 10, 'image/jpeg')],
         ]);
@@ -136,7 +132,6 @@ class StoreKaizenRequestTest extends TestCase
             'title' => str_repeat('a', 256), // more than 255
             'current_situation' => 'Current situation is bad.',
             'proposed_situation' => 'Proposed situation is good.',
-            'expected_benefit' => 'Expected benefit is high.',
             'current_situation_images' => [UploadedFile::fake()->create('current.jpg', 10, 'image/jpeg')],
             'proposed_situation_images' => [UploadedFile::fake()->create('proposed.jpg', 10, 'image/jpeg')],
         ]);
@@ -173,7 +168,6 @@ class StoreKaizenRequestTest extends TestCase
             'title' => 'Valid Title',
             'current_situation' => 'Current situation is bad.',
             'proposed_situation' => 'Proposed situation is good.',
-            'expected_benefit' => 'Expected benefit is high.',
             'current_situation_images' => [UploadedFile::fake()->create('current.jpg', 10, 'image/jpeg')],
             'proposed_situation_images' => [UploadedFile::fake()->create('proposed.jpg', 10, 'image/jpeg')],
         ];
@@ -200,7 +194,6 @@ class StoreKaizenRequestTest extends TestCase
             'title' => 'Valid Title',
             'current_situation' => 'Current situation is bad.',
             'proposed_situation' => 'Proposed situation is good.',
-            'expected_benefit' => 'Expected benefit is high.',
             'current_situation_images' => [UploadedFile::fake()->create('current.jpg', 10, 'image/jpeg')],
             'proposed_situation_images' => [UploadedFile::fake()->create('proposed.jpg', 10, 'image/jpeg')],
         ];
@@ -228,7 +221,6 @@ class StoreKaizenRequestTest extends TestCase
             'title' => 'Valid Title',
             'current_situation' => 'Current situation is bad.',
             'proposed_situation' => 'Proposed situation is good.',
-            'expected_benefit' => 'Expected benefit is high.',
             'current_situation_images' => [UploadedFile::fake()->create('current.jpg', 10, 'image/jpeg')],
             'proposed_situation_images' => [UploadedFile::fake()->create('proposed.jpg', 10, 'image/jpeg')],
         ];

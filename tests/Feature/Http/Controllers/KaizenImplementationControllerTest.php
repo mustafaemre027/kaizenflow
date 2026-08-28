@@ -5,6 +5,7 @@ namespace Tests\Feature\Http\Controllers;
 use App\Actions\Kaizens\StartKaizenImplementation;
 use App\Enums\KaizenStatus;
 use App\Enums\UserCapability;
+use App\Models\BenefitType;
 use App\Models\Category;
 use App\Models\Department;
 use App\Models\Kaizen;
@@ -380,5 +381,44 @@ class KaizenImplementationControllerTest extends TestCase
         $this->actingAs($this->opex)
             ->post(route('kaizens.implementation.complete', $kaizen), ['actual_result' => 'Done'])
             ->assertForbidden();
+    }
+
+    public function test_client_cannot_inject_prohibited_fields_in_complete(): void
+    {
+        $this->grant($this->opex, $this->dept1, UserCapability::KAIZEN_IMPLEMENTATION_COMPLETE);
+        $kaizen = Kaizen::factory()->create([
+            'department_id' => $this->dept1->id,
+            'status' => KaizenStatus::IN_PROGRESS->value,
+            'assigned_user_id' => $this->employee->id,
+            'target_date' => now()->addDays(5),
+            'started_at' => now()->subDay(),
+            'expected_benefit' => null,
+            'realized_benefit' => null,
+        ]);
+
+        $type = BenefitType::factory()->create();
+
+        $this->actingAs($this->opex)
+            ->post(route('kaizens.implementation.complete', $kaizen), [
+                'actual_result' => 'Done',
+                'status' => KaizenStatus::DRAFT->value,
+                'actor_user_id' => 999,
+                'completed_at' => '2020-01-01',
+                'expected_benefit' => 'Hack',
+                'realized_benefit' => 'Hack',
+                'benefits' => [
+                    [
+                        'benefit_type_id' => $type->id,
+                        'realized_value' => '10',
+                    ],
+                ],
+            ])
+            ->assertRedirect();
+
+        $kaizen->refresh();
+        $this->assertEquals(KaizenStatus::COMPLETED->value, $kaizen->status->value);
+        $this->assertNotEquals('2020-01-01 00:00:00', $kaizen->completed_at);
+        $this->assertNull($kaizen->expected_benefit);
+        $this->assertNull($kaizen->realized_benefit);
     }
 }

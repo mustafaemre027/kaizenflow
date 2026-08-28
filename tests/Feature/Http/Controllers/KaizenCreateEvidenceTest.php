@@ -42,7 +42,6 @@ class KaizenCreateEvidenceTest extends TestCase
             'title' => 'No images test',
             'current_situation' => 'Current situation details',
             'proposed_situation' => 'Proposed situation details',
-            'expected_benefit' => 'Expected benefit details',
         ];
 
         $response = $this->actingAs($this->user)->post(route('kaizens.store'), $payload);
@@ -62,7 +61,6 @@ class KaizenCreateEvidenceTest extends TestCase
             'title' => 'Only current images test',
             'current_situation' => 'Current situation details',
             'proposed_situation' => 'Proposed situation details',
-            'expected_benefit' => 'Expected benefit details',
             'current_situation_images' => [
                 UploadedFile::fake()->create('current1.jpg', 100, 'image/jpeg'),
                 UploadedFile::fake()->create('current2.jpg', 100, 'image/jpeg'),
@@ -83,7 +81,6 @@ class KaizenCreateEvidenceTest extends TestCase
             'title' => 'Only proposed images test',
             'current_situation' => 'Current situation details',
             'proposed_situation' => 'Proposed situation details',
-            'expected_benefit' => 'Expected benefit details',
             'proposed_situation_images' => [
                 UploadedFile::fake()->create('proposed1.jpg', 100, 'image/jpeg'),
                 UploadedFile::fake()->create('proposed2.jpg', 100, 'image/jpeg'),
@@ -107,7 +104,6 @@ class KaizenCreateEvidenceTest extends TestCase
             'title' => 'Single images test',
             'current_situation' => 'Current situation details',
             'proposed_situation' => 'Proposed situation details',
-            'expected_benefit' => 'Expected benefit details',
             'current_situation_images' => [$currentFile],
             'proposed_situation_images' => [$proposedFile],
         ];
@@ -136,7 +132,6 @@ class KaizenCreateEvidenceTest extends TestCase
             'title' => 'Both contexts test',
             'current_situation' => 'Current situation details',
             'proposed_situation' => 'Proposed situation details',
-            'expected_benefit' => 'Expected benefit details',
             'current_situation_images' => [$current1, $current2],
             'proposed_situation_images' => [$proposed1, $proposed2],
         ];
@@ -175,7 +170,6 @@ class KaizenCreateEvidenceTest extends TestCase
             'title' => 'Max count test',
             'current_situation' => 'Current situation details',
             'proposed_situation' => 'Proposed situation details',
-            'expected_benefit' => 'Expected benefit details',
             'current_situation_images' => $files,
             'proposed_situation_images' => [UploadedFile::fake()->create('proposed.jpg', 100, 'image/jpeg')],
         ];
@@ -197,7 +191,6 @@ class KaizenCreateEvidenceTest extends TestCase
             'title' => 'Oversize test',
             'current_situation' => 'Current situation details',
             'proposed_situation' => 'Proposed situation details',
-            'expected_benefit' => 'Expected benefit details',
             'current_situation_images' => [$file],
             'proposed_situation_images' => [UploadedFile::fake()->create('proposed.jpg', 100, 'image/jpeg')],
         ];
@@ -217,7 +210,6 @@ class KaizenCreateEvidenceTest extends TestCase
             'title' => 'Invalid mime test',
             'current_situation' => 'Current situation details',
             'proposed_situation' => 'Proposed situation details',
-            'expected_benefit' => 'Expected benefit details',
             'current_situation_images' => [$file],
             'proposed_situation_images' => [UploadedFile::fake()->create('proposed.jpg', 100, 'image/jpeg')],
         ];
@@ -237,7 +229,6 @@ class KaizenCreateEvidenceTest extends TestCase
             'title' => 'SVG rejection test',
             'current_situation' => 'Current situation details',
             'proposed_situation' => 'Proposed situation details',
-            'expected_benefit' => 'Expected benefit details',
             'current_situation_images' => [$file],
             'proposed_situation_images' => [UploadedFile::fake()->create('proposed.jpg', 100, 'image/jpeg')],
         ];
@@ -257,7 +248,6 @@ class KaizenCreateEvidenceTest extends TestCase
             'title' => 'Misleading extension test',
             'current_situation' => 'Current situation details',
             'proposed_situation' => 'Proposed situation details',
-            'expected_benefit' => 'Expected benefit details',
             'current_situation_images' => [$file],
             'proposed_situation_images' => [UploadedFile::fake()->create('proposed.jpg', 100, 'image/jpeg')],
         ];
@@ -277,7 +267,6 @@ class KaizenCreateEvidenceTest extends TestCase
             'title' => 'Text required test',
             'current_situation' => '', // Empty!
             'proposed_situation' => 'Proposed situation details',
-            'expected_benefit' => 'Expected benefit details',
             'current_situation_images' => [$file],
             'proposed_situation_images' => [UploadedFile::fake()->create('proposed.jpg', 100, 'image/jpeg')],
         ];
@@ -303,7 +292,6 @@ class KaizenCreateEvidenceTest extends TestCase
             'title' => 'Storage failure test',
             'current_situation' => 'Current situation details',
             'proposed_situation' => 'Proposed situation details',
-            'expected_benefit' => 'Expected benefit details',
             'current_situation_images' => [$file],
             'proposed_situation_images' => [UploadedFile::fake()->create('proposed.jpg', 100, 'image/jpeg')],
         ];
@@ -332,7 +320,6 @@ class KaizenCreateEvidenceTest extends TestCase
             'title' => 'Outer rollback test',
             'current_situation' => 'Current situation details',
             'proposed_situation' => 'Proposed situation details',
-            'expected_benefit' => 'Expected benefit details',
             'current_situation_images' => [$currentImage],
             'proposed_situation_images' => [$proposedImage],
         ];

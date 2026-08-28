@@ -13,6 +13,7 @@ use App\Http\Requests\Kaizens\IndexKaizenRequest;
 use App\Http\Requests\Kaizens\StoreKaizenRequest;
 use App\Http\Requests\Kaizens\SubmitKaizenRequest;
 use App\Http\Requests\Kaizens\UpdateKaizenDraftRequest;
+use App\Models\BenefitType;
 use App\Models\Category;
 use App\Models\Department;
 use App\Models\Kaizen;
@@ -85,8 +86,9 @@ class KaizenController extends Controller
         Gate::authorize('create', Kaizen::class);
 
         $categories = Category::active()->orderBy('name')->get();
+        $benefitTypes = BenefitType::active()->orderBy('name')->get();
 
-        return view('kaizens.create', compact('categories'));
+        return view('kaizens.create', compact('categories', 'benefitTypes'));
     }
 
     public function edit(Kaizen $kaizen)
@@ -104,16 +106,28 @@ class KaizenController extends Controller
 
         $kaizen->load(['attachments' => function ($query) {
             $query->orderBy('context')->orderBy('sort_order');
-        }]);
+        }, 'benefits.benefitType']);
 
         $currentSituationAttachments = $kaizen->attachments->where('context', KaizenAttachmentContext::CURRENT_SITUATION->value);
         $proposedSituationAttachments = $kaizen->attachments->where('context', KaizenAttachmentContext::PROPOSED_SITUATION->value);
+
+        // Active benefit types for new associations
+        $activeBenefitTypes = BenefitType::active()->orderBy('name')->get();
+
+        // Inactive types that are already linked to this Kaizen (historical preservation)
+        $linkedInactiveBenefitTypes = $kaizen->benefits
+            ->filter(fn ($b) => $b->benefitType && ! $b->benefitType->is_active)
+            ->map(fn ($b) => $b->benefitType);
+
+        // Merge: all types the edit form should display
+        $benefitTypes = $activeBenefitTypes->merge($linkedInactiveBenefitTypes)->unique('id')->sortBy('name');
 
         return view('kaizens.edit', compact(
             'kaizen',
             'categories',
             'currentSituationAttachments',
-            'proposedSituationAttachments'
+            'proposedSituationAttachments',
+            'benefitTypes',
         ));
     }
 
@@ -130,6 +144,7 @@ class KaizenController extends Controller
                 $query->orderBy('context')->orderBy('sort_order');
             },
             'workflowInstance.workflow.stages',
+            'benefits.benefitType',
         ]);
 
         $currentSituationAttachments = $kaizen->attachments->where('context', KaizenAttachmentContext::CURRENT_SITUATION->value);
@@ -148,12 +163,18 @@ class KaizenController extends Controller
             }
         }
 
+        $activeBenefitTypes = collect();
+        if ($kaizen->status === KaizenStatus::IN_PROGRESS && request()->user()->can('completeImplementation', $kaizen)) {
+            $activeBenefitTypes = BenefitType::active()->orderBy('name')->get();
+        }
+
         return view('kaizens.show', compact(
             'kaizen',
             'workflowTimeline',
             'currentSituationAttachments',
             'proposedSituationAttachments',
-            'implementationCandidates'
+            'implementationCandidates',
+            'activeBenefitTypes'
         ));
     }
 

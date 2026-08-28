@@ -60,8 +60,11 @@ class SubmitKaizenTest extends TestCase
         ]);
     }
 
-    public function test_it_rejects_submission_if_expected_benefit_is_empty(): void
+    public function test_draft_kaizen_with_null_expected_benefit_can_be_submitted(): void
     {
+        // Product decision: benefit entry is optional.
+        // A DRAFT Kaizen with no expected_benefit should submit successfully
+        // when all other preconditions are met.
         $creator = User::factory()->create(['role' => UserRole::EMPLOYEE]);
         $kaizen = Kaizen::factory()->create([
             'creator_user_id' => $creator->id,
@@ -69,14 +72,18 @@ class SubmitKaizenTest extends TestCase
             'expected_benefit' => null,
         ]);
 
-        $this->expectException(ValidationException::class);
-        $this->expectExceptionMessage('Kaizen\'i onaya göndermeden önce beklenen fayda alanını doldurmalısınız.');
+        $result = $this->action->execute($creator, $kaizen);
 
-        $this->action->execute($creator, $kaizen);
+        $this->assertEquals(KaizenStatus::SUBMITTED, $result->status);
+        $this->assertDatabaseHas('kaizens', [
+            'id' => $kaizen->id,
+            'status' => KaizenStatus::SUBMITTED->value,
+        ]);
     }
 
-    public function test_it_rejects_submission_if_expected_benefit_is_only_whitespace(): void
+    public function test_draft_kaizen_with_whitespace_expected_benefit_can_be_submitted(): void
     {
+        // Product decision: legacy whitespace-only expected_benefit no longer blocks submission.
         $creator = User::factory()->create(['role' => UserRole::EMPLOYEE]);
         $kaizen = Kaizen::factory()->create([
             'creator_user_id' => $creator->id,
@@ -84,10 +91,9 @@ class SubmitKaizenTest extends TestCase
             'expected_benefit' => '   ',
         ]);
 
-        $this->expectException(ValidationException::class);
-        $this->expectExceptionMessage('Kaizen\'i onaya göndermeden önce beklenen fayda alanını doldurmalısınız.');
+        $result = $this->action->execute($creator, $kaizen);
 
-        $this->action->execute($creator, $kaizen);
+        $this->assertEquals(KaizenStatus::SUBMITTED, $result->status);
     }
 
     public function test_active_creator_employee_can_resubmit_revision_requested_kaizen(): void

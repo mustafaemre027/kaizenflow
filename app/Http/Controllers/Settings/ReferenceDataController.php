@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Settings;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\IndexReferenceDataRequest;
+use App\Models\BenefitType;
 use App\Models\Category;
 use App\Models\Department;
 
@@ -61,6 +62,26 @@ class ReferenceDataController extends Controller
             ->paginate(15, ['*'], 'department_page')
             ->withQueryString();
 
-        return view('settings.reference-data.index', compact('categories', 'departments'));
+        $benefitTypeQuery = BenefitType::withCount('kaizenBenefits');
+
+        if (! empty($validated['benefit_type_q'])) {
+            $q = '%'.$validated['benefit_type_q'].'%';
+            $benefitTypeQuery->where(function ($query) use ($q) {
+                $query->where('name', 'like', $q)
+                    ->orWhere('unit_label', 'like', $q);
+            });
+        }
+
+        if (! empty($validated['benefit_type_status'])) {
+            $benefitTypeQuery->where('is_active', $validated['benefit_type_status'] === 'active');
+        }
+
+        $benefitTypes = $benefitTypeQuery
+            ->orderBy('is_active', 'desc')
+            ->orderBy('name', 'asc')
+            ->paginate(15, ['*'], 'benefit_type_page')
+            ->withQueryString();
+
+        return view('settings.reference-data.index', compact('categories', 'departments', 'benefitTypes'));
     }
 }

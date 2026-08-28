@@ -12,6 +12,7 @@ use App\Http\Controllers\KaizenController;
 use App\Http\Controllers\KaizenImplementationController;
 use App\Http\Controllers\Kaizens\KaizenImplementationWorkQueueController;
 use App\Http\Controllers\Settings\ApprovalConfigurationController;
+use App\Http\Controllers\Settings\BenefitTypeController;
 use App\Http\Controllers\Settings\CategoryController;
 use App\Http\Controllers\Settings\DepartmentController;
 use App\Http\Controllers\Settings\ReferenceDataController;
@@ -91,6 +92,12 @@ Route::middleware('auth')->group(function () {
             Route::post('/departments', [DepartmentController::class, 'store'])->name('departments.store');
             Route::patch('/departments/{department}', [DepartmentController::class, 'update'])->name('departments.update');
             Route::patch('/departments/{department}/status', [DepartmentController::class, 'toggleStatus'])->name('departments.status');
+
+            Route::get('/benefit-types/create', [BenefitTypeController::class, 'create'])->name('benefit-types.create');
+            Route::post('/benefit-types', [BenefitTypeController::class, 'store'])->name('benefit-types.store');
+            Route::get('/benefit-types/{benefitType}/edit', [BenefitTypeController::class, 'edit'])->name('benefit-types.edit');
+            Route::patch('/benefit-types/{benefitType}', [BenefitTypeController::class, 'update'])->name('benefit-types.update');
+            Route::patch('/benefit-types/{benefitType}/status', [BenefitTypeController::class, 'toggleStatus'])->name('benefit-types.status');
         });
     });
 });

@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Models\UserCapabilityGrant;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
 class CompleteKaizenImplementationTest extends TestCase
@@ -123,7 +124,7 @@ class CompleteKaizenImplementationTest extends TestCase
             'capability' => UserCapability::KAIZEN_IMPLEMENTATION_COMPLETE,
         ]);
 
-        $this->expectException(\Exception::class);
+        $this->expectException(\DomainException::class);
         $this->action->execute($kaizen, $user, 'Done');
     }
 
@@ -147,7 +148,43 @@ class CompleteKaizenImplementationTest extends TestCase
             'capability' => UserCapability::KAIZEN_IMPLEMENTATION_COMPLETE,
         ]);
 
-        $this->expectException(\Exception::class);
+        $this->expectException(\DomainException::class);
         $this->action->execute($kaizen, $user, 'Done again');
+    }
+
+    public function test_transaction_rolls_back_on_benefit_failure()
+    {
+        $department = Department::factory()->create();
+        $kaizen = Kaizen::factory()->create([
+            'status' => KaizenStatus::IN_PROGRESS,
+            'department_id' => $department->id,
+            'assigned_user_id' => User::factory()->create()->id,
+            'target_date' => now()->addDays(5),
+            'started_at' => now()->subDay(),
+        ]);
+
+        $user = User::factory()->create(['is_active' => true]);
+        UserCapabilityGrant::factory()->create([
+            'user_id' => $user->id,
+            'department_id' => $department->id,
+            'capability' => UserCapability::KAIZEN_IMPLEMENTATION_COMPLETE,
+        ]);
+
+        // Pass invalid benefit type ID to force a ValidationException inside the transaction
+        try {
+            $this->action->execute($kaizen, $user, 'All done!', [
+                ['benefit_type_id' => 9999, 'realized_value' => '10'],
+            ]);
+            $this->fail('Expected ValidationException was not thrown.');
+        } catch (ValidationException $e) {
+            // Expected exception
+        }
+
+        $kaizen->refresh();
+        $this->assertEquals(KaizenStatus::IN_PROGRESS, $kaizen->status);
+        $this->assertNull($kaizen->completed_at);
+        $this->assertNull($kaizen->actual_result);
+        $this->assertDatabaseCount('kaizen_benefits', 0);
+        $this->assertDatabaseCount('kaizen_status_histories', 0);
     }
 }

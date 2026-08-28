@@ -19,30 +19,20 @@
     <div class="mt-3 mt-md-0 d-flex gap-2 flex-wrap">
         @can('submit', $kaizen)
             @php
-                $isCompletable = trim($kaizen->expected_benefit ?? '') !== '';
                 $btnText = $kaizen->status === \App\Enums\KaizenStatus::REVISION_REQUESTED ? 'Yeniden Gönder' : 'Onaya Gönder';
             @endphp
 
-            @if($isCompletable)
-                <form action="{{ route('kaizens.submit', $kaizen) }}" method="POST" class="d-inline m-0 p-0">
-                    @csrf
-                    <button type="submit" class="kf-btn kf-btn-primary" onclick="return confirm('Bu Kaizen\'i onaya göndermek istediğinize emin misiniz?');">
-                        {{ $btnText }}
-                    </button>
-                </form>
-                @can('update', $kaizen)
-                    <a href="{{ route('kaizens.edit', $kaizen) }}" class="kf-btn kf-btn-secondary">
-                        Düzenle
-                    </a>
-                @endcan
-            @else
-                <div class="d-inline-flex align-items-center gap-2 bg-light px-3 py-1 rounded border">
-                    <span class="text-muted small fw-medium">Onay için Beklenen Fayda eksik.</span>
-                    <a href="{{ route('kaizens.edit', $kaizen) }}" class="kf-btn kf-btn-primary btn-sm">
-                        Eksikleri Tamamla
-                    </a>
-                </div>
-            @endif
+            <form action="{{ route('kaizens.submit', $kaizen) }}" method="POST" class="d-inline m-0 p-0">
+                @csrf
+                <button type="submit" class="kf-btn kf-btn-primary" onclick="return confirm('Bu Kaizen\'i onaya göndermek istediğinize emin misiniz?');">
+                    {{ $btnText }}
+                </button>
+            </form>
+            @can('update', $kaizen)
+                <a href="{{ route('kaizens.edit', $kaizen) }}" class="kf-btn kf-btn-secondary">
+                    Düzenle
+                </a>
+            @endcan
         @else
             @can('update', $kaizen)
                 <a href="{{ route('kaizens.edit', $kaizen) }}" class="kf-btn kf-btn-primary">
@@ -200,9 +190,50 @@
             <div class="kf-content-block">
                 <div class="kf-content-block-header">
                     <span class="kf-content-num">03</span>
-                    <h3 class="kf-content-title">Beklenen Fayda</h3>
+                    <h3 class="kf-content-title">Beklenen Faydalar</h3>
                 </div>
-                <p class="kf-detail-text">{{ $kaizen->expected_benefit }}</p>
+                @if($kaizen->benefits->isNotEmpty())
+                    <div class="table-responsive">
+                        <table class="table table-sm table-borderless mb-0" aria-label="Beklenen faydalar tablosu">
+                            <thead class="text-muted small">
+                                <tr>
+                                    <th scope="col">Fayda Türü</th>
+                                    <th scope="col">Beklenen Değer</th>
+                                    <th scope="col">Not</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($kaizen->benefits as $benefit)
+                                    <tr>
+                                        <td>
+                                            {{ $benefit->benefitType?->name ?? '-' }}
+                                            @if($benefit->benefitType && !$benefit->benefitType->is_active)
+                                                <span class="badge bg-secondary ms-1" title="Bu fayda türü pasif edilmiştir">Pasif</span>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @if($benefit->expected_value !== null)
+                                                {{ $benefit->expected_value }}
+                                                @if($benefit->benefitType?->unit_label)
+                                                    <span class="text-muted small">{{ $benefit->benefitType->unit_label }}</span>
+                                                @endif
+                                            @else
+                                                <span class="text-muted fst-italic">-</span>
+                                            @endif
+                                        </td>
+                                        <td class="text-muted small">{{ $benefit->expected_note ?: '-' }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @elseif(trim($kaizen->expected_benefit ?? '') !== '')
+                    {{-- Legacy compatibility: show old free-text benefit if no structured record exists --}}
+                    <div class="kf-detail-text text-muted fst-italic small mb-1">Eski kayıt (yapılandırılmamış)</div>
+                    <p class="kf-detail-text">{{ $kaizen->expected_benefit }}</p>
+                @else
+                    <p class="kf-detail-text text-muted fst-italic">Beklenen fayda bilgisi girilmemiş.</p>
+                @endif
             </div>
 
             <div class="kf-content-block">
@@ -212,12 +243,47 @@
                 </div>
                 @if($kaizen->actual_result)
                     <p class="kf-detail-text">{{ $kaizen->actual_result }}</p>
+                    
+                    @if($kaizen->benefits->whereNotNull('realized_value')->count() > 0)
+                        <h4 class="mt-4 fs-6 fw-bold text-dark mb-3">Gerçekleşen Faydalar</h4>
+                        <div class="table-responsive rounded border mb-4">
+                            <table class="table table-sm table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th scope="col" style="width: 35%;">Fayda Türü</th>
+                                        <th scope="col">Gerçekleşen Değer</th>
+                                        <th scope="col">Not</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($kaizen->benefits as $benefit)
+                                        @if($benefit->realized_value !== null)
+                                            <tr>
+                                                <td>{{ $benefit->benefitType?->name ?? '-' }}</td>
+                                                <td>
+                                                    {{ $benefit->realized_value }}
+                                                    @if($benefit->benefitType?->unit_label)
+                                                        <span class="text-muted small">{{ $benefit->benefitType->unit_label }}</span>
+                                                    @endif
+                                                </td>
+                                                <td class="text-muted small">{{ $benefit->realized_note ?? '-' }}</td>
+                                            </tr>
+                                        @endif
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @elseif($kaizen->realized_benefit)
+                        <h4 class="mt-4 fs-6 fw-bold text-dark mb-3">Gerçekleşen Fayda</h4>
+                        <div class="kf-detail-text text-muted fst-italic small mb-1">Eski kayıt (yapılandırılmamış)</div>
+                        <p class="kf-detail-text">{{ $kaizen->realized_benefit }}</p>
+                    @endif
                 @else
                     @can('completeImplementation', $kaizen)
                         @if($kaizen->status === \App\Enums\KaizenStatus::IN_PROGRESS)
                             <form action="{{ route('kaizens.implementation.complete', $kaizen) }}" method="POST" class="mt-3">
                                 @csrf
-                                <div class="kf-form-group mb-3">
+                                <div class="kf-form-group mb-4">
                                     <label for="actual_result" class="kf-form-label visually-hidden">Gerçekleşen Sonuç Açıklaması</label>
                                     <textarea class="kf-form-control @error('actual_result') is-invalid @enderror" id="actual_result" name="actual_result" rows="5" maxlength="5000" placeholder="Kaizen uygulaması sonucunda elde edilen durum ve kazanımları detaylıca açıklayınız..." required aria-describedby="actualResultHelp">{{ old('actual_result') }}</textarea>
                                     <div id="actualResultHelp" class="form-text">Maksimum 5000 karakter. Bu bilgi onay sonrasında raporlarda kullanılacaktır.</div>
@@ -225,6 +291,76 @@
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
+                                
+                                @php
+                                    $activeBenefitTypes = App\Models\BenefitType::where('is_active', true)->orderBy('name')->get();
+                                    $existingBenefits = $kaizen->benefits->keyBy('benefit_type_id');
+                                @endphp
+
+                                @if($activeBenefitTypes->count() > 0 || $existingBenefits->count() > 0)
+                                    <h4 class="kf-content-title fs-6 mb-3">Gerçekleşen Faydalar (Opsiyonel)</h4>
+                                    <div class="table-responsive rounded border mb-4">
+                                        <table class="table table-sm align-middle mb-0">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th scope="col" style="width: 30%;">Fayda Türü</th>
+                                                    <th scope="col" style="width: 20%;">Beklenen</th>
+                                                    <th scope="col" style="width: 20%;">Gerçekleşen Değer</th>
+                                                    <th scope="col" style="width: 30%;">Gerçekleşen Not</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach($activeBenefitTypes as $type)
+                                                    @php $existing = $existingBenefits->get($type->id); @endphp
+                                                    <tr>
+                                                        <td>{{ $type->name }}</td>
+                                                        <td class="text-muted small">
+                                                            {{ $existing?->expected_value ?? '-' }} {{ $existing?->expected_value ? $type->unit_label : '' }}
+                                                        </td>
+                                                        <td>
+                                                            <div class="input-group input-group-sm">
+                                                                <input type="number" step="0.01" class="form-control" name="realized_benefits[{{ $type->id }}][value]" value="{{ old('realized_benefits.'.$type->id.'.value', $existing?->realized_value) }}">
+                                                                @if($type->unit_label)
+                                                                    <span class="input-group-text">{{ $type->unit_label }}</span>
+                                                                @endif
+                                                            </div>
+                                                        </td>
+                                                        <td>
+                                                            <input type="text" class="form-control form-control-sm" name="realized_benefits[{{ $type->id }}][note]" value="{{ old('realized_benefits.'.$type->id.'.note', $existing?->realized_note) }}" maxlength="255" placeholder="Opsiyonel not...">
+                                                        </td>
+                                                    </tr>
+                                                @endforeach
+                                                
+                                                {{-- Show inactive types if they are already attached to this Kaizen --}}
+                                                @foreach($existingBenefits as $typeId => $existing)
+                                                    @if(!$activeBenefitTypes->contains('id', $typeId))
+                                                        <tr>
+                                                            <td>
+                                                                {{ $existing->benefitType?->name ?? 'Bilinmeyen (ID: '.$typeId.')' }}
+                                                                <span class="badge bg-secondary ms-1">Pasif</span>
+                                                            </td>
+                                                            <td class="text-muted small">
+                                                                {{ $existing->expected_value ?? '-' }} {{ $existing->expected_value ? $existing->benefitType?->unit_label : '' }}
+                                                            </td>
+                                                            <td>
+                                                                <div class="input-group input-group-sm">
+                                                                    <input type="number" step="0.01" class="form-control" name="realized_benefits[{{ $typeId }}][value]" value="{{ old('realized_benefits.'.$typeId.'.value', $existing->realized_value) }}">
+                                                                    @if($existing->benefitType?->unit_label)
+                                                                        <span class="input-group-text">{{ $existing->benefitType->unit_label }}</span>
+                                                                    @endif
+                                                                </div>
+                                                            </td>
+                                                            <td>
+                                                                <input type="text" class="form-control form-control-sm" name="realized_benefits[{{ $typeId }}][note]" value="{{ old('realized_benefits.'.$typeId.'.note', $existing->realized_note) }}" maxlength="255" placeholder="Opsiyonel not...">
+                                                            </td>
+                                                        </tr>
+                                                    @endif
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                @endif
+
                                 <button type="submit" class="kf-btn kf-btn-primary" onclick="if(this.form.checkValidity()){this.disabled=true;this.form.submit();}">
                                     Uygulamayı Tamamla
                                 </button>
