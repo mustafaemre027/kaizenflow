@@ -171,16 +171,95 @@
                 </div>
 
                 <div class="kf-form-section border-bottom-0 pb-0 mb-0">
-                    <h2 class="kf-form-section-title">03 &nbsp; Beklenen Etki</h2>
+                    <h2 class="kf-form-section-title">03 &nbsp; Beklenen Faydalar</h2>
+                    <p class="text-muted small mb-3">Opsiyonel — Bu kaizen ile elde etmeyi beklediğiniz ölçülebilir faydaları belirtin.</p>
 
-                    <div class="kf-form-group mb-0">
-                        <label for="expected_benefit" class="kf-form-label">Beklenen Fayda <span class="badge bg-light text-secondary border ms-2 fw-normal">Opsiyonel</span></label>
-                        <textarea name="expected_benefit" id="expected_benefit" class="kf-form-control @error('expected_benefit') is-invalid @enderror" rows="3" maxlength="5000" placeholder="Öneriniz uygulandığında elde edilecek zaman, maliyet veya kalite faydalarını belirtin...">{{ old('expected_benefit') }}</textarea>
-                        @error('expected_benefit')
-                            <div class="invalid-feedback">{{ $message }}</div>
+                    @if($benefitTypes->isEmpty())
+                        <div class="alert alert-light border text-muted small py-2">
+                            Sistemde tanımlı aktif fayda türü bulunmuyor.
+                        </div>
+                    @else
+                        <div id="benefits-container">
+                            {{-- Populated dynamically via JS; restored on validation failure via old() --}}
+                            @php
+                                $oldBenefits = old('benefits', []);
+                            @endphp
+                            @foreach($oldBenefits as $idx => $oldBenefit)
+                                @php
+                                    $matchedType = $benefitTypes->firstWhere('id', $oldBenefit['benefit_type_id'] ?? null);
+                                @endphp
+                                @if($matchedType)
+                                    <div class="kf-benefit-row border rounded p-3 mb-2 bg-light" data-benefit-row>
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <span class="fw-medium text-dark">{{ e($matchedType->name) }}
+                                                @if($matchedType->unit_label)
+                                                    <span class="text-muted small">({{ e($matchedType->unit_label) }})</span>
+                                                @endif
+                                            </span>
+                                            <button type="button" class="btn btn-sm btn-outline-danger kf-remove-benefit-row" aria-label="{{ e($matchedType->name) }} fayda satırını kaldır">Kaldır</button>
+                                        </div>
+                                        <input type="hidden" name="benefits[{{ $idx }}][benefit_type_id]" value="{{ $matchedType->id }}">
+                                        <div class="row g-2">
+                                            <div class="col-md-4">
+                                                <label class="kf-form-label visually-hidden" for="benefit_value_{{ $idx }}">Beklenen Değer</label>
+                                                <input type="number" step="any" min="0"
+                                                    id="benefit_value_{{ $idx }}"
+                                                    name="benefits[{{ $idx }}][expected_value]"
+                                                    class="kf-form-control @error('benefits.'.$idx.'.expected_value') is-invalid @enderror"
+                                                    placeholder="Beklenen değer"
+                                                    value="{{ old('benefits.'.$idx.'.expected_value') }}">
+                                                @error('benefits.'.$idx.'.expected_value')
+                                                    <div class="invalid-feedback">{{ $message }}</div>
+                                                @enderror
+                                            </div>
+                                            <div class="col-md-8">
+                                                <label class="kf-form-label visually-hidden" for="benefit_note_{{ $idx }}">Not</label>
+                                                <input type="text"
+                                                    id="benefit_note_{{ $idx }}"
+                                                    name="benefits[{{ $idx }}][expected_note]"
+                                                    class="kf-form-control @error('benefits.'.$idx.'.expected_note') is-invalid @enderror"
+                                                    placeholder="Not (opsiyonel)"
+                                                    maxlength="2000"
+                                                    value="{{ old('benefits.'.$idx.'.expected_note') }}">
+                                                @error('benefits.'.$idx.'.expected_note')
+                                                    <div class="invalid-feedback">{{ $message }}</div>
+                                                @enderror
+                                            </div>
+                                        </div>
+                                    </div>
+                                @endif
+                            @endforeach
+                        </div>
+
+                        @error('benefits')
+                            <div class="text-danger small mt-1 mb-2">{{ $message }}</div>
                         @enderror
-                    </div>
+                        @error('benefits.*')
+                            <div class="text-danger small mt-1 mb-2">{{ $message }}</div>
+                        @enderror
+
+                        {{-- Type picker dropdown --}}
+                        @php
+                            $usedTypeIds = collect(old('benefits', []))->pluck('benefit_type_id')->map(fn($v) => (int)$v)->filter()->all();
+                            $availableTypes = $benefitTypes->reject(fn($t) => in_array($t->id, $usedTypeIds, true));
+                        @endphp
+                        <div class="d-flex align-items-center gap-2 mt-2" id="benefit-add-area">
+                            <select id="benefit-type-picker" class="kf-form-control" style="max-width: 280px;" aria-label="Eklenecek fayda türü seçin">
+                                <option value="">-- Fayda türü seçin --</option>
+                                @foreach($benefitTypes as $type)
+                                    <option value="{{ $type->id }}"
+                                        data-name="{{ e($type->name) }}"
+                                        data-unit="{{ e($type->unit_label ?? '') }}"
+                                        {{ in_array($type->id, $usedTypeIds, true) ? 'disabled' : '' }}>
+                                        {{ e($type->name) }}{{ $type->unit_label ? ' ('.$type->unit_label.')' : '' }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <button type="button" id="benefit-add-btn" class="kf-btn kf-btn-secondary btn-sm">+ Fayda Ekle</button>
+                        </div>
+                    @endif
                 </div>
+
             </div>
 
             <div class="kf-form-footer">
@@ -193,3 +272,100 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+(function () {
+    'use strict';
+
+    const container  = document.getElementById('benefits-container');
+    const picker     = document.getElementById('benefit-type-picker');
+    const addBtn     = document.getElementById('benefit-add-btn');
+
+    if (!container || !picker || !addBtn) return;
+
+    function nextIndex() {
+        return container.querySelectorAll('[data-benefit-row]').length;
+    }
+
+    function disableOption(typeId, disabled) {
+        const opt = picker.querySelector('option[value="' + typeId + '"]');
+        if (opt) opt.disabled = disabled;
+    }
+
+    function addRow(typeId, typeName, typeUnit) {
+        const idx  = nextIndex();
+        const row  = document.createElement('div');
+        const unit = typeUnit ? ' (' + typeUnit + ')' : '';
+
+        row.className        = 'kf-benefit-row border rounded p-3 mb-2 bg-light';
+        row.dataset.benefitRow = '1';
+        row.dataset.typeId   = typeId;
+
+        row.innerHTML =
+            '<div class="d-flex justify-content-between align-items-center mb-2">' +
+                '<span class="fw-medium text-dark">' + escHtml(typeName) + (typeUnit ? ' <span class="text-muted small">(' + escHtml(typeUnit) + ')</span>' : '') + '</span>' +
+                '<button type="button" class="btn btn-sm btn-outline-danger kf-remove-benefit-row" aria-label="' + escHtml(typeName) + ' fayda satırını kaldır">Kaldır</button>' +
+            '</div>' +
+            '<input type="hidden" name="benefits[' + idx + '][benefit_type_id]" value="' + escHtml(typeId) + '">' +
+            '<div class="row g-2">' +
+                '<div class="col-md-4">' +
+                    '<label class="kf-form-label visually-hidden" for="benefit_value_' + idx + '">Beklenen Değer</label>' +
+                    '<input type="number" step="any" min="0" id="benefit_value_' + idx + '" name="benefits[' + idx + '][expected_value]" class="kf-form-control" placeholder="Beklenen değer">' +
+                '</div>' +
+                '<div class="col-md-8">' +
+                    '<label class="kf-form-label visually-hidden" for="benefit_note_' + idx + '">Not</label>' +
+                    '<input type="text" id="benefit_note_' + idx + '" name="benefits[' + idx + '][expected_note]" class="kf-form-control" placeholder="Not (opsiyonel)" maxlength="2000">' +
+                '</div>' +
+            '</div>';
+
+        row.querySelector('.kf-remove-benefit-row').addEventListener('click', function () {
+            disableOption(typeId, false);
+            row.remove();
+            reindex();
+        });
+
+        container.appendChild(row);
+        disableOption(typeId, true);
+        picker.value = '';
+    }
+
+    function reindex() {
+        container.querySelectorAll('[data-benefit-row]').forEach(function (row, i) {
+            row.querySelectorAll('[name]').forEach(function (el) {
+                el.name = el.name.replace(/benefits\[\d+\]/, 'benefits[' + i + ']');
+            });
+            row.querySelectorAll('[id]').forEach(function (el) {
+                el.id = el.id.replace(/_\d+$/, '_' + i);
+            });
+        });
+    }
+
+    function escHtml(str) {
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    addBtn.addEventListener('click', function () {
+        const opt = picker.options[picker.selectedIndex];
+        if (!opt || !opt.value) return;
+        addRow(opt.value, opt.dataset.name, opt.dataset.unit);
+    });
+
+    // Wire up remove buttons for server-side restored rows (old() loop)
+    container.querySelectorAll('[data-benefit-row]').forEach(function (row) {
+        var hiddenInput = row.querySelector('input[type="hidden"]');
+        if (!hiddenInput) return;
+        var typeId = hiddenInput.value;
+        row.querySelector('.kf-remove-benefit-row').addEventListener('click', function () {
+            disableOption(typeId, false);
+            row.remove();
+            reindex();
+        });
+    });
+}());
+</script>
+@endpush

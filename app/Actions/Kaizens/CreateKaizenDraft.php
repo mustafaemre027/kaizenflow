@@ -39,7 +39,6 @@ class CreateKaizenDraft
                 'title',
                 'current_situation',
                 'proposed_situation',
-                'expected_benefit',
                 'priority',
                 'target_date',
             ]);

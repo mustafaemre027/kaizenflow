@@ -15,7 +15,8 @@ class CreateKaizenDraftWithEvidence
 {
     public function __construct(
         private readonly CreateKaizenDraft $createKaizenDraft,
-        private readonly KaizenAttachmentService $attachmentService
+        private readonly KaizenAttachmentService $attachmentService,
+        private readonly SyncExpectedKaizenBenefits $syncBenefits
     ) {}
 
     public function execute(
@@ -35,7 +36,13 @@ class CreateKaizenDraftWithEvidence
                 // 1. Core Kaizen create
                 $kaizen = $this->createKaizenDraft->execute($creator, $category, $kaizenData);
 
-                // 2. Current evidence
+                // 2. Structured expected benefits (no dual-write to legacy column)
+                $benefitsPayload = $kaizenData['benefits'] ?? [];
+                if (! empty($benefitsPayload) && is_array($benefitsPayload)) {
+                    $this->syncBenefits->execute($creator, $kaizen, $benefitsPayload);
+                }
+
+                // 3. Current evidence
                 if (! empty($currentSituationImages)) {
                     $stored = $this->attachmentService->storeMany(
                         $kaizen,
@@ -46,7 +53,7 @@ class CreateKaizenDraftWithEvidence
                     $storedPaths = array_merge($storedPaths, $stored->pluck('storage_path')->all());
                 }
 
-                // 3. Proposed evidence
+                // 4. Proposed evidence
                 if (! empty($proposedSituationImages)) {
                     $stored = $this->attachmentService->storeMany(
                         $kaizen,

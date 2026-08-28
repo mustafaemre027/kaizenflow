@@ -117,7 +117,6 @@ class KaizenControllerTest extends TestCase
             'title' => 'Controller Test Kaizen',
             'current_situation' => 'Current sit',
             'proposed_situation' => 'Proposed sit',
-            'expected_benefit' => 'Expected ben',
             'current_situation_images' => [UploadedFile::fake()->create('current.jpg', 10, 'image/jpeg')],
             'proposed_situation_images' => [UploadedFile::fake()->create('proposed.jpg', 10, 'image/jpeg')],
         ];
@@ -215,7 +214,6 @@ class KaizenControllerTest extends TestCase
             'title' => 'HTML Test Kaizen',
             'current_situation' => 'Current sit',
             'proposed_situation' => 'Proposed sit',
-            'expected_benefit' => 'Expected ben',
             'current_situation_images' => [UploadedFile::fake()->create('current.jpg', 10, 'image/jpeg')],
             'proposed_situation_images' => [UploadedFile::fake()->create('proposed.jpg', 10, 'image/jpeg')],
         ];
@@ -241,7 +239,6 @@ class KaizenControllerTest extends TestCase
             'title' => 'Action Mock Test',
             'current_situation' => 'Mock situation long enough',
             'proposed_situation' => 'Mock situation long enough',
-            'expected_benefit' => 'Mock benefit long enough',
             'current_situation_images' => [UploadedFile::fake()->create('current.jpg', 10, 'image/jpeg')],
             'proposed_situation_images' => [UploadedFile::fake()->create('proposed.jpg', 10, 'image/jpeg')],
         ];
@@ -533,7 +530,6 @@ class KaizenControllerTest extends TestCase
             'title' => 'My Kaizen Title',
             'current_situation' => 'Current sit',
             'proposed_situation' => 'Proposed sit',
-            'expected_benefit' => 'Expected ben',
         ]);
 
         $response = $this->actingAs($this->user)->get(route('kaizens.show', $kaizen));
@@ -543,7 +539,6 @@ class KaizenControllerTest extends TestCase
         $response->assertSee('My Kaizen Title');
         $response->assertSee('Current sit');
         $response->assertSee('Proposed sit');
-        $response->assertSee('Expected ben');
         $response->assertSee($kaizen->code);
     }
 
@@ -767,7 +762,6 @@ class KaizenControllerTest extends TestCase
         $kaizen = Kaizen::factory()->create([
             'creator_user_id' => $this->user->id,
             'status' => KaizenStatus::DRAFT,
-            'expected_benefit' => 'A valid benefit',
         ]);
 
         ApprovalWorkflow::query()->delete();
@@ -794,7 +788,6 @@ class KaizenControllerTest extends TestCase
         $kaizen = Kaizen::factory()->create([
             'creator_user_id' => $this->user->id,
             'status' => KaizenStatus::DRAFT,
-            'expected_benefit' => 'A valid benefit',
         ]);
 
         ApprovalWorkflow::factory()->count(2)->create([
@@ -817,7 +810,6 @@ class KaizenControllerTest extends TestCase
         $kaizen = Kaizen::factory()->create([
             'creator_user_id' => $this->user->id,
             'status' => KaizenStatus::DRAFT,
-            'expected_benefit' => 'A valid benefit',
         ]);
 
         $this->artisan('db:seed', ['--class' => 'ApprovalWorkflowSeeder']);
@@ -843,7 +835,6 @@ class KaizenControllerTest extends TestCase
         $kaizen = Kaizen::factory()->create([
             'creator_user_id' => $this->user->id,
             'status' => KaizenStatus::DRAFT,
-            'expected_benefit' => 'A valid benefit',
         ]);
 
         $this->artisan('db:seed', ['--class' => 'ApprovalWorkflowSeeder']);
@@ -866,7 +857,6 @@ class KaizenControllerTest extends TestCase
         $kaizen = Kaizen::factory()->create([
             'creator_user_id' => $this->user->id,
             'status' => KaizenStatus::DRAFT,
-            'expected_benefit' => null,
         ]);
 
         $this->artisan('db:seed', ['--class' => 'ApprovalWorkflowSeeder']);
@@ -888,7 +878,6 @@ class KaizenControllerTest extends TestCase
         $kaizen = Kaizen::factory()->create([
             'creator_user_id' => $this->user->id,
             'status' => KaizenStatus::REVISION_REQUESTED,
-            'expected_benefit' => 'A valid benefit',
         ]);
 
         $workflow = ApprovalWorkflow::factory()->create(['is_active' => true, 'is_default' => true]);

@@ -30,12 +30,11 @@ class UpdateKaizenDraft
                 'title',
                 'current_situation',
                 'proposed_situation',
-                'expected_benefit',
                 'priority',
                 'target_date',
             ];
 
-            if (! Arr::hasAny($attributes, $allowedKeys)) {
+            if (! Arr::hasAny($attributes, array_merge($allowedKeys, ['benefits']))) {
                 throw ValidationException::withMessages(['payload' => 'Güncellenecek en az bir geçerli alan bulunmalıdır.']);
             }
 

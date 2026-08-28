@@ -31,9 +31,14 @@ class StoreKaizenRequest extends FormRequest
             'title' => ['required', 'string', 'min:5', 'max:255'],
             'current_situation' => ['required', 'string', 'min:10', 'max:5000'],
             'proposed_situation' => ['required', 'string', 'min:10', 'max:5000'],
-            'expected_benefit' => ['nullable', 'string', 'max:5000'],
             'priority' => ['nullable', new Enum(KaizenPriority::class)],
             'target_date' => ['nullable', 'date', 'after_or_equal:today'],
+
+            // Structured expected benefits (optional array)
+            'benefits' => ['nullable', 'array'],
+            'benefits.*.benefit_type_id' => ['required_with:benefits.*', 'integer', 'distinct'],
+            'benefits.*.expected_value' => ['nullable', 'numeric', 'min:0', 'max:999999999999999'],
+            'benefits.*.expected_note' => ['nullable', 'string', 'max:2000'],
 
             'code' => ['prohibited'],
             'creator_user_id' => ['prohibited'],
@@ -42,6 +47,7 @@ class StoreKaizenRequest extends FormRequest
             'status' => ['prohibited'],
             'actual_result' => ['prohibited'],
             'realized_benefit' => ['prohibited'],
+            'expected_benefit' => ['prohibited'],
             'submitted_at' => ['prohibited'],
             'approved_at' => ['prohibited'],
             'started_at' => ['prohibited'],
@@ -83,9 +89,12 @@ class StoreKaizenRequest extends FormRequest
             'title' => 'Başlık',
             'current_situation' => 'Mevcut Durum',
             'proposed_situation' => 'Önerilen Durum',
-            'expected_benefit' => 'Beklenen Fayda',
             'priority' => 'Öncelik',
             'target_date' => 'Hedef Tarih',
+            'benefits' => 'Beklenen Faydalar',
+            'benefits.*.benefit_type_id' => 'Fayda Türü',
+            'benefits.*.expected_value' => 'Beklenen Değer',
+            'benefits.*.expected_note' => 'Beklenen Not',
             'current_situation_images' => 'Mevcut Durum Fotoğrafları',
             'current_situation_images.*' => 'Mevcut Durum Fotoğrafı',
             'proposed_situation_images' => 'Önerilen Durum Fotoğrafları',
@@ -98,6 +107,13 @@ class StoreKaizenRequest extends FormRequest
         $maxMb = round(config('kaizen.attachments.max_image_kb', 8192) / 1024);
 
         return [
+            'benefits.*.benefit_type_id.required_with' => 'Her fayda satırı için fayda türü seçilmelidir.',
+            'benefits.*.benefit_type_id.integer' => 'Geçersiz fayda türü.',
+            'benefits.*.benefit_type_id.distinct' => 'Aynı fayda türü birden fazla kez eklenemez.',
+            'benefits.*.expected_value.numeric' => 'Beklenen değer sayısal olmalıdır.',
+            'benefits.*.expected_value.min' => 'Beklenen değer sıfırdan küçük olamaz.',
+            'benefits.*.expected_value.max' => 'Beklenen değer çok büyük.',
+            'benefits.*.expected_note.max' => 'Beklenen not en fazla 2000 karakter olabilir.',
             'current_situation_images.required' => 'Mevcut durum için en az bir fotoğraf yüklemelisiniz.',
             'current_situation_images.min' => 'Mevcut durum için en az bir fotoğraf yüklemelisiniz.',
             'proposed_situation_images.required' => 'Önerilen durum için en az bir fotoğraf yüklemelisiniz.',

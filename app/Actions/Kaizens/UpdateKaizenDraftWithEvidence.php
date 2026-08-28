@@ -16,7 +16,8 @@ class UpdateKaizenDraftWithEvidence
 {
     public function __construct(
         private readonly UpdateKaizenDraft $updateKaizenDraft,
-        private readonly KaizenAttachmentService $attachmentService
+        private readonly KaizenAttachmentService $attachmentService,
+        private readonly SyncExpectedKaizenBenefits $syncBenefits
     ) {}
 
     public function execute(
@@ -100,6 +101,12 @@ class UpdateKaizenDraftWithEvidence
 
                 // 4. Update core Kaizen scalar data
                 $updatedKaizen = $this->updateKaizenDraft->execute($updater, $kaizen, $validatedData);
+
+                // 5. Sync structured expected benefits (no dual-write to legacy column)
+                $benefitsPayload = $validatedData['benefits'] ?? null;
+                if (is_array($benefitsPayload)) {
+                    $this->syncBenefits->execute($updater, $updatedKaizen, $benefitsPayload);
+                }
 
             } catch (\Throwable $e) {
                 // Outer transaction will be rolled back. Clean up any physical files

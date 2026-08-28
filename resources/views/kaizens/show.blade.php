@@ -19,30 +19,20 @@
     <div class="mt-3 mt-md-0 d-flex gap-2 flex-wrap">
         @can('submit', $kaizen)
             @php
-                $isCompletable = trim($kaizen->expected_benefit ?? '') !== '';
                 $btnText = $kaizen->status === \App\Enums\KaizenStatus::REVISION_REQUESTED ? 'Yeniden Gönder' : 'Onaya Gönder';
             @endphp
 
-            @if($isCompletable)
-                <form action="{{ route('kaizens.submit', $kaizen) }}" method="POST" class="d-inline m-0 p-0">
-                    @csrf
-                    <button type="submit" class="kf-btn kf-btn-primary" onclick="return confirm('Bu Kaizen\'i onaya göndermek istediğinize emin misiniz?');">
-                        {{ $btnText }}
-                    </button>
-                </form>
-                @can('update', $kaizen)
-                    <a href="{{ route('kaizens.edit', $kaizen) }}" class="kf-btn kf-btn-secondary">
-                        Düzenle
-                    </a>
-                @endcan
-            @else
-                <div class="d-inline-flex align-items-center gap-2 bg-light px-3 py-1 rounded border">
-                    <span class="text-muted small fw-medium">Onay için Beklenen Fayda eksik.</span>
-                    <a href="{{ route('kaizens.edit', $kaizen) }}" class="kf-btn kf-btn-primary btn-sm">
-                        Eksikleri Tamamla
-                    </a>
-                </div>
-            @endif
+            <form action="{{ route('kaizens.submit', $kaizen) }}" method="POST" class="d-inline m-0 p-0">
+                @csrf
+                <button type="submit" class="kf-btn kf-btn-primary" onclick="return confirm('Bu Kaizen\'i onaya göndermek istediğinize emin misiniz?');">
+                    {{ $btnText }}
+                </button>
+            </form>
+            @can('update', $kaizen)
+                <a href="{{ route('kaizens.edit', $kaizen) }}" class="kf-btn kf-btn-secondary">
+                    Düzenle
+                </a>
+            @endcan
         @else
             @can('update', $kaizen)
                 <a href="{{ route('kaizens.edit', $kaizen) }}" class="kf-btn kf-btn-primary">
@@ -200,9 +190,50 @@
             <div class="kf-content-block">
                 <div class="kf-content-block-header">
                     <span class="kf-content-num">03</span>
-                    <h3 class="kf-content-title">Beklenen Fayda</h3>
+                    <h3 class="kf-content-title">Beklenen Faydalar</h3>
                 </div>
-                <p class="kf-detail-text">{{ $kaizen->expected_benefit }}</p>
+                @if($kaizen->benefits->isNotEmpty())
+                    <div class="table-responsive">
+                        <table class="table table-sm table-borderless mb-0" aria-label="Beklenen faydalar tablosu">
+                            <thead class="text-muted small">
+                                <tr>
+                                    <th scope="col">Fayda Türü</th>
+                                    <th scope="col">Beklenen Değer</th>
+                                    <th scope="col">Not</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($kaizen->benefits as $benefit)
+                                    <tr>
+                                        <td>
+                                            {{ e($benefit->benefitType?->name ?? '-') }}
+                                            @if($benefit->benefitType && !$benefit->benefitType->is_active)
+                                                <span class="badge bg-secondary ms-1" title="Bu fayda türü pasif edilmiştir">Pasif</span>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @if($benefit->expected_value !== null)
+                                                {{ $benefit->expected_value }}
+                                                @if($benefit->benefitType?->unit_label)
+                                                    <span class="text-muted small">{{ e($benefit->benefitType->unit_label) }}</span>
+                                                @endif
+                                            @else
+                                                <span class="text-muted fst-italic">-</span>
+                                            @endif
+                                        </td>
+                                        <td class="text-muted small">{{ e($benefit->expected_note ?? '') ?: '-' }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @elseif(trim($kaizen->expected_benefit ?? '') !== '')
+                    {{-- Legacy compatibility: show old free-text benefit if no structured record exists --}}
+                    <div class="kf-detail-text text-muted fst-italic small mb-1">Eski kayıt (yapılandırılmamış)</div>
+                    <p class="kf-detail-text">{{ e($kaizen->expected_benefit) }}</p>
+                @else
+                    <p class="kf-detail-text text-muted fst-italic">Beklenen fayda bilgisi girilmemiş.</p>
+                @endif
             </div>
 
             <div class="kf-content-block">

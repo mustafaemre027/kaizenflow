@@ -84,7 +84,6 @@ class UpdateKaizenDraftRequestTest extends TestCase
             'title' => 'Updated Title Here',
             'current_situation' => 'Updated current situation.',
             'proposed_situation' => 'Updated proposed situation.',
-            'expected_benefit' => 'Updated expected benefit.',
             'priority' => KaizenPriority::HIGH->value,
             'target_date' => Carbon::tomorrow()->format('Y-m-d'),
         ]);
@@ -186,7 +185,6 @@ class UpdateKaizenDraftRequestTest extends TestCase
         $validator = $this->validate([
             'priority' => null,
             'target_date' => null,
-            'expected_benefit' => null,
         ]);
 
         $this->assertTrue($validator->passes());
