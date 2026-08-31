@@ -30,8 +30,19 @@ class NewPasswordController extends Controller
         $status = Password::broker()->reset(
             $request->only('email', 'password', 'password_confirmation', 'token'),
             function ($user, string $password) {
+                if (! $user->is_active) {
+                    throw ValidationException::withMessages([
+                        'email' => __('passwords.user'),
+                    ]);
+                }
+
                 $user->password = Hash::make($password);
                 $user->setRememberToken(Str::random(60));
+
+                if ($user->must_set_password) {
+                    $user->must_set_password = false;
+                }
+
                 $user->save();
 
                 event(new PasswordReset($user));

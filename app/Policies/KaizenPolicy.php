@@ -50,15 +50,14 @@ class KaizenPolicy
             return true;
         }
 
-        if ($user->role === UserRole::OPEX_SPECIALIST) {
+        /** @var UserCapabilityResolver $resolver */
+        $resolver = app(UserCapabilityResolver::class);
+
+        if ($resolver->allowsSystem($user, UserCapability::KAIZEN_OPEX_REVIEW)) {
             return true;
         }
 
-        if ($user->role === UserRole::ADMIN) {
-            return true;
-        }
-
-        if ($user->role === UserRole::MANAGER && $user->department_id === $kaizen->department_id) {
+        if ($resolver->allows($user, UserCapability::KAIZEN_DEPARTMENT_APPROVE, $kaizen->department_id)) {
             return true;
         }
 

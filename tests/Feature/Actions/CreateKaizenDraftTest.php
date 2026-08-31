@@ -194,7 +194,7 @@ class CreateKaizenDraftTest extends TestCase
         ];
 
         // Mock KaizenCodeGenerator to throw an exception
-        $mockGenerator = $this->createMock(KaizenCodeGenerator::class);
+        $mockGenerator = $this->createStub(KaizenCodeGenerator::class);
         $mockGenerator->method('generate')->willThrowException(new \RuntimeException('Generator error'));
 
         $actionWithMock = new CreateKaizenDraft($mockGenerator);

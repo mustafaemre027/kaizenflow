@@ -7,7 +7,6 @@ use App\Actions\Kaizens\SubmitKaizen;
 use App\Actions\Kaizens\UpdateKaizenDraftWithEvidence;
 use App\Enums\KaizenAttachmentContext;
 use App\Enums\KaizenStatus;
-use App\Enums\UserRole;
 use App\Exceptions\Workflow\InvalidApprovalWorkflowConfiguration;
 use App\Http\Requests\Kaizens\IndexKaizenRequest;
 use App\Http\Requests\Kaizens\StoreKaizenRequest;
@@ -69,14 +68,8 @@ class KaizenController extends Controller
         $statuses = KaizenStatus::cases();
         $categories = Category::active()->orderBy('name')->get();
 
-        if ($user->role === UserRole::MANAGER) {
-            $departments = Department::where('id', $user->department_id)->active()->get();
-        } elseif (in_array($user->role, [UserRole::OPEX_SPECIALIST, UserRole::ADMIN], true)) {
-            $departments = Department::active()->orderBy('name')->get();
-        } else {
-            $departmentIds = (clone $baseQuery)->select('department_id')->distinct()->pluck('department_id');
-            $departments = Department::whereIn('id', $departmentIds)->active()->orderBy('name')->get();
-        }
+        $departmentIds = (clone $baseQuery)->select('department_id')->distinct()->pluck('department_id');
+        $departments = Department::whereIn('id', $departmentIds)->active()->orderBy('name')->get();
 
         return view('kaizens.index', compact('kaizens', 'statuses', 'categories', 'departments'));
     }

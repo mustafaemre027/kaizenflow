@@ -25,8 +25,8 @@ class UserRoleTest extends TestCase
     public function test_it_returns_correct_labels(): void
     {
         $this->assertSame('Çalışan', UserRole::EMPLOYEE->label());
-        $this->assertSame('OPEX Uzmanı', UserRole::OPEX_SPECIALIST->label());
-        $this->assertSame('Yönetici', UserRole::MANAGER->label());
+        $this->assertSame('Sürekli İyileştirme Uzmanı', UserRole::OPEX_SPECIALIST->label());
+        $this->assertSame('Departman Yöneticisi', UserRole::MANAGER->label());
         $this->assertSame('Sistem Yöneticisi', UserRole::ADMIN->label());
     }
 

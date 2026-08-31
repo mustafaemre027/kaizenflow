@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Settings;
 
+use App\Enums\UserCapability;
 use App\Enums\UserRole;
 use App\Models\Category;
 use App\Models\Department;
@@ -26,6 +27,10 @@ class ReferenceDataManagementTest extends TestCase
 
         $this->admin = User::factory()->create(['role' => UserRole::ADMIN, 'is_active' => true, 'department_id' => $department->id]);
         $this->employee = User::factory()->create(['role' => UserRole::EMPLOYEE, 'is_active' => true, 'department_id' => $department->id]);
+
+        $this->admin->systemCapabilityGrants()->create(['capability' => UserCapability::ORGANIZATION_VIEW, 'is_active' => true]);
+        $this->admin->systemCapabilityGrants()->create(['capability' => UserCapability::ORGANIZATION_MANAGE, 'is_active' => true]);
+        $this->admin->systemCapabilityGrants()->create(['capability' => UserCapability::KAIZEN_OPEX_REVIEW, 'is_active' => true]);
     }
 
     public function test_reference_data_index_auth_checks(): void

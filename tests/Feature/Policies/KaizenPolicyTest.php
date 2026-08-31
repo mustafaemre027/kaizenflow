@@ -3,6 +3,7 @@
 namespace Tests\Feature\Policies;
 
 use App\Enums\KaizenStatus;
+use App\Enums\UserCapability;
 use App\Enums\UserRole;
 use App\Models\Department;
 use App\Models\Kaizen;
@@ -66,58 +67,48 @@ class KaizenPolicyTest extends TestCase
         $this->assertTrue($this->policy->view($assignee, $kaizen));
     }
 
-    public function test_opex_specialist_can_view_any_kaizen(): void
+    public function test_user_with_system_opex_review_capability_can_view_any_kaizen(): void
     {
-        $opex = User::factory()->create([
+        $user = User::factory()->create([
             'is_active' => true,
-            'role' => UserRole::OPEX_SPECIALIST,
         ]);
+        $user->systemCapabilityGrants()->create(['capability' => UserCapability::KAIZEN_OPEX_REVIEW, 'is_active' => true]);
+
         $kaizen = Kaizen::factory()->create();
 
-        $this->assertTrue($this->policy->view($opex, $kaizen));
+        $this->assertTrue($this->policy->view($user, $kaizen));
     }
 
-    public function test_admin_can_view_any_kaizen(): void
-    {
-        $admin = User::factory()->create([
-            'is_active' => true,
-            'role' => UserRole::ADMIN,
-        ]);
-        $kaizen = Kaizen::factory()->create();
-
-        $this->assertTrue($this->policy->view($admin, $kaizen));
-    }
-
-    public function test_manager_in_same_department_can_view_kaizen(): void
+    public function test_user_with_department_approve_capability_can_view_department_kaizen(): void
     {
         $department = Department::factory()->create();
-        $manager = User::factory()->create([
+        $user = User::factory()->create([
             'is_active' => true,
-            'role' => UserRole::MANAGER,
-            'department_id' => $department->id,
         ]);
+        $user->capabilityGrants()->create(['capability' => UserCapability::KAIZEN_DEPARTMENT_APPROVE, 'department_id' => $department->id, 'is_active' => true]);
+
         $kaizen = Kaizen::factory()->create([
             'department_id' => $department->id,
         ]);
 
-        $this->assertTrue($this->policy->view($manager, $kaizen));
+        $this->assertTrue($this->policy->view($user, $kaizen));
     }
 
-    public function test_manager_in_different_department_cannot_view_kaizen(): void
+    public function test_user_with_department_approve_capability_cannot_view_other_department_kaizen(): void
     {
         $department1 = Department::factory()->create();
         $department2 = Department::factory()->create();
 
-        $manager = User::factory()->create([
+        $user = User::factory()->create([
             'is_active' => true,
-            'role' => UserRole::MANAGER,
-            'department_id' => $department1->id,
         ]);
+        $user->capabilityGrants()->create(['capability' => UserCapability::KAIZEN_DEPARTMENT_APPROVE, 'department_id' => $department1->id, 'is_active' => true]);
+
         $kaizen = Kaizen::factory()->create([
             'department_id' => $department2->id,
         ]);
 
-        $this->assertFalse($this->policy->view($manager, $kaizen));
+        $this->assertFalse($this->policy->view($user, $kaizen));
     }
 
     public function test_employee_in_different_department_cannot_view_kaizen(): void

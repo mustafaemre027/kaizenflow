@@ -4,12 +4,12 @@ use App\Actions\ApprovalConfiguration\CreateApprovalWorkflowDraft;
 use App\Actions\ApprovalConfiguration\MutateApprovalStageApproverRule;
 use App\Actions\ApprovalConfiguration\PublishApprovalWorkflow;
 use App\Actions\ApprovalConfiguration\SetDefaultApprovalWorkflow;
+use App\Actions\Users\CreateUserWithInvitation;
 use App\Actions\Workflow\ProgressKaizenWorkflow;
 use App\Enums\ApprovalApproverScopeSource;
 use App\Enums\UserCapability;
 use App\Enums\WorkflowAction;
 use App\Exceptions\AuthorizationException;
-use App\Exceptions\DomainException;
 use App\Models\ApprovalStage;
 use App\Models\ApprovalWorkflow;
 use App\Models\KaizenWorkflowInstance;
@@ -144,8 +144,15 @@ if (in_array('--race-worker', $argv)) {
             $action = $app->make(ProgressKaizenWorkflow::class);
             $action->execute($instance->kaizen, $actor, WorkflowAction::APPROVE, 'concurrent test');
             echo "STATUS:SUCCESS\n";
+        } elseif ($raceType === 'CREATE_USER_RACE') {
+            $actor = User::findOrFail($payload['user_id']);
+            $action = $app->make(CreateUserWithInvitation::class);
+            $action->execute($actor, $payload['validated']);
+            echo "STATUS:SUCCESS\n";
         }
     } catch (AuthorizationException $e) {
+        echo "STATUS:REJECTED\n";
+    } catch (App\Exceptions\DomainException $e) {
         echo "STATUS:REJECTED\n";
     } catch (DomainException $e) {
         echo "STATUS:REJECTED\n";

@@ -5,6 +5,7 @@ namespace Tests\Feature\Http\Controllers;
 use App\Actions\Kaizens\CreateKaizenDraft;
 use App\Actions\Kaizens\UpdateKaizenDraft;
 use App\Enums\KaizenStatus;
+use App\Enums\UserCapability;
 use App\Enums\UserRole;
 use App\Models\ApprovalGroup;
 use App\Models\ApprovalGroupMember;
@@ -648,8 +649,7 @@ class KaizenControllerTest extends TestCase
 
     public function test_index_manager_can_see_own_assigned_and_department_kaizens(): void
     {
-        $this->user->role = UserRole::MANAGER;
-        $this->user->save();
+        $this->user->capabilityGrants()->create(['capability' => UserCapability::KAIZEN_DEPARTMENT_APPROVE, 'department_id' => $this->department->id, 'is_active' => true]);
 
         $otherDepartment = Department::factory()->create();
         $otherUser = User::factory()->create(['department_id' => $otherDepartment->id]);
@@ -668,8 +668,7 @@ class KaizenControllerTest extends TestCase
 
     public function test_index_opex_specialist_can_see_all_kaizens(): void
     {
-        $this->user->role = UserRole::OPEX_SPECIALIST;
-        $this->user->save();
+        $this->user->systemCapabilityGrants()->create(['capability' => UserCapability::KAIZEN_OPEX_REVIEW, 'is_active' => true]);
 
         $unrelatedKaizen = Kaizen::factory()->create();
 
@@ -680,8 +679,7 @@ class KaizenControllerTest extends TestCase
 
     public function test_index_admin_can_see_all_kaizens(): void
     {
-        $this->user->role = UserRole::ADMIN;
-        $this->user->save();
+        $this->user->systemCapabilityGrants()->create(['capability' => UserCapability::KAIZEN_OPEX_REVIEW, 'is_active' => true]);
 
         $unrelatedKaizen = Kaizen::factory()->create();
 
@@ -738,8 +736,7 @@ class KaizenControllerTest extends TestCase
 
     public function test_index_pagination_returns_correct_number_of_items(): void
     {
-        $this->user->role = UserRole::ADMIN;
-        $this->user->save();
+        $this->user->systemCapabilityGrants()->create(['capability' => UserCapability::KAIZEN_OPEX_REVIEW, 'is_active' => true]);
 
         Kaizen::factory()->count(20)->create();
 

@@ -16,6 +16,8 @@ use App\Http\Controllers\Settings\BenefitTypeController;
 use App\Http\Controllers\Settings\CategoryController;
 use App\Http\Controllers\Settings\DepartmentController;
 use App\Http\Controllers\Settings\ReferenceDataController;
+use App\Http\Controllers\Settings\UserCapabilityController;
+use App\Http\Controllers\Settings\UserController;
 use App\Queries\KaizenImplementationWorkQueueSummaryQuery;
 use Illuminate\Support\Facades\Route;
 
@@ -68,6 +70,17 @@ Route::middleware('auth')->group(function () {
         Route::get('/kaizens/{kaizen}/attachments/{attachment}/download', [KaizenAttachmentController::class, 'download'])->name('kaizens.attachments.download');
 
         Route::prefix('settings')->name('settings.')->group(function () {
+            Route::get('/users', [UserController::class, 'index'])->name('users.index');
+            Route::get('/users/create', [UserController::class, 'create'])->name('users.create');
+            Route::post('/users', [UserController::class, 'store'])->name('users.store');
+            Route::get('/users/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
+            Route::patch('/users/{user}', [UserController::class, 'update'])->name('users.update');
+            Route::patch('/users/{user}/status', [UserController::class, 'setStatus'])->name('users.status');
+            Route::post('/users/{user}/invitation', [UserController::class, 'resendInvitation'])->name('users.invitation');
+            Route::get('/users/{user}/capabilities', [UserCapabilityController::class, 'show'])->name('users.capabilities');
+            Route::patch('/users/{user}/capabilities/system', [UserCapabilityController::class, 'setSystem'])->name('users.capabilities.system');
+            Route::patch('/users/{user}/capabilities/department', [UserCapabilityController::class, 'setDepartment'])->name('users.capabilities.department');
+
             Route::get('/reference-data', [ReferenceDataController::class, 'index'])->name('reference-data.index');
 
             Route::get('/approval-configurations', [ApprovalConfigurationController::class, 'index'])->name('approval-configurations.index');

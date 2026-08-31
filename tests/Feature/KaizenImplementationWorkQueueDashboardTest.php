@@ -5,6 +5,8 @@ namespace Tests\Feature;
 use App\Enums\KaizenStatus;
 use App\Enums\UserRole;
 use App\Models\AuditLog;
+use App\Models\Category;
+use App\Models\Department;
 use App\Models\Kaizen;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -151,8 +153,31 @@ class KaizenImplementationWorkQueueDashboardTest extends TestCase
         $queries = DB::getQueryLog();
 
         // The exact count should be minimal, ideally 1 query for the dashboard
-        // We'll assert < 5 to allow for session/user lookup, but ensure it's not O(N)
-        $this->assertTrue(count($queries) < 5, 'N+1 or multiple queries detected for dashboard summary.');
+        // We'll assert < 10 to allow for session/user lookup and capability checks, but ensure it's not O(N)
+        $this->assertTrue(count($queries) < 10, 'N+1 or multiple queries detected for dashboard summary.');
+    }
+
+    public function test_single_aggregate_query_performance_large_dataset(): void
+    {
+        $user = User::factory()->create(['is_active' => true]);
+        $department = Department::factory()->create();
+        $category = Category::factory()->create();
+
+        Kaizen::factory()->count(100)->create([
+            'assigned_user_id' => $user->id,
+            'department_id' => $department->id,
+            'category_id' => $category->id,
+            'status' => KaizenStatus::IN_PROGRESS,
+            'target_date' => now()->subDay()->format('Y-m-d'), // 100 overdue
+        ]);
+
+        $this->actingAs($user);
+
+        DB::enableQueryLog();
+        $this->get($this->route)->assertOk();
+        $queries = DB::getQueryLog();
+
+        $this->assertTrue(count($queries) < 10, 'Queries should be bounded regardless of dataset size (was '.count($queries).')');
     }
 
     public function test_actor_injection_is_rejected(): void

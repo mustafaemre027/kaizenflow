@@ -13,8 +13,8 @@ enum UserRole: string
     {
         return match ($this) {
             self::EMPLOYEE => 'Çalışan',
-            self::OPEX_SPECIALIST => 'OPEX Uzmanı',
-            self::MANAGER => 'Yönetici',
+            self::OPEX_SPECIALIST => 'Sürekli İyileştirme Uzmanı',
+            self::MANAGER => 'Departman Yöneticisi',
             self::ADMIN => 'Sistem Yöneticisi',
         };
     }

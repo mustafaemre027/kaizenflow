@@ -35,4 +35,22 @@ enum UserCapability: string
             self::AUTHORIZATION_MANAGE => CapabilityScope::SYSTEM,
         };
     }
+
+    public function label(): string
+    {
+        return match ($this) {
+            self::KAIZEN_IMPLEMENTATION_ASSIGN => 'Uygulama Sorumlusu Atama',
+            self::KAIZEN_IMPLEMENTATION_START => 'Uygulamayı Başlatma',
+            self::KAIZEN_IMPLEMENTATION_COMPLETE => 'Uygulamayı Tamamlama',
+            self::KAIZEN_DEPARTMENT_APPROVE => 'Departman Onayı',
+
+            self::KAIZEN_OPEX_REVIEW => 'Sürekli İyileştirme İncelemesi',
+            self::KAIZEN_BOARD_APPROVE => 'Kurul Onayı',
+            self::ORGANIZATION_VIEW => 'Organizasyonu Görüntüleme',
+            self::ORGANIZATION_MANAGE => 'Organizasyonu Yönetme',
+            self::APPROVAL_CONFIGURATION_VIEW => 'Onay Yapılandırmasını Görüntüleme',
+            self::APPROVAL_CONFIGURATION_MANAGE => 'Onay Yapılandırmasını Yönetme',
+            self::AUTHORIZATION_MANAGE => 'Yetkilendirme Yönetimi',
+        };
+    }
 }
