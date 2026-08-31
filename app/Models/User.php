@@ -6,6 +6,7 @@ namespace App\Models;
 use App\Enums\UserRole;
 use App\Enums\WorkflowAction;
 use App\Notifications\CustomResetPasswordNotification;
+use App\Notifications\UserInvitationNotification;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -35,6 +36,8 @@ class User extends Authenticatable
             'password' => 'hashed',
             'role' => UserRole::class,
             'is_active' => 'boolean',
+            'must_set_password' => 'boolean',
+            'invitation_sent_at' => 'datetime',
         ];
     }
 
@@ -97,6 +100,10 @@ class User extends Authenticatable
 
     public function sendPasswordResetNotification($token): void
     {
-        $this->notify(new CustomResetPasswordNotification($token));
+        if ($this->must_set_password) {
+            $this->notify(new UserInvitationNotification($token));
+        } else {
+            $this->notify(new CustomResetPasswordNotification($token));
+        }
     }
 }
