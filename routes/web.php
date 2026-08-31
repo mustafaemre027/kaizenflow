@@ -11,6 +11,7 @@ use App\Http\Controllers\KaizenApprovalActionController;
 use App\Http\Controllers\KaizenAttachmentController;
 use App\Http\Controllers\KaizenController;
 use App\Http\Controllers\KaizenImplementationController;
+use App\Http\Controllers\KaizenReportExportController;
 use App\Http\Controllers\Kaizens\KaizenImplementationWorkQueueController;
 use App\Http\Controllers\Settings\ApprovalConfigurationController;
 use App\Http\Controllers\Settings\BenefitTypeController;
@@ -47,6 +48,7 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::middleware(['auth', 'auth.session', 'active-user', 'email-verified'])->group(function () {
+        Route::get('/reports/kaizens.csv', [KaizenReportExportController::class, 'export'])->name('reports.kaizens.csv');
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
         Route::get('/kaizens', [KaizenController::class, 'index'])->name('kaizens.index');
         Route::get('/approvals', [ApprovalController::class, 'index'])->name('approvals.index');

@@ -16,6 +16,14 @@
                 Rakamlar yalnızca erişim yetkiniz bulunan Kaizen kayıtlarını içerir.
             </small>
         </div>
+        <div>
+            <a href="{{ route('reports.kaizens.csv', request()->only(['date_from', 'date_to', 'department_id', 'category_id', 'status'])) }}" class="btn btn-outline-primary d-inline-flex align-items-center">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg" class="me-2">
+                    <path fill-rule="evenodd" d="M14 4.5V14a2 2 0 0 1-2 2h-1v-1h1a1 1 0 0 0 1-1V4.5h-2A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v9H2V2a2 2 0 0 1 2-2h5.5L14 4.5ZM.354 11.646a.5.5 0 0 0 0 .708l3 3a.5.5 0 0 0 .708-.708L1.707 12.5H8a.5.5 0 0 0 0-1H1.707l2.355-2.146a.5.5 0 1 0-.708-.708l-3 3Z"/>
+                </svg>
+                CSV Dışa Aktar
+            </a>
+        </div>
     </div>
 
     {{-- Filter Section --}}

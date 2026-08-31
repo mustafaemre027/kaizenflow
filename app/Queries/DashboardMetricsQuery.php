@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\Department;
 use App\Models\KaizenBenefit;
 use App\Models\User;
+use App\Queries\Concerns\FiltersKaizenQueries;
 use App\Services\Kaizens\VisibleKaizensQuery;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
@@ -14,6 +15,8 @@ use Illuminate\Support\Facades\DB;
 
 class DashboardMetricsQuery
 {
+    use FiltersKaizenQueries;
+
     public function __construct(
         private readonly VisibleKaizensQuery $visibleKaizens
     ) {}
@@ -22,7 +25,7 @@ class DashboardMetricsQuery
     {
         // 1. Base Scoped Query
         $baseQuery = $this->visibleKaizens->forUser($actor);
-        $this->applyFilters($baseQuery, $filters);
+        $this->applyKaizenFilters($baseQuery, $filters);
 
         // 2. Metrics Object
         return [
@@ -36,29 +39,6 @@ class DashboardMetricsQuery
             'monthly_trend' => $this->getMonthlyTrend($baseQuery),
             'structured_benefits' => $this->getStructuredBenefits($baseQuery),
         ];
-    }
-
-    private function applyFilters(Builder $query, array $filters): void
-    {
-        if (! empty($filters['date_from'])) {
-            $query->where('created_at', '>=', Carbon::parse($filters['date_from'])->startOfDay());
-        }
-
-        if (! empty($filters['date_to'])) {
-            $query->where('created_at', '<=', Carbon::parse($filters['date_to'])->endOfDay());
-        }
-
-        if (! empty($filters['department_id'])) {
-            $query->where('department_id', $filters['department_id']);
-        }
-
-        if (! empty($filters['category_id'])) {
-            $query->where('category_id', $filters['category_id']);
-        }
-
-        if (! empty($filters['status'])) {
-            $query->where('status', $filters['status']);
-        }
     }
 
     private function getTotal(Builder $baseQuery): int
