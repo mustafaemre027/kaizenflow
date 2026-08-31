@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Http\Controllers\Settings;
 
+use App\Actions\Users\CreateUserWithInvitation;
 use App\Actions\Users\SendUserInvitation;
 use App\Actions\Users\UpdateUser;
 use App\Enums\UserCapability;
@@ -135,6 +136,68 @@ class UserControllerTest extends TestCase
 
         $response->assertRedirect();
         $response->assertSessionHas('warning', 'Davet kısa süre önce gönderildi. Lütfen tekrar denemeden önce bekleyin.');
+    }
+
+    public function test_store_exact_duplicate_email_http_error()
+    {
+        $department = Department::factory()->create(['is_active' => true]);
+        User::factory()->create(['email' => 'user@example.com']);
+
+        $response = $this->actingAs($this->admin)->post(route('settings.users.store'), [
+            'name' => 'John Doe',
+            'email' => 'user@example.com',
+            'role' => UserRole::EMPLOYEE->value,
+            'department_id' => $department->id,
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHasErrors([
+            'email' => 'Bu e-posta adresi ile kayıtlı bir kullanıcı zaten mevcut.',
+        ]);
+
+        $this->assertEquals(3, User::count()); // admin + employee + existing
+    }
+
+    public function test_store_duplicate_email_http_error()
+    {
+        $department = Department::factory()->create(['is_active' => true]);
+        User::factory()->create(['email' => 'Mixed@Example.com']);
+
+        $response = $this->actingAs($this->admin)->post(route('settings.users.store'), [
+            'name' => 'John Doe',
+            'email' => 'mixed@example.com',
+            'role' => UserRole::EMPLOYEE->value,
+            'department_id' => $department->id,
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHasErrors([
+            'email' => 'Bu e-posta adresi ile kayıtlı bir kullanıcı zaten mevcut.',
+        ]);
+
+        $this->assertEquals(3, User::count()); // admin + employee + existing
+    }
+
+    public function test_store_raw_exception_not_exposed()
+    {
+        $department = Department::factory()->create(['is_active' => true]);
+
+        $mockAction = $this->createStub(CreateUserWithInvitation::class);
+        $mockAction->method('execute')->willThrowException(new \Exception('SECRET CREATE INTERNAL ERROR'));
+        $this->app->instance(CreateUserWithInvitation::class, $mockAction);
+
+        $response = $this->actingAs($this->admin)->post(route('settings.users.store'), [
+            'name' => 'John Doe',
+            'email' => 'test@example.com',
+            'role' => UserRole::EMPLOYEE->value,
+            'department_id' => $department->id,
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('error', 'İşlem tamamlanamadı. Lütfen tekrar deneyin.');
+
+        $sessionError = session('error');
+        $this->assertStringNotContainsString('SECRET CREATE INTERNAL ERROR', $sessionError);
     }
 
     public function test_raw_exception_not_exposed_on_update()

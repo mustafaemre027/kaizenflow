@@ -76,13 +76,31 @@ class UserController extends Controller
 
     public function store(StoreUserRequest $request, CreateUserWithInvitation $action): RedirectResponse
     {
-        $result = $action->execute($request->user(), $request->validated());
+        try {
+            $result = $action->execute($request->user(), $request->validated());
 
-        if ($result['success']) {
-            return redirect()->route('settings.users.index')->with('success', $result['message']);
+            if ($result['success']) {
+                return redirect()->route('settings.users.index')->with('success', $result['message']);
+            }
+
+            return redirect()->route('settings.users.index')->with('warning', $result['message']);
+        } catch (DomainException $e) {
+            if ($e->getMessage() === 'Bu e-posta adresi ile kayıtlı bir kullanıcı zaten mevcut.') {
+                return redirect()->back()
+                    ->withErrors([
+                        'email' => 'Bu e-posta adresi ile kayıtlı bir kullanıcı zaten mevcut.',
+                    ])
+                    ->withInput();
+            }
+
+            report($e);
+
+            return redirect()->back()->with('error', 'İşlem tamamlanamadı. Lütfen tekrar deneyin.')->withInput();
+        } catch (Exception $e) {
+            report($e);
+
+            return redirect()->back()->with('error', 'İşlem tamamlanamadı. Lütfen tekrar deneyin.')->withInput();
         }
-
-        return redirect()->route('settings.users.index')->with('warning', $result['message']);
     }
 
     public function edit(User $user): View
