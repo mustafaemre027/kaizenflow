@@ -9,7 +9,7 @@ use App\Exceptions\ScopeMismatchException;
 use App\Models\User;
 use App\Models\UserSystemCapabilityGrant;
 use App\Services\AppendAuditLog;
-use Exception;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 
 class RevokeSystemCapability
@@ -47,7 +47,7 @@ class RevokeSystemCapability
             $freshTarget = $users->get($target->id);
 
             if (! $freshActor || ! $freshActor->is_active) {
-                throw new Exception('Unauthorized action.');
+                throw new AuthorizationException('Unauthorized action.');
             }
 
             $userIdsForGrantsToLock = $capability === UserCapability::AUTHORIZATION_MANAGE
@@ -62,7 +62,7 @@ class RevokeSystemCapability
                 ->keyBy('user_id');
 
             if (! $managerGrants->has($freshActor->id) || ! $managerGrants->get($freshActor->id)->is_active) {
-                throw new Exception('Unauthorized action.');
+                throw new AuthorizationException('Unauthorized action.');
             }
 
             $grant = UserSystemCapabilityGrant::where('user_id', $freshTarget->id)

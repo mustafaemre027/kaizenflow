@@ -2,12 +2,15 @@
 
 namespace Tests\Feature\Http\Controllers\Settings;
 
+use App\Actions\Users\SendUserInvitation;
+use App\Actions\Users\UpdateUser;
 use App\Enums\UserCapability;
 use App\Enums\UserRole;
 use App\Models\Department;
 use App\Models\User;
 use App\Models\UserSystemCapabilityGrant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Password;
 use Tests\TestCase;
 
 class UserControllerTest extends TestCase
@@ -117,5 +120,39 @@ class UserControllerTest extends TestCase
         ]);
 
         $response->assertSessionHasErrors(['password']);
+    }
+
+    public function test_resend_throttle_returns_warning()
+    {
+        $user = User::factory()->create(['is_active' => true, 'must_set_password' => true]);
+
+        // Mock the action to return throttled
+        $mockAction = $this->createMock(SendUserInvitation::class);
+        $mockAction->method('execute')->willReturn(Password::RESET_THROTTLED);
+        $this->app->instance(SendUserInvitation::class, $mockAction);
+
+        $response = $this->actingAs($this->admin)->post(route('settings.users.invitation', $user->id));
+
+        $response->assertRedirect();
+        $response->assertSessionHas('warning', 'Davet kısa süre önce gönderildi. Lütfen tekrar denemeden önce bekleyin.');
+    }
+
+    public function test_raw_exception_not_exposed_on_update()
+    {
+        $user = User::factory()->create(['is_active' => true]);
+
+        $mockAction = $this->createMock(UpdateUser::class);
+        $mockAction->method('execute')->willThrowException(new \Exception('Raw exception message'));
+        $this->app->instance(UpdateUser::class, $mockAction);
+
+        $response = $this->actingAs($this->admin)->patch(route('settings.users.update', $user->id), [
+            'name' => 'Name',
+            'email' => 'email@example.com',
+            'role' => UserRole::EMPLOYEE->value,
+            'department_id' => Department::factory()->create(['is_active' => true])->id,
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('error', 'İşlem tamamlanamadı. Lütfen tekrar deneyin.');
     }
 }

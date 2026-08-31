@@ -5,6 +5,7 @@ namespace App\Actions\Users;
 use App\Models\AuditLog;
 use App\Models\User;
 use DomainException;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
@@ -26,29 +27,37 @@ class CreateUserWithInvitation
             throw new DomainException('Bu e-posta adresi ile kayıtlı bir kullanıcı zaten mevcut.');
         }
 
-        $user = DB::transaction(function () use ($actor, $validatedPayload) {
-            // Generate a secure placeholder that will never be used/seen
-            $placeholder = Str::random(64);
+        try {
+            $user = DB::transaction(function () use ($actor, $validatedPayload) {
+                // Generate a secure placeholder that will never be used/seen
+                $placeholder = Str::random(64);
 
-            $user = new User;
-            $user->name = $validatedPayload['name'];
-            $user->email = $validatedPayload['email'];
-            $user->role = $validatedPayload['role'];
-            $user->department_id = $validatedPayload['department_id'] ?? null;
+                $user = new User;
+                $user->name = $validatedPayload['name'];
+                $user->email = $validatedPayload['email'];
+                $user->role = $validatedPayload['role'];
+                $user->department_id = $validatedPayload['department_id'] ?? null;
 
-            // Server-controlled fields
-            $user->is_active = true;
-            $user->must_set_password = true;
-            $user->email_verified_at = null;
-            $user->invitation_sent_at = null;
-            $user->password = Hash::make($placeholder); // hashed cast in Model will happen if we just assign, but we use Hash::make to be safe, assuming Model casts 'password' to 'hashed'.
+                // Server-controlled fields
+                $user->is_active = true;
+                $user->must_set_password = true;
+                $user->email_verified_at = null;
+                $user->invitation_sent_at = null;
+                $user->password = Hash::make($placeholder); // hashed cast in Model will happen if we just assign, but we use Hash::make to be safe, assuming Model casts 'password' to 'hashed'.
 
-            $user->save();
+                $user->save();
 
-            $this->writeCreatedAudit($actor, $user);
+                $this->writeCreatedAudit($actor, $user);
 
-            return $user;
-        });
+                return $user;
+            });
+        } catch (QueryException $e) {
+            $errorCode = $e->errorInfo[1] ?? null;
+            if ($errorCode === 1062 || $errorCode === 19) {
+                throw new DomainException('Bu e-posta adresi ile kayıtlı bir kullanıcı zaten mevcut.');
+            }
+            throw $e;
+        }
 
         return $this->orchestrateInvitation($actor, $user);
     }

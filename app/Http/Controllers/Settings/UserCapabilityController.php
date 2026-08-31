@@ -8,11 +8,14 @@ use App\Actions\Authorization\RevokeDepartmentCapability;
 use App\Actions\Authorization\RevokeSystemCapability;
 use App\Enums\CapabilityScope;
 use App\Enums\UserCapability;
+use App\Exceptions\LastAuthorizationManagerException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\Users\SetDepartmentCapabilityRequest;
 use App\Http\Requests\Settings\Users\SetSystemCapabilityRequest;
 use App\Models\Department;
 use App\Models\User;
+use Exception;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -51,13 +54,23 @@ class UserCapabilityController extends Controller
         $capability = UserCapability::from($request->validated('capability'));
         $isActive = $request->validated('is_active');
 
-        if ($isActive) {
-            $grantAction->execute($request->user(), $user, $capability);
-        } else {
-            $revokeAction->execute($request->user(), $user, $capability);
-        }
+        try {
+            if ($isActive) {
+                $grantAction->execute($request->user(), $user, $capability);
+            } else {
+                $revokeAction->execute($request->user(), $user, $capability);
+            }
 
-        return redirect()->back()->with('success', 'Sistem yetkisi güncellendi.');
+            return redirect()->back()->with('success', 'Sistem yetkisi güncellendi.');
+        } catch (AuthorizationException $e) {
+            throw $e;
+        } catch (LastAuthorizationManagerException $e) {
+            return redirect()->back()->with('error', 'Son yetkilendirme yöneticisinin yetkisi alınamaz.');
+        } catch (Exception $e) {
+            report($e);
+
+            return redirect()->back()->with('error', 'İşlem tamamlanamadı. Lütfen tekrar deneyin.');
+        }
     }
 
     public function setDepartment(
@@ -70,12 +83,20 @@ class UserCapabilityController extends Controller
         $department = Department::findOrFail($request->validated('department_id'));
         $isActive = $request->validated('is_active');
 
-        if ($isActive) {
-            $grantAction->execute($request->user(), $user, $department, $capability);
-        } else {
-            $revokeAction->execute($request->user(), $user, $department, $capability);
-        }
+        try {
+            if ($isActive) {
+                $grantAction->execute($request->user(), $user, $department, $capability);
+            } else {
+                $revokeAction->execute($request->user(), $user, $department, $capability);
+            }
 
-        return redirect()->back()->with('success', 'Departman yetkisi güncellendi.');
+            return redirect()->back()->with('success', 'Departman yetkisi güncellendi.');
+        } catch (AuthorizationException $e) {
+            throw $e;
+        } catch (Exception $e) {
+            report($e);
+
+            return redirect()->back()->with('error', 'İşlem tamamlanamadı. Lütfen tekrar deneyin.');
+        }
     }
 }

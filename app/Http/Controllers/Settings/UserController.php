@@ -7,6 +7,7 @@ use App\Actions\Users\SendUserInvitation;
 use App\Actions\Users\SetUserStatus;
 use App\Actions\Users\UpdateUser;
 use App\Enums\UserRole;
+use App\Exceptions\LastAuthorizationManagerException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\Users\IndexUserRequest;
 use App\Http\Requests\Settings\Users\SetUserStatusRequest;
@@ -14,9 +15,11 @@ use App\Http\Requests\Settings\Users\StoreUserRequest;
 use App\Http\Requests\Settings\Users\UpdateUserRequest;
 use App\Models\Department;
 use App\Models\User;
+use DomainException;
 use Exception;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Password;
 use Illuminate\View\View;
 
 class UserController extends Controller
@@ -106,8 +109,12 @@ class UserController extends Controller
             }
 
             return redirect()->back()->with('error', 'Kullanıcı güncellenemedi.');
-        } catch (Exception $e) {
+        } catch (DomainException $e) {
             return redirect()->back()->with('error', $e->getMessage())->withInput();
+        } catch (Exception $e) {
+            report($e);
+
+            return redirect()->back()->with('error', 'İşlem tamamlanamadı. Lütfen tekrar deneyin.')->withInput();
         }
     }
 
@@ -119,8 +126,14 @@ class UserController extends Controller
             $result = $action->execute($request->user(), $user, (bool) $request->validated('is_active'));
 
             return redirect()->back()->with('success', $result['message']);
-        } catch (Exception $e) {
+        } catch (LastAuthorizationManagerException $e) {
+            return redirect()->back()->with('error', 'Son yetkilendirme yöneticisi pasife alınamaz.');
+        } catch (DomainException $e) {
             return redirect()->back()->with('error', $e->getMessage());
+        } catch (Exception $e) {
+            report($e);
+
+            return redirect()->back()->with('error', 'İşlem tamamlanamadı. Lütfen tekrar deneyin.');
         }
     }
 
@@ -129,11 +142,21 @@ class UserController extends Controller
         Gate::authorize('resendInvitation', $user);
 
         try {
-            $action->execute(request()->user(), $user);
+            $status = $action->execute(request()->user(), $user);
 
-            return redirect()->back()->with('success', 'Davet e-postası başarıyla gönderildi.');
-        } catch (Exception $e) {
+            if ($status === Password::RESET_LINK_SENT) {
+                return redirect()->back()->with('success', 'Davet e-postası başarıyla gönderildi.');
+            } elseif ($status === Password::RESET_THROTTLED) {
+                return redirect()->back()->with('warning', 'Davet kısa süre önce gönderildi. Lütfen tekrar denemeden önce bekleyin.');
+            }
+
+            return redirect()->back()->with('warning', 'Davet gönderilemedi. Lütfen daha sonra tekrar deneyin.');
+        } catch (DomainException $e) {
             return redirect()->back()->with('error', $e->getMessage());
+        } catch (Exception $e) {
+            report($e);
+
+            return redirect()->back()->with('error', 'İşlem tamamlanamadı. Lütfen tekrar deneyin.');
         }
     }
 }

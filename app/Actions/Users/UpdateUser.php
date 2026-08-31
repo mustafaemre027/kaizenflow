@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Models\UserCapabilityGrant;
 use DomainException;
 use Exception;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 
 class UpdateUser
@@ -29,96 +30,134 @@ class UpdateUser
             throw new DomainException('Cannot update your own profile from user management.');
         }
 
-        return DB::transaction(function () use ($actor, $target, $data) {
-            $freshTarget = clone $target;
-            // Lock target
-            $lockedTarget = User::where('id', $target->id)->lockForUpdate()->first();
-            if (! $lockedTarget) {
-                throw new DomainException('Target user not found.');
-            }
-
-            // Department Change Protection
-            $newDepartmentId = $data['department_id'] ?? null;
-            if ($lockedTarget->department_id !== $newDepartmentId) {
-                $hasActiveDepartmentGrants = UserCapabilityGrant::where('user_id', $lockedTarget->id)
-                    ->where('is_active', true)
-                    ->exists();
-
-                if ($hasActiveDepartmentGrants) {
-                    throw new DomainException('Kullanıcının aktif departman yetkileri bulunduğu için departman değiştirilemez. Önce ilgili yetkileri düzenleyin.');
-                }
-            }
-
-            $oldEmail = $lockedTarget->email;
-            $newEmail = strtolower(trim($data['email']));
-            $emailChanged = $oldEmail !== $newEmail;
-
-            $changedFields = [];
-            foreach (['name', 'role', 'department_id'] as $field) {
-                $newValue = $data[$field] ?? null;
-                if ($field === 'role') {
-                    $newValue = UserRole::tryFrom($newValue);
+        try {
+            $result = DB::transaction(function () use ($actor, $target, $data) {
+                // Lock target
+                $lockedTarget = User::where('id', $target->id)->lockForUpdate()->first();
+                if (! $lockedTarget) {
+                    throw new DomainException('Target user not found.');
                 }
 
-                if ($newValue !== $lockedTarget->$field) {
-                    $changedFields[] = $field;
-                    $lockedTarget->$field = $newValue;
+                // Department Change Protection
+                $newDepartmentId = isset($data['department_id']) ? (int) $data['department_id'] : null;
+                $oldDepartmentId = $lockedTarget->department_id !== null ? (int) $lockedTarget->department_id : null;
+                if ($oldDepartmentId !== $newDepartmentId) {
+                    $hasActiveDepartmentGrants = UserCapabilityGrant::where('user_id', $lockedTarget->id)
+                        ->where('is_active', true)
+                        ->exists();
+
+                    if ($hasActiveDepartmentGrants) {
+                        throw new DomainException('Kullanıcının aktif departman yetkileri bulunduğu için departman değiştirilemez. Önce ilgili yetkileri düzenleyin.');
+                    }
                 }
-            }
 
-            $mailFailureWarning = null;
+                $oldEmail = $lockedTarget->email;
+                $newEmail = strtolower(trim($data['email']));
+                $emailChanged = $oldEmail !== $newEmail;
 
-            if ($emailChanged) {
-                $changedFields[] = 'email';
-                $lockedTarget->email = $newEmail;
+                $changedFields = [];
+                foreach (['name', 'role', 'department_id'] as $field) {
+                    $newValue = $data[$field] ?? null;
+                    $currentValue = $lockedTarget->$field;
 
-                // Invalidate tokens for old and new email
-                DB::table('password_reset_tokens')->whereIn('email', [$oldEmail, $newEmail])->delete();
-                EmailVerificationCode::where('user_id', $lockedTarget->id)->delete();
+                    if ($field === 'role') {
+                        $newValue = UserRole::tryFrom($newValue);
+                    } elseif ($field === 'department_id') {
+                        $newValue = $newValue !== null ? (int) $newValue : null;
+                        $currentValue = $currentValue !== null ? (int) $currentValue : null;
+                    }
 
-                if ($lockedTarget->must_set_password) {
-                    // Pending User Email Change
-                    $lockedTarget->invitation_sent_at = null;
-                } else {
-                    // Ready User Email Change
-                    $lockedTarget->email_verified_at = null;
+                    if ($newValue !== $currentValue) {
+                        $changedFields[] = $field;
+                        $lockedTarget->$field = $newValue;
+                    }
                 }
-            }
 
-            if (empty($changedFields)) {
+                if ($emailChanged) {
+                    $changedFields[] = 'email';
+                    $lockedTarget->email = $newEmail;
+
+                    // Invalidate tokens for old and new email
+                    DB::table('password_reset_tokens')->whereIn('email', [$oldEmail, $newEmail])->delete();
+                    EmailVerificationCode::where('user_id', $lockedTarget->id)->delete();
+
+                    if ($lockedTarget->must_set_password) {
+                        // Pending User Email Change
+                        $lockedTarget->invitation_sent_at = null;
+                    } else {
+                        // Ready User Email Change
+                        $lockedTarget->email_verified_at = null;
+                    }
+                }
+
+                if (empty($changedFields)) {
+                    return [
+                        'success' => true,
+                        'message' => 'Değişiklik yapılmadı.',
+                        'email_changed' => false,
+                    ];
+                }
+
+                $lockedTarget->save();
+
+                $this->writeAudit($actor, $lockedTarget, $changedFields);
+
                 return [
                     'success' => true,
-                    'message' => 'Değişiklik yapılmadı.',
+                    'email_changed' => $emailChanged,
+                    'must_set_password' => $lockedTarget->must_set_password,
+                    'is_active' => $lockedTarget->is_active,
+                    'target_id' => $lockedTarget->id,
                 ];
+            });
+
+        } catch (QueryException $e) {
+            $errorCode = $e->errorInfo[1] ?? null;
+            if ($errorCode === 1062 || $errorCode === 19) { // 1062 MySQL, 19 SQLite
+                throw new DomainException('Bu e-posta adresi ile kayıtlı bir kullanıcı zaten mevcut.');
             }
+            throw $e;
+        }
 
-            $lockedTarget->save();
+        if (isset($result['success']) && $result['success']) {
+            if (! empty($result['email_changed'])) {
+                $freshTarget = clone $target;
+                $freshTarget->id = $result['target_id'];
+                // We should re-fetch to ensure relations/etc are clean if needed, but for mail sending mostly email/status are used.
+                // Let's refetch to be absolutely safe.
+                $freshTarget = User::find($result['target_id']);
 
-            if ($emailChanged) {
-                if ($lockedTarget->must_set_password) {
+                $mailFailureWarning = null;
+
+                if ($result['must_set_password']) {
                     try {
-                        $this->sendUserInvitation->execute($actor, $lockedTarget);
+                        $this->sendUserInvitation->execute($actor, $freshTarget);
                     } catch (Exception $e) {
                         $mailFailureWarning = 'Kullanıcı güncellendi ancak yeni adrese davet e-postası gönderilemedi.';
                     }
                 } else {
                     try {
-                        if ($lockedTarget->is_active) {
-                            $this->issueEmailVerificationCode->execute($lockedTarget);
+                        if ($result['is_active']) {
+                            $this->issueEmailVerificationCode->execute($freshTarget);
                         }
                     } catch (Exception $e) {
                         $mailFailureWarning = 'Kullanıcı güncellendi ancak doğrulama e-postası gönderilemedi.';
                     }
                 }
-            }
 
-            $this->writeAudit($actor, $lockedTarget, $changedFields);
+                return [
+                    'success' => true,
+                    'message' => $mailFailureWarning ?? 'Kullanıcı başarıyla güncellendi.',
+                ];
+            }
 
             return [
                 'success' => true,
-                'message' => $mailFailureWarning ?? 'Kullanıcı başarıyla güncellendi.',
+                'message' => $result['message'] ?? 'Kullanıcı başarıyla güncellendi.',
             ];
-        });
+        }
+
+        return $result;
     }
 
     protected function writeAudit(User $actor, User $target, array $changedFields): void

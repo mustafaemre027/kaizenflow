@@ -10,7 +10,7 @@ use App\Models\User;
 use App\Models\UserCapabilityGrant;
 use App\Models\UserSystemCapabilityGrant;
 use App\Services\AppendAuditLog;
-use Exception;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 
 class RevokeDepartmentCapability
@@ -26,7 +26,7 @@ class RevokeDepartmentCapability
         }
 
         if ($actor->id === $target->id) {
-            throw new Exception('Unauthorized action.');
+            throw new AuthorizationException('Unauthorized action.');
         }
 
         DB::transaction(function () use ($actor, $target, $department, $capability) {
@@ -40,7 +40,7 @@ class RevokeDepartmentCapability
             $freshDepartment = Department::where('id', $department->id)->lockForUpdate()->first();
 
             if (! $freshActor || ! $freshActor->is_active) {
-                throw new Exception('Unauthorized action.');
+                throw new AuthorizationException('Unauthorized action.');
             }
 
             $requiredSystemCapabilities = [
@@ -58,7 +58,7 @@ class RevokeDepartmentCapability
 
             foreach ($requiredSystemCapabilities as $requiredCapability) {
                 if (! $actorGrants->has($requiredCapability) || ! $actorGrants->get($requiredCapability)->is_active) {
-                    throw new Exception('Unauthorized action.');
+                    throw new AuthorizationException('Unauthorized action.');
                 }
             }
 

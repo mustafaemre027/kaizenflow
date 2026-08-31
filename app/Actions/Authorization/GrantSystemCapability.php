@@ -8,7 +8,7 @@ use App\Exceptions\ScopeMismatchException;
 use App\Models\User;
 use App\Models\UserSystemCapabilityGrant;
 use App\Services\AppendAuditLog;
-use Exception;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 
 class GrantSystemCapability
@@ -24,7 +24,7 @@ class GrantSystemCapability
         }
 
         if ($actor->id === $target->id) {
-            throw new Exception('Unauthorized action.');
+            throw new AuthorizationException('Unauthorized action.');
         }
 
         DB::transaction(function () use ($actor, $target, $capability) {
@@ -36,11 +36,11 @@ class GrantSystemCapability
             $freshTarget = $users->get($target->id);
 
             if (! $freshActor || ! $freshActor->is_active) {
-                throw new Exception('Unauthorized action.');
+                throw new AuthorizationException('Unauthorized action.');
             }
 
             if (! $freshTarget || ! $freshTarget->is_active) {
-                throw new Exception('Unauthorized action.');
+                throw new AuthorizationException('Unauthorized action.');
             }
 
             $requiredCapabilities = array_unique([UserCapability::AUTHORIZATION_MANAGE->value, $capability->value]);
@@ -53,11 +53,11 @@ class GrantSystemCapability
                 ->keyBy('capability');
 
             if (! $actorGrants->has(UserCapability::AUTHORIZATION_MANAGE->value) || ! $actorGrants->get(UserCapability::AUTHORIZATION_MANAGE->value)->is_active) {
-                throw new Exception('Unauthorized action.');
+                throw new AuthorizationException('Unauthorized action.');
             }
 
             if (! $actorGrants->has($capability->value) || ! $actorGrants->get($capability->value)->is_active) {
-                throw new Exception('Unauthorized action.');
+                throw new AuthorizationException('Unauthorized action.');
             }
 
             $grant = UserSystemCapabilityGrant::where('user_id', $freshTarget->id)
