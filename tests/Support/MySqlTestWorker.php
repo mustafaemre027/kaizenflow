@@ -152,6 +152,8 @@ if (in_array('--race-worker', $argv)) {
         }
     } catch (AuthorizationException $e) {
         echo "STATUS:REJECTED\n";
+    } catch (\App\Exceptions\DomainException $e) {
+        echo "STATUS:REJECTED\n";
     } catch (\DomainException $e) {
         echo "STATUS:REJECTED\n";
     } catch (Throwable $e) {

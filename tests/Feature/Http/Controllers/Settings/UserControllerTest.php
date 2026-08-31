@@ -127,7 +127,7 @@ class UserControllerTest extends TestCase
         $user = User::factory()->create(['is_active' => true, 'must_set_password' => true]);
 
         // Mock the action to return throttled
-        $mockAction = $this->createMock(SendUserInvitation::class);
+        $mockAction = $this->createStub(SendUserInvitation::class);
         $mockAction->method('execute')->willReturn(Password::RESET_THROTTLED);
         $this->app->instance(SendUserInvitation::class, $mockAction);
 
@@ -141,7 +141,7 @@ class UserControllerTest extends TestCase
     {
         $user = User::factory()->create(['is_active' => true]);
 
-        $mockAction = $this->createMock(UpdateUser::class);
+        $mockAction = $this->createStub(UpdateUser::class);
         $mockAction->method('execute')->willThrowException(new \Exception('Raw exception message'));
         $this->app->instance(UpdateUser::class, $mockAction);
 

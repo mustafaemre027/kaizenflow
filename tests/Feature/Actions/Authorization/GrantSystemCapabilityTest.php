@@ -194,7 +194,7 @@ class GrantSystemCapabilityTest extends TestCase
 
         $target = User::factory()->create();
 
-        $mockAudit = $this->createMock(AppendAuditLog::class);
+        $mockAudit = $this->createStub(AppendAuditLog::class);
         $mockAudit->method('execute')->willThrowException(new Exception('Audit failed'));
         $this->app->instance(AppendAuditLog::class, $mockAudit);
 
