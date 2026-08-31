@@ -74,6 +74,14 @@ class UpdateUser
                 }
 
                 if ($emailChanged) {
+                    $existing = User::where('id', '!=', $lockedTarget->id)
+                        ->whereRaw('LOWER(email) = ?', [$newEmail])
+                        ->exists();
+
+                    if ($existing) {
+                        throw new DomainException('Bu e-posta adresi ile kayıtlı bir kullanıcı zaten mevcut.');
+                    }
+
                     $changedFields[] = 'email';
                     $lockedTarget->email = $newEmail;
 

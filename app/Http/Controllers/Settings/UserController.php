@@ -110,7 +110,14 @@ class UserController extends Controller
 
             return redirect()->back()->with('error', 'Kullanıcı güncellenemedi.');
         } catch (DomainException $e) {
-            return redirect()->back()->with('error', $e->getMessage())->withInput();
+            $message = $e->getMessage();
+            if ($message === 'Bu e-posta adresi ile kayıtlı bir kullanıcı zaten mevcut.') {
+                return redirect()->back()->with('error', $message)->withInput();
+            }
+
+            report($e);
+
+            return redirect()->back()->with('error', 'İşlem tamamlanamadı. Lütfen tekrar deneyin.')->withInput();
         } catch (Exception $e) {
             report($e);
 
@@ -129,7 +136,9 @@ class UserController extends Controller
         } catch (LastAuthorizationManagerException $e) {
             return redirect()->back()->with('error', 'Son yetkilendirme yöneticisi pasife alınamaz.');
         } catch (DomainException $e) {
-            return redirect()->back()->with('error', $e->getMessage());
+            report($e);
+
+            return redirect()->back()->with('error', 'İşlem tamamlanamadı. Lütfen tekrar deneyin.');
         } catch (Exception $e) {
             report($e);
 
@@ -152,7 +161,17 @@ class UserController extends Controller
 
             return redirect()->back()->with('warning', 'Davet gönderilemedi. Lütfen daha sonra tekrar deneyin.');
         } catch (DomainException $e) {
-            return redirect()->back()->with('error', $e->getMessage());
+            $message = $e->getMessage();
+            if ($message === 'Target user is not active.') {
+                return redirect()->back()->with('error', 'Davet gönderebilmek için kullanıcı hesabı aktif olmalıdır.');
+            }
+            if ($message === 'Target user does not need an invitation.') {
+                return redirect()->back()->with('error', 'Bu kullanıcının hesap kurulumu tamamlanmıştır.');
+            }
+
+            report($e);
+
+            return redirect()->back()->with('error', 'İşlem tamamlanamadı. Lütfen tekrar deneyin.');
         } catch (Exception $e) {
             report($e);
 

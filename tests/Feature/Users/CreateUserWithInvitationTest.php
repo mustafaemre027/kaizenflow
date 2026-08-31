@@ -85,16 +85,17 @@ class CreateUserWithInvitationTest extends TestCase
 
     public function test_it_prevents_duplicate_email_creation()
     {
-        User::factory()->create(['email' => 'john@example.com']);
+        User::factory()->create(['email' => 'Mixed@Example.com']);
 
         $payload = [
             'name' => 'John Doe',
-            'email' => 'john@example.com',
+            'email' => 'mixed@example.com',
             'role' => UserRole::EMPLOYEE,
             'department_id' => null,
         ];
 
         $this->expectException(DomainException::class);
+        $this->expectExceptionMessage('Bu e-posta adresi ile kayıtlı bir kullanıcı zaten mevcut.');
         $this->action->execute($this->admin, $payload);
     }
 

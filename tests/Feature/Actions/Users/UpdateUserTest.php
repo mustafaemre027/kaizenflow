@@ -341,7 +341,7 @@ class UpdateUserTest extends TestCase
 
     public function test_it_prevents_case_insensitive_duplicate_email()
     {
-        User::factory()->create(['email' => 'other@example.com']);
+        User::factory()->create(['email' => 'Other@Example.com']);
 
         $this->expectException(\DomainException::class);
         $this->expectExceptionMessage('Bu e-posta adresi ile kayıtlı bir kullanıcı zaten mevcut.');

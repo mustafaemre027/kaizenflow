@@ -155,4 +155,26 @@ class UserControllerTest extends TestCase
         $response->assertRedirect();
         $response->assertSessionHas('error', 'İşlem tamamlanamadı. Lütfen tekrar deneyin.');
     }
+
+    public function test_inactive_pending_target_resend_shows_safe_error()
+    {
+        $user = User::factory()->create(['is_active' => false, 'must_set_password' => true]);
+
+        $response = $this->actingAs($this->admin)->post(route('settings.users.invitation', $user->id));
+
+        $response->assertRedirect();
+        $response->assertSessionHas('error', 'Davet gönderebilmek için kullanıcı hesabı aktif olmalıdır.');
+
+        $response->assertSessionDoesntHaveErrors(); // Or we can check the error message doesn't contain 'Target user is not active.'
+    }
+
+    public function test_ready_active_target_resend_shows_safe_error()
+    {
+        $user = User::factory()->create(['is_active' => true, 'must_set_password' => false]);
+
+        $response = $this->actingAs($this->admin)->post(route('settings.users.invitation', $user->id));
+
+        $response->assertRedirect();
+        $response->assertSessionHas('error', 'Bu kullanıcının hesap kurulumu tamamlanmıştır.');
+    }
 }
