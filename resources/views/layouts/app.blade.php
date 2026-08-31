@@ -17,6 +17,9 @@
                     @auth
                         <nav class="d-none d-md-flex gap-2 ms-4">
                             <a href="{{ url('/') }}" class="kf-app-nav-link {{ request()->is('/') ? 'active' : '' }}">Ana Sayfa</a>
+                            @if(auth()->user()->is_active && app(\App\Services\UserCapabilityResolver::class)->allowsSystem(auth()->user(), \App\Enums\UserCapability::ORGANIZATION_VIEW))
+                                <a href="{{ route('dashboard.index') }}" class="kf-app-nav-link {{ request()->routeIs('dashboard.index') ? 'active' : '' }}">Yönetim Dashboardu</a>
+                            @endif
                             <a href="{{ route('kaizens.index') }}" class="kf-app-nav-link {{ request()->routeIs('kaizens.index', 'kaizens.show') ? 'active' : '' }}">Kaizenler</a>
                             <a href="{{ route('kaizens.create') }}" class="kf-app-nav-link {{ request()->routeIs('kaizens.create') ? 'active' : '' }}">Yeni Kaizen</a>
                             <a href="{{ route('implementation.work-queue.index') }}" class="kf-app-nav-link {{ request()->routeIs('implementation.work-queue.index') ? 'active' : '' }}">Uygulama İşlerim</a>
