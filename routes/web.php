@@ -68,6 +68,10 @@ Route::middleware('auth')->group(function () {
         Route::get('/kaizens/{kaizen}/attachments/{attachment}/download', [KaizenAttachmentController::class, 'download'])->name('kaizens.attachments.download');
 
         Route::prefix('settings')->name('settings.')->group(function () {
+            Route::get('/users', [\App\Http\Controllers\Settings\UserController::class, 'index'])->name('users.index');
+            Route::get('/users/create', [\App\Http\Controllers\Settings\UserController::class, 'create'])->name('users.create');
+            Route::post('/users', [\App\Http\Controllers\Settings\UserController::class, 'store'])->name('users.store');
+
             Route::get('/reference-data', [ReferenceDataController::class, 'index'])->name('reference-data.index');
 
             Route::get('/approval-configurations', [ApprovalConfigurationController::class, 'index'])->name('approval-configurations.index');

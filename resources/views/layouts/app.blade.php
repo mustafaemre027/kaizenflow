@@ -27,7 +27,10 @@
                                 <a href="{{ route('history.index') }}" class="kf-app-nav-link {{ request()->routeIs('history.index') ? 'active' : '' }}">Değerlendirme Geçmişi</a>
                             @endif
                             @can('viewAny', \App\Models\Category::class)
-                                <a href="{{ route('settings.reference-data.index') }}" class="kf-app-nav-link {{ request()->routeIs('settings.*') ? 'active' : '' }}">Yönetim</a>
+                                <a href="{{ route('settings.reference-data.index') }}" class="kf-app-nav-link {{ request()->routeIs('settings.reference-data.*', 'settings.approval-configurations.*', 'settings.categories.*', 'settings.departments.*', 'settings.benefit-types.*') ? 'active' : '' }}">Yönetim</a>
+                            @endcan
+                            @can('viewAny', \App\Models\User::class)
+                                <a href="{{ route('settings.users.index') }}" class="kf-app-nav-link {{ request()->routeIs('settings.users.*') ? 'active' : '' }}">Kullanıcı Yönetimi</a>
                             @endcan
                         </nav>
                     @endauth
