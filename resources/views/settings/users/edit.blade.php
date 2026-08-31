@@ -87,7 +87,7 @@
                                         </option>
                                     @endforeach
                                 </select>
-                                <div class="form-text">OPEX Uzmanı ve Sistem Yöneticisi için isteğe bağlıdır.</div>
+                                <div class="form-text">Sürekli İyileştirme Uzmanı ve Sistem Yöneticisi için isteğe bağlıdır.</div>
                                 @error('department_id')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror

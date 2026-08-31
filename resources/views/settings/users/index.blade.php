@@ -191,8 +191,12 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="text-center py-5 text-muted">
-                                    Arama kriterlerinize uygun kullanıcı bulunamadı.
+                                <td colspan="7" class="text-center py-5 text-muted">
+                                    @if(request()->hasAny(['q', 'role', 'department_id', 'status', 'setup']))
+                                        Arama ve filtrelerle eşleşen kullanıcı bulunamadı.
+                                    @else
+                                        Kayıtlı kullanıcı bulunmuyor.
+                                    @endif
                                 </td>
                             </tr>
                         @endforelse

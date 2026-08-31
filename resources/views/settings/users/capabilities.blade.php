@@ -154,6 +154,8 @@
                                                     <input type="hidden" name="is_active" value="0">
                                                     <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Bu yetkiyi almak istediğinize emin misiniz?');">Yetkiyi Al</button>
                                                 </form>
+                                            @elseif($canManage && $targetUser->is_active && !$isActive && !$actorCanGrant)
+                                                <button type="button" class="btn btn-sm btn-outline-secondary" disabled title="Bu yetkiyi devredebilmek için aynı yetkiye sahip olmanız gerekir.">Yetki Ver</button>
                                             @else
                                                 <span class="text-muted text-sm">-</span>
                                             @endif
