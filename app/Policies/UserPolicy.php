@@ -48,13 +48,35 @@ class UserPolicy
         return $this->hasRequiredCapabilities($user);
     }
 
-    public function resendInvitation(User $user, User $model): bool
+    public function resendInvitation(User $actor, User $target): bool
     {
-        if ($user->id === $model->id) {
+        return $this->update($actor, $target);
+    }
+
+    public function viewCapabilities(User $actor, User $target): bool
+    {
+        if (! $actor->is_active) {
             return false;
         }
 
-        return $this->hasRequiredCapabilities($user);
+        if (! $this->capabilityResolver->allowsSystem($actor, UserCapability::AUTHORIZATION_MANAGE)) {
+            return false;
+        }
+
+        if (! $this->capabilityResolver->allowsSystem($actor, UserCapability::ORGANIZATION_VIEW)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public function manageCapabilities(User $actor, User $target): bool
+    {
+        if ($actor->id === $target->id) {
+            return false;
+        }
+
+        return $this->viewCapabilities($actor, $target);
     }
 
     private function hasRequiredCapabilities(User $user): bool

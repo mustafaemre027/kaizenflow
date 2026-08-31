@@ -156,7 +156,11 @@
                                             <li>
                                                 <a class="dropdown-item" href="{{ route('settings.users.edit', $user) }}">Düzenle</a>
                                             </li>
-                                            
+                                            @if(auth()->user()->can('viewCapabilities', $user))
+                                                <li>
+                                                    <a class="dropdown-item" href="{{ route('settings.users.capabilities', $user) }}">Yetkileri Yönet</a>
+                                                </li>
+                                            @endif
                                             @if(auth()->id() !== $user->id)
                                                 <li><hr class="dropdown-divider"></li>
                                                 @if($user->must_set_password && $user->is_active)

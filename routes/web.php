@@ -16,6 +16,7 @@ use App\Http\Controllers\Settings\BenefitTypeController;
 use App\Http\Controllers\Settings\CategoryController;
 use App\Http\Controllers\Settings\DepartmentController;
 use App\Http\Controllers\Settings\ReferenceDataController;
+use App\Http\Controllers\Settings\UserCapabilityController;
 use App\Http\Controllers\Settings\UserController;
 use App\Queries\KaizenImplementationWorkQueueSummaryQuery;
 use Illuminate\Support\Facades\Route;
@@ -76,6 +77,9 @@ Route::middleware('auth')->group(function () {
             Route::patch('/users/{user}', [UserController::class, 'update'])->name('users.update');
             Route::patch('/users/{user}/status', [UserController::class, 'setStatus'])->name('users.status');
             Route::post('/users/{user}/invitation', [UserController::class, 'resendInvitation'])->name('users.invitation');
+            Route::get('/users/{user}/capabilities', [UserCapabilityController::class, 'show'])->name('users.capabilities');
+            Route::patch('/users/{user}/capabilities/system', [UserCapabilityController::class, 'setSystem'])->name('users.capabilities.system');
+            Route::patch('/users/{user}/capabilities/department', [UserCapabilityController::class, 'setDepartment'])->name('users.capabilities.department');
 
             Route::get('/reference-data', [ReferenceDataController::class, 'index'])->name('reference-data.index');
 
