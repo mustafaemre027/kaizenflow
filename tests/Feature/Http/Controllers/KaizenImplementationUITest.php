@@ -43,6 +43,9 @@ class KaizenImplementationUITest extends TestCase
         $this->manager = User::factory()->create(['department_id' => $this->dept1->id, 'role' => UserRole::MANAGER]);
         $this->opex = User::factory()->create(['department_id' => $this->dept1->id, 'role' => UserRole::OPEX_SPECIALIST]);
         $this->employee = User::factory()->create(['department_id' => $this->dept1->id, 'role' => UserRole::EMPLOYEE]);
+
+        $this->admin->systemCapabilityGrants()->create(['capability' => UserCapability::KAIZEN_OPEX_REVIEW, 'is_active' => true]);
+        $this->opex->systemCapabilityGrants()->create(['capability' => UserCapability::KAIZEN_OPEX_REVIEW, 'is_active' => true]);
     }
 
     private function grant(User $user, Department $dept, UserCapability $capability): void

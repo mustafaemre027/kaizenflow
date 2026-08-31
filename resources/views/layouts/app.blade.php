@@ -26,9 +26,9 @@
                             @if(auth()->user()->canAccessReviewedHistory())
                                 <a href="{{ route('history.index') }}" class="kf-app-nav-link {{ request()->routeIs('history.index') ? 'active' : '' }}">Değerlendirme Geçmişi</a>
                             @endif
-                            @if(auth()->user()->role === \App\Enums\UserRole::ADMIN)
+                            @can('viewAny', \App\Models\Category::class)
                                 <a href="{{ route('settings.reference-data.index') }}" class="kf-app-nav-link {{ request()->routeIs('settings.*') ? 'active' : '' }}">Yönetim</a>
-                            @endif
+                            @endcan
                         </nav>
                     @endauth
                 </div>

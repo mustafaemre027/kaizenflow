@@ -56,6 +56,11 @@ class User extends Authenticatable
         return $this->hasMany(UserCapabilityGrant::class);
     }
 
+    public function systemCapabilityGrants()
+    {
+        return $this->hasMany(UserSystemCapabilityGrant::class);
+    }
+
     public function createdKaizens(): HasMany
     {
         return $this->hasMany(Kaizen::class, 'creator_user_id');

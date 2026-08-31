@@ -46,14 +46,12 @@ class BenefitTypeManagementTest extends TestCase
         $response->assertStatus(403);
     }
 
-    // 3. ADMIN role without organization.view cannot view BenefitTypes (even if they see categories)
+    // 3. ADMIN role without organization.view cannot view BenefitTypes
     public function test_admin_role_without_organization_view_cannot_view_benefit_types()
     {
         $admin = User::factory()->create(['role' => UserRole::ADMIN]);
         $response = $this->actingAs($admin)->get(route('settings.reference-data.index'));
-        $response->assertOk();
-        $response->assertDontSee('Fayda Türleri');
-        $response->assertDontSee('Yeni Fayda Türü');
+        $response->assertStatus(403);
     }
 
     // 4. organization.view user can view list
