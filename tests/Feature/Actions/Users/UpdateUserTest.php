@@ -13,6 +13,7 @@ use App\Models\UserSystemCapabilityGrant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class UpdateUserTest extends TestCase
@@ -76,12 +77,13 @@ class UpdateUserTest extends TestCase
         ]);
     }
 
-    public function test_it_rejects_department_change_if_active_department_grants_exist()
+    #[DataProvider('departmentCapabilityProvider')]
+    public function test_it_rejects_department_change_if_active_department_grants_exist(UserCapability $capability)
     {
         UserCapabilityGrant::create([
             'user_id' => $this->target->id,
             'department_id' => $this->target->department_id,
-            'capability' => UserCapability::KAIZEN_DEPARTMENT_APPROVE,
+            'capability' => $capability,
             'is_active' => true,
         ]);
 
@@ -96,6 +98,16 @@ class UpdateUserTest extends TestCase
             'role' => UserRole::EMPLOYEE->value,
             'department_id' => $newDept->id,
         ]);
+    }
+
+    public static function departmentCapabilityProvider(): array
+    {
+        return [
+            [UserCapability::KAIZEN_IMPLEMENTATION_ASSIGN],
+            [UserCapability::KAIZEN_IMPLEMENTATION_START],
+            [UserCapability::KAIZEN_IMPLEMENTATION_COMPLETE],
+            [UserCapability::KAIZEN_DEPARTMENT_APPROVE],
+        ];
     }
 
     public function test_it_allows_department_change_if_no_active_grants()
@@ -120,6 +132,58 @@ class UpdateUserTest extends TestCase
         $this->assertDatabaseHas('users', [
             'id' => $this->target->id,
             'department_id' => $newDept->id,
+        ]);
+    }
+
+    public function test_it_allows_department_change_if_only_system_grants_exist()
+    {
+        UserSystemCapabilityGrant::create([
+            'user_id' => $this->target->id,
+            'capability' => UserCapability::AUTHORIZATION_MANAGE,
+            'is_active' => true,
+        ]);
+        UserSystemCapabilityGrant::create([
+            'user_id' => $this->target->id,
+            'capability' => UserCapability::KAIZEN_OPEX_REVIEW,
+            'is_active' => true,
+        ]);
+
+        $newDept = Department::factory()->create();
+
+        $result = $this->action->execute($this->admin, $this->target, [
+            'name' => 'New Name',
+            'email' => 'old@example.com',
+            'role' => UserRole::EMPLOYEE->value,
+            'department_id' => $newDept->id,
+        ]);
+
+        $this->assertTrue($result['success']);
+        $this->assertDatabaseHas('users', [
+            'id' => $this->target->id,
+            'department_id' => $newDept->id,
+        ]);
+    }
+
+    public function test_it_allows_role_change_if_department_is_unchanged_despite_active_grants()
+    {
+        UserCapabilityGrant::create([
+            'user_id' => $this->target->id,
+            'department_id' => $this->target->department_id,
+            'capability' => UserCapability::KAIZEN_DEPARTMENT_APPROVE,
+            'is_active' => true,
+        ]);
+
+        $result = $this->action->execute($this->admin, $this->target, [
+            'name' => 'New Name',
+            'email' => 'old@example.com',
+            'role' => UserRole::MANAGER->value,
+            'department_id' => $this->target->department_id, // Same department
+        ]);
+
+        $this->assertTrue($result['success']);
+        $this->assertDatabaseHas('users', [
+            'id' => $this->target->id,
+            'role' => UserRole::MANAGER->value,
         ]);
     }
 
