@@ -7,6 +7,7 @@ use App\Models\User;
 use DomainException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 
 class CreateUserWithInvitation
@@ -29,7 +30,7 @@ class CreateUserWithInvitation
             // Generate a secure placeholder that will never be used/seen
             $placeholder = Str::random(64);
 
-            $user = new User();
+            $user = new User;
             $user->name = $validatedPayload['name'];
             $user->email = $validatedPayload['email'];
             $user->role = $validatedPayload['role'];
@@ -77,7 +78,7 @@ class CreateUserWithInvitation
         try {
             $status = $this->sendUserInvitation->execute($actor, $target);
 
-            if ($status === \Illuminate\Support\Facades\Password::RESET_LINK_SENT) {
+            if ($status === Password::RESET_LINK_SENT) {
                 return [
                     'success' => true,
                     'message' => 'Kullanıcı başarıyla oluşturuldu ve davet e-postası gönderildi.',

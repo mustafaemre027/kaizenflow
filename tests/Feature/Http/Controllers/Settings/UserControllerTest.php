@@ -15,14 +15,15 @@ class UserControllerTest extends TestCase
     use RefreshDatabase;
 
     private User $admin;
+
     private User $employee;
 
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         $this->admin = User::factory()->create(['is_active' => true]);
-        
+
         UserSystemCapabilityGrant::create([
             'user_id' => $this->admin->id,
             'capability' => UserCapability::AUTHORIZATION_MANAGE,
@@ -59,7 +60,7 @@ class UserControllerTest extends TestCase
             'is_active' => true,
             'role' => UserRole::ADMIN,
         ]);
-        
+
         $response = $this->actingAs($fakeAdmin)->get(route('settings.users.index'));
         $response->assertForbidden();
     }

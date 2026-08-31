@@ -6,14 +6,12 @@ use App\Actions\Users\CreateUserWithInvitation;
 use App\Actions\Users\SendUserInvitation;
 use App\Enums\UserCapability;
 use App\Enums\UserRole;
-use App\Models\AuditLog;
 use App\Models\Department;
 use App\Models\User;
 use App\Models\UserSystemCapabilityGrant;
 use DomainException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Password;
 use Mockery\MockInterface;
 use Tests\TestCase;
 
@@ -22,14 +20,15 @@ class CreateUserWithInvitationTest extends TestCase
     use RefreshDatabase;
 
     private User $admin;
+
     private CreateUserWithInvitation $action;
 
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         $this->admin = User::factory()->create(['is_active' => true]);
-        
+
         UserSystemCapabilityGrant::create([
             'user_id' => $this->admin->id,
             'capability' => UserCapability::AUTHORIZATION_MANAGE,
@@ -138,7 +137,7 @@ class CreateUserWithInvitationTest extends TestCase
         $this->action->execute($this->admin, $payload);
 
         $user = User::where('email', 'test@example.com')->first();
-        
+
         $this->assertTrue(Hash::info($user->password)['algoName'] !== 'unknown');
         // We do not know the plaintext, which is the point
         $this->assertFalse(Hash::check('password', $user->password));

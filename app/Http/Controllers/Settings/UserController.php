@@ -10,6 +10,7 @@ use App\Http\Requests\Settings\Users\StoreUserRequest;
 use App\Models\Department;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
 
 class UserController extends Controller
@@ -22,7 +23,7 @@ class UserController extends Controller
             $query->where(function ($q) use ($request) {
                 $search = '%'.$request->q.'%';
                 $q->where('name', 'like', $search)
-                  ->orWhere('email', 'like', $search);
+                    ->orWhere('email', 'like', $search);
             });
         }
 
@@ -56,7 +57,7 @@ class UserController extends Controller
 
     public function create(): View
     {
-        \Illuminate\Support\Facades\Gate::authorize('create', User::class);
+        Gate::authorize('create', User::class);
 
         $departments = Department::where('is_active', true)->orderBy('name')->get();
         $roles = UserRole::cases();
