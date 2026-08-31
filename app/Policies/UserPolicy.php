@@ -25,6 +25,38 @@ class UserPolicy
         return $this->hasRequiredCapabilities($user);
     }
 
+    public function view(User $user, User $model): bool
+    {
+        return $this->hasRequiredCapabilities($user);
+    }
+
+    public function update(User $user, User $model): bool
+    {
+        if ($user->id === $model->id) {
+            return false;
+        }
+
+        return $this->hasRequiredCapabilities($user);
+    }
+
+    public function setStatus(User $user, User $model): bool
+    {
+        if ($user->id === $model->id) {
+            return false;
+        }
+
+        return $this->hasRequiredCapabilities($user);
+    }
+
+    public function resendInvitation(User $user, User $model): bool
+    {
+        if ($user->id === $model->id) {
+            return false;
+        }
+
+        return $this->hasRequiredCapabilities($user);
+    }
+
     private function hasRequiredCapabilities(User $user): bool
     {
         if (! $user->is_active) {

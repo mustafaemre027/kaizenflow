@@ -72,6 +72,10 @@ Route::middleware('auth')->group(function () {
             Route::get('/users', [UserController::class, 'index'])->name('users.index');
             Route::get('/users/create', [UserController::class, 'create'])->name('users.create');
             Route::post('/users', [UserController::class, 'store'])->name('users.store');
+            Route::get('/users/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
+            Route::patch('/users/{user}', [UserController::class, 'update'])->name('users.update');
+            Route::patch('/users/{user}/status', [UserController::class, 'setStatus'])->name('users.status');
+            Route::post('/users/{user}/invitation', [UserController::class, 'resendInvitation'])->name('users.invitation');
 
             Route::get('/reference-data', [ReferenceDataController::class, 'index'])->name('reference-data.index');
 

@@ -104,7 +104,8 @@
                             <th class="px-4 py-3">Rol</th>
                             <th class="px-4 py-3">Hesap Durumu</th>
                             <th class="px-4 py-3">Kurulum</th>
-                            <th class="px-4 py-3 text-end">Oluşturulma</th>
+                            <th class="px-4 py-3">Oluşturulma</th>
+                            <th class="px-4 py-3 text-end">İşlemler</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -141,8 +142,47 @@
                                         <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25">Hazır</span>
                                     @endif
                                 </td>
-                                <td class="px-4 py-3 text-end text-muted text-sm">
+                                <td class="px-4 py-3 text-muted text-sm">
                                     {{ $user->created_at->format('d.m.Y') }}
+                                </td>
+                                <td class="px-4 py-3 text-end">
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-three-dots-vertical" viewBox="0 0 16 16">
+                                                <path d="M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/>
+                                            </svg>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                            <li>
+                                                <a class="dropdown-item" href="{{ route('settings.users.edit', $user) }}">Düzenle</a>
+                                            </li>
+                                            
+                                            @if(auth()->id() !== $user->id)
+                                                <li><hr class="dropdown-divider"></li>
+                                                @if($user->must_set_password && $user->is_active)
+                                                    <li>
+                                                        <form action="{{ route('settings.users.invitation', $user) }}" method="POST">
+                                                            @csrf
+                                                            <button type="submit" class="dropdown-item">Daveti Yeniden Gönder</button>
+                                                        </form>
+                                                    </li>
+                                                @endif
+                                                
+                                                <li>
+                                                    <form action="{{ route('settings.users.status', $user) }}" method="POST">
+                                                        @csrf
+                                                        @method('PATCH')
+                                                        <input type="hidden" name="is_active" value="{{ $user->is_active ? '0' : '1' }}">
+                                                        @if($user->is_active)
+                                                            <button type="submit" class="dropdown-item text-danger">Pasife Al</button>
+                                                        @else
+                                                            <button type="submit" class="dropdown-item text-success">Aktifleştir</button>
+                                                        @endif
+                                                    </form>
+                                                </li>
+                                            @endif
+                                        </ul>
+                                    </div>
                                 </td>
                             </tr>
                         @empty

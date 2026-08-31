@@ -3,12 +3,18 @@
 namespace App\Http\Controllers\Settings;
 
 use App\Actions\Users\CreateUserWithInvitation;
+use App\Actions\Users\SendUserInvitation;
+use App\Actions\Users\SetUserStatus;
+use App\Actions\Users\UpdateUser;
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\Users\IndexUserRequest;
+use App\Http\Requests\Settings\Users\SetUserStatusRequest;
 use App\Http\Requests\Settings\Users\StoreUserRequest;
+use App\Http\Requests\Settings\Users\UpdateUserRequest;
 use App\Models\Department;
 use App\Models\User;
+use Exception;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
@@ -74,5 +80,60 @@ class UserController extends Controller
         }
 
         return redirect()->route('settings.users.index')->with('warning', $result['message']);
+    }
+
+    public function edit(User $user): View
+    {
+        Gate::authorize('view', $user);
+
+        $departments = Department::where('is_active', true)->orderBy('name')->get();
+        $roles = UserRole::cases();
+
+        return view('settings.users.edit', compact('user', 'departments', 'roles'));
+    }
+
+    public function update(UpdateUserRequest $request, User $user, UpdateUser $action): RedirectResponse
+    {
+        Gate::authorize('update', $user);
+
+        try {
+            $result = $action->execute($request->user(), $user, $request->validated());
+
+            if ($result['success']) {
+                $status = str_contains($result['message'] ?? '', 'gönderilemedi') ? 'warning' : 'success';
+
+                return redirect()->route('settings.users.index')->with($status, $result['message']);
+            }
+
+            return redirect()->back()->with('error', 'Kullanıcı güncellenemedi.');
+        } catch (Exception $e) {
+            return redirect()->back()->with('error', $e->getMessage())->withInput();
+        }
+    }
+
+    public function setStatus(SetUserStatusRequest $request, User $user, SetUserStatus $action): RedirectResponse
+    {
+        Gate::authorize('setStatus', $user);
+
+        try {
+            $result = $action->execute($request->user(), $user, (bool) $request->validated('is_active'));
+
+            return redirect()->back()->with('success', $result['message']);
+        } catch (Exception $e) {
+            return redirect()->back()->with('error', $e->getMessage());
+        }
+    }
+
+    public function resendInvitation(User $user, SendUserInvitation $action): RedirectResponse
+    {
+        Gate::authorize('resendInvitation', $user);
+
+        try {
+            $action->execute(request()->user(), $user);
+
+            return redirect()->back()->with('success', 'Davet e-postası başarıyla gönderildi.');
+        } catch (Exception $e) {
+            return redirect()->back()->with('error', $e->getMessage());
+        }
     }
 }
