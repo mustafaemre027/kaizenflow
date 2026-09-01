@@ -2,18 +2,17 @@
 
 namespace Tests\Feature;
 
-use App\Actions\Kaizens\AssignKaizenImplementation;
-use App\Actions\Kaizens\CompleteKaizenImplementation;
-use App\Actions\Kaizens\StartKaizenImplementation;
 use App\Actions\Kaizens\SubmitKaizen;
 use App\Enums\KaizenStatus;
+use App\Exceptions\Workflow\InvalidApprovalWorkflowConfiguration;
+use App\Models\ApprovalStage;
 use App\Models\ApprovalWorkflow;
 use App\Models\Kaizen;
 use App\Models\User;
 use App\Services\Notifications\KaizenBusinessNotificationDispatcher;
+use Exception;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
-use Exception;
 
 class ActionNotificationBoundaryTest extends TestCase
 {
@@ -24,7 +23,7 @@ class ActionNotificationBoundaryTest extends TestCase
         $user = User::factory()->create();
         $kaizen = Kaizen::factory()->create(['creator_user_id' => $user->id, 'status' => KaizenStatus::DRAFT]);
         $workflow = ApprovalWorkflow::factory()->create(['is_active' => true, 'published_at' => now(), 'is_default' => true]);
-        \App\Models\ApprovalStage::factory()->create(['approval_workflow_id' => $workflow->id, 'sequence' => 1, 'is_final' => true]);
+        ApprovalStage::factory()->create(['approval_workflow_id' => $workflow->id, 'sequence' => 1, 'is_final' => true]);
 
         $dispatcher = $this->mock(KaizenBusinessNotificationDispatcher::class);
         $dispatcher->shouldReceive('dispatchSubmitted')->once();
@@ -41,7 +40,7 @@ class ActionNotificationBoundaryTest extends TestCase
         $dispatcher = $this->mock(KaizenBusinessNotificationDispatcher::class);
         $dispatcher->shouldNotReceive('dispatchSubmitted');
 
-        $this->expectException(\App\Exceptions\Workflow\InvalidApprovalWorkflowConfiguration::class);
+        $this->expectException(InvalidApprovalWorkflowConfiguration::class);
         app(SubmitKaizen::class)->execute($user, $kaizen);
     }
 }
