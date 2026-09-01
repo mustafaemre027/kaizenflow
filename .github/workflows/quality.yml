@@ -1,0 +1,55 @@
+name: Quality Verification
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  quality:
+    name: Verify Quality
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          
+      - name: Validate Composer
+        run: composer validate --strict
+        
+      - name: Install PHP dependencies
+        run: composer install --prefer-dist --no-progress --no-suggest
+        
+      - name: Install NPM dependencies
+        run: npm ci
+        
+      - name: Check code style
+        run: vendor/bin/pint --test
+        
+      - name: Run SQLite Tests
+        run: vendor/bin/phpunit
+        env:
+          APP_ENV: testing
+          DB_CONNECTION: sqlite
+          DB_DATABASE: :memory:
+          
+      - name: Build frontend assets
+        run: npm run build
+        
+      - name: Cache Views
+        run: php artisan view:cache
+        
+      - name: Clear Views
+        run: php artisan view:clear

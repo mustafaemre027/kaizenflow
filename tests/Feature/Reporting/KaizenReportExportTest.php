@@ -62,7 +62,7 @@ class KaizenReportExportTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
-        $response->assertHeader('Content-Disposition', 'attachment; filename=' . 'kaizen-raporu-' . now()->format('Ymd-His') . '.csv');
+        $response->assertHeader('Content-Disposition', 'attachment; filename='.'kaizen-raporu-'.now()->format('Ymd-His').'.csv');
 
         $content = $response->streamedContent();
 
