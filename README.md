@@ -8,7 +8,7 @@ KaizenFlow, çalışanların süreç iyileştirme fikirlerini dijital ortamda ol
 Proje belirli bir şirkete özel değildir. Farklı üretim ve hizmet kuruluşlarına uyarlanabilecek genel bir sürekli iyileştirme prototipi olarak tasarlanmaktadır. Herhangi bir gerçek kurum veya kuruluşun sistemlerini doğrudan temsil etmez.
 
 ## Proje Durumu
-Gereksinim analizi, Kaizen iş akışı, sistem mimarisi ve veritabanı tasarımı tamamlanmıştır. Proje, Laravel uygulama altyapısının kurulması aşamasına hazırdır.
+Şu anki güncel duruma göre sistemde; güvenli kimlik doğrulama, hesap yaşam döngüsü, dinamik onay iş akışı (Approval Workflow), yapılandırılmış fayda tanımları, uygulama/yürütme takibi, güvenli yönetim dashboard'u, güvenli CSV raporlama ve kuyruk tabanlı bildirim döngüleri (notifications) başarıyla tamamlanmıştır.
 
 ## Gizlilik Notu
 Projede hiçbir gerçek şirket adı, logo, çalışan bilgisi, üretim verisi veya finansal veri kullanılmayacaktır. Geliştirme ve test süreçlerinde yalnızca sentetik demo verileri kullanılacaktır.
@@ -25,7 +25,7 @@ Projede hiçbir gerçek şirket adı, logo, çalışan bilgisi, üretim verisi v
 
 ## Planlanan Temel Özellikler
 - **Kimlik doğrulama:** Kullanıcıların sisteme güvenli şekilde giriş yapabilmesi.
-- **Rol tabanlı yetkilendirme:** Kullanıcıların sahip oldukları rollere göre işlemleri gerçekleştirebilmesi.
+- **Yetenek (Capability) tabanlı yetkilendirme:** Yetki kontrollerinin statik roller yerine dinamik yetenekler (capabilities) üzerinden yapıldığı, güvenli ve esnek mimari.
 - **Kaizen öneri yönetimi:** İyileştirme önerilerinin formlar aracılığıyla sisteme girilmesi ve izlenmesi.
 - **Dosya ekleri:** Önerilere ilgili resim ve belgelerin eklenebilmesi.
 - **Çok aşamalı değerlendirme:** Önerilerin OPEX ve yönetici aşamalarından geçerek onaylanması.
@@ -39,12 +39,14 @@ Projede hiçbir gerçek şirket adı, logo, çalışan bilgisi, üretim verisi v
 
 ## Kullanıcı Rolleri
 
-| Rol | Yetki Özeti |
+| Rol | Açıklama |
 |---|---|
 | EMPLOYEE | Çalışan. Kendi Kaizen önerilerini oluşturabilir ve takip edebilir. |
 | OPEX_SPECIALIST | Sürekli İyileştirme Uzmanı. Sistemin işleyişine rehberlik eder, kendisine iş akışında onay tanımlanmışsa değerlendirir. Yürütme aşamasını takip eder. |
-| MANAGER | Yönetici. Kendisine (departmanına veya özel olarak) atanan iş akışı aşamalarındaki önerileri onaylar, reddeder veya düzeltme ister. |
+| MANAGER | Departman Yöneticisi. Kendisine (departmanına veya özel olarak) atanan iş akışı aşamalarındaki önerileri onaylar, reddeder veya düzeltme ister. |
 | ADMIN | Sistem Yöneticisi. Sistemdeki referans verilerine ve dinamik iş akışı tanımlarına (ApprovalWorkflow) erişebilir, kullanıcı ve rol yönetimini gerçekleştirir. |
+
+*Not: Sistemdeki ayrıcalıklı işlemler (privileged operations) kullanıcıların taşıdıkları role göre değil, sahip oldukları yeteneklere (capabilities) göre denetlenmektedir.*
 
 ## Kaizen Durumları
 
@@ -69,7 +71,6 @@ Projede hiçbir gerçek şirket adı, logo, çalışan bilgisi, üretim verisi v
 | Laravel Blade | Şablon motoru (view katmanı) |
 | HTML, CSS ve JavaScript | İstemci taraflı arayüz teknolojileri |
 | Bootstrap | CSS bileşen çerçevesi |
-| Chart.js | Dashboard grafikleri |
 | MySQL | İlişkisel veritabanı yönetim sistemi |
 | Eloquent ORM | Veritabanı etkileşimleri |
 | Laravel Migrations | Veritabanı şema yönetimi |
