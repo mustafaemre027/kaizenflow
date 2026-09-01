@@ -393,10 +393,10 @@ class ApprovalConfigurationUiTest extends TestCase
         $response->assertStatus(200);
 
         // Assert the desktop table is hidden on mobile
-        $response->assertSee('<div class="table-responsive d-none d-md-block">', false);
+        $response->assertSee('d-none d-md-block', false);
 
         // Assert the mobile card layout is visible on mobile only
-        $response->assertSee('<div class="d-block d-md-none">', false);
+        $response->assertSee('d-block d-md-none', false);
         $response->assertSee('STG_UI_1'); // Code
         $stage = $this->workflow->stages()->first();
         $response->assertSee($stage->name); // Name

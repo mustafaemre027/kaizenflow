@@ -3,60 +3,51 @@
 @section('title', 'Kategori Düzenle')
 
 @section('content')
-<div class="kf-page-header d-flex justify-content-between align-items-center">
-    <div>
-        <span class="kf-page-eyebrow">Yapılandırma / Kategoriler</span>
-        <h1 class="kf-page-title">Kategori Düzenle</h1>
-    </div>
-    <div>
+<x-page-header 
+    title="Kategori Düzenle" 
+    subtitle="Yapılandırma / Kategoriler"
+>
+    <x-slot:actions>
         @if($category->is_active)
             <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-2 rounded-pill">Aktif</span>
         @else
             <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 px-3 py-2 rounded-pill">Pasif</span>
         @endif
-    </div>
-</div>
+    </x-slot:actions>
+</x-page-header>
 
 <div class="row justify-content-center">
-    <div class="col-md-8 col-lg-6">
-        <div class="kf-panel">
-            <div class="kf-panel-body p-4 p-md-5">
-                <form action="{{ route('settings.categories.update', $category) }}" method="POST">
-                    @csrf
-                    @method('PATCH')
-                    
-                    <div class="mb-4">
-                        <label for="name" class="form-label fw-medium text-dark">Kategori Adı</label>
-                        <input type="text" id="name" name="name" class="form-control @error('name') is-invalid @enderror" value="{{ old('name', $category->name) }}" required>
-                        @error('name')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
-                    </div>
+    <div class="col-12 col-md-8 col-lg-6">
+        <x-section-card>
+            <form action="{{ route('settings.categories.update', $category) }}" method="POST">
+                @csrf
+                @method('PATCH')
+                
+                <div class="mb-4">
+                    <label for="name" class="kf-form-label mb-1">Kategori Adı</label>
+                    <input type="text" id="name" name="name" class="form-control kf-form-control @error('name') is-invalid @enderror" value="{{ old('name', $category->name) }}" required>
+                    @error('name')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
 
-                    <div class="mb-4">
-                        <label for="code" class="form-label fw-medium text-dark">Kod</label>
-                        <input type="text" id="code" name="code" class="form-control text-uppercase @error('code') is-invalid @enderror" value="{{ old('code', $category->code) }}" required>
-                        <div class="form-text">Sistemde benzersiz teknik tanımlayıcı olarak kullanılır. Örn: KALITE</div>
-                        @error('code')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
-                    </div>
+                <div class="mb-4">
+                    <label for="code" class="kf-form-label mb-1">Kod</label>
+                    <input type="text" id="code" name="code" class="form-control kf-form-control text-uppercase @error('code') is-invalid @enderror" value="{{ old('code', $category->code) }}" required>
+                    <div class="form-text small">Sistemde benzersiz teknik tanımlayıcı olarak kullanılır. Örn: KALITE</div>
+                    @error('code')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
 
-                    <div class="mb-5">
-                        <label for="description" class="form-label fw-medium text-dark">Açıklama <span class="text-muted fw-normal">(Opsiyonel)</span></label>
-                        <textarea id="description" name="description" class="form-control @error('description') is-invalid @enderror" rows="3">{{ old('description', $category->description) }}</textarea>
-                        @error('description')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
-                    </div>
+                <div class="mb-5">
+                    <label for="description" class="kf-form-label mb-1">Açıklama <span class="text-muted fw-normal">(Opsiyonel)</span></label>
+                    <textarea id="description" name="description" class="form-control kf-form-control @error('description') is-invalid @enderror" rows="3">{{ old('description', $category->description) }}</textarea>
+                    @error('description')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
 
-                    <div class="d-flex justify-content-end gap-3">
-                        <a href="{{ route('settings.reference-data.index') }}" class="btn btn-light border">Vazgeç</a>
-                        <button type="submit" class="btn btn-primary">Değişiklikleri Kaydet</button>
-                    </div>
-                </form>
-            </div>
-        </div>
+                <div class="d-flex justify-content-end gap-3">
+                    <a href="{{ route('settings.reference-data.index') }}" class="kf-btn kf-btn-secondary">Vazgeç</a>
+                    <button type="submit" class="kf-btn kf-btn-primary">Değişiklikleri Kaydet</button>
+                </div>
+            </form>
+        </x-section-card>
     </div>
 </div>
 @endsection

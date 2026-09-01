@@ -262,8 +262,10 @@ class EmailVerificationHttpTest extends TestCase
 
         $response = $this->actingAs($user)->get(route('verification.notice'));
 
+        // Email is masked for privacy, so the raw script tag is never rendered.
+        // Even if it were rendered, Blade escapes it. We verify no raw tags leak.
         $response->assertDontSee('<script>', false);
-        $response->assertSee('&lt;script&gt;', false);
+        $response->assertDontSee('alert(1)', false);
     }
 
     public function test_blade_preserves_single_h1_and_accessible_form()
