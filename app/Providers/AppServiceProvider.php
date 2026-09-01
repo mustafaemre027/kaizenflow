@@ -19,6 +19,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        \Illuminate\Support\Facades\View::composer(
+            'layouts.app',
+            \App\Http\View\Composers\NavigationComposer::class
+        );
     }
 }
