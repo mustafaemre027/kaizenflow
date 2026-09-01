@@ -3,152 +3,128 @@
 @section('title', 'Değerlendirme Geçmişi')
 
 @section('content')
-<div class="kf-list-page">
-    {{-- Page Header --}}
-    <div class="kf-list-header">
-        <div>
-            <span class="kf-list-context">ONAY YÖNETİMİ</span>
-            <h1 class="kf-list-title">Değerlendirme Geçmişi</h1>
-            <p class="kf-list-desc">Geçmişte verdiğiniz onay, revizyon ve red kararlarını görüntüleyin.</p>
+<x-page-header 
+    title="Değerlendirme Geçmişi" 
+    subtitle="Geçmişte verdiğiniz onay, revizyon ve red kararlarını görüntüleyin."
+/>
+
+<x-section-card class="mb-4">
+    <form action="{{ route('history.index') }}" method="GET" class="row g-3 align-items-end">
+        <div class="col-12 col-md-3">
+            <label for="q" class="kf-form-label mb-1">Arama</label>
+            <input type="text" name="q" id="q" class="form-control kf-form-control"
+                   value="{{ $filters['q'] ?? '' }}" placeholder="Kaizen kodu veya başlık...">
         </div>
-    </div>
-
-    {{-- Filter --}}
-    <div class="kf-list-filter-panel mb-4">
-        <form action="{{ route('history.index') }}" method="GET">
-            <div class="row g-3 align-items-end">
-                <div class="col-12 col-md-3">
-                    <label for="q" class="form-label">Arama</label>
-                    <input type="text" name="q" id="q" class="kf-form-control"
-                           value="{{ $filters['q'] ?? '' }}" placeholder="Kaizen kodu veya başlık...">
-                </div>
-                <div class="col-12 col-md-3">
-                    <label for="action" class="form-label">İşlem Türü</label>
-                    <select name="action" id="action" class="kf-form-control">
-                        <option value="">Tüm İşlemler</option>
-                        <option value="{{ \App\Enums\WorkflowAction::APPROVE->value }}" {{ ($filters['action'] ?? '') === \App\Enums\WorkflowAction::APPROVE->value ? 'selected' : '' }}>Onaylandı</option>
-                        <option value="{{ \App\Enums\WorkflowAction::REQUEST_REVISION->value }}" {{ ($filters['action'] ?? '') === \App\Enums\WorkflowAction::REQUEST_REVISION->value ? 'selected' : '' }}>Revizyon İstendi</option>
-                        <option value="{{ \App\Enums\WorkflowAction::REJECT->value }}" {{ ($filters['action'] ?? '') === \App\Enums\WorkflowAction::REJECT->value ? 'selected' : '' }}>Reddedildi</option>
-                    </select>
-                </div>
-                <div class="col-12 col-md-2">
-                    <label for="date_from" class="form-label">Başlangıç</label>
-                    <input type="date" name="date_from" id="date_from" class="kf-form-control"
-                           value="{{ $filters['date_from'] ?? '' }}">
-                </div>
-                <div class="col-12 col-md-2">
-                    <label for="date_to" class="form-label">Bitiş</label>
-                    <input type="date" name="date_to" id="date_to" class="kf-form-control"
-                           value="{{ $filters['date_to'] ?? '' }}">
-                </div>
-                <div class="col-12 col-md-2">
-                    <label class="form-label">&nbsp;</label>
-                    <div class="d-flex gap-2">
-                        <button type="submit" class="kf-btn kf-btn-primary flex-grow-1">Filtrele</button>
-                        <a href="{{ route('history.index') }}" class="kf-btn kf-btn-secondary text-decoration-none px-3" title="Filtreleri Temizle">Temizle</a>
-                    </div>
-                </div>
-            </div>
-        </form>
-    </div>
-
-    {{-- Table --}}
-    <div class="kf-list-surface">
-        @if($reviewedTransitions->isEmpty())
-            <div class="kf-list-empty">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" style="opacity:0.4; margin-bottom: 1rem;">
-                    <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
-                </svg>
-                <h3 class="kf-list-empty-title">Henüz tamamladığınız bir değerlendirme bulunmuyor.</h3>
-                <p class="kf-list-empty-desc">Onay süreçlerinde değerlendirme yaptığınızda geçmişiniz burada görünecek.</p>
-            </div>
-        @else
-            <div class="table-responsive">
-                <table class="table kf-list-table" aria-label="Değerlendirme Geçmişim">
-                    <thead>
-                        <tr>
-                            <th scope="col">Kaizen</th>
-                            <th scope="col" class="kf-hide-mobile">Aşama</th>
-                            <th scope="col">Yaptığım İşlem</th>
-                            <th scope="col" class="kf-hide-mobile">İşlem Tarihi</th>
-                            <th scope="col" class="kf-hide-mobile">Güncel Durum</th>
-                            <th scope="col" class="text-end">İncele</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($reviewedTransitions as $transition)
-                            @php
-                                $kaizen = $transition->kaizen;
-                                $badgeVariant = $transition->action->badgeVariant();
-                                $kStatusVariant = match($kaizen->status) {
-                                    \App\Enums\KaizenStatus::APPROVED => 'success',
-                                    \App\Enums\KaizenStatus::REJECTED => 'danger',
-                                    \App\Enums\KaizenStatus::REVISION_REQUESTED => 'warning',
-                                    \App\Enums\KaizenStatus::SUBMITTED => 'primary',
-                                    \App\Enums\KaizenStatus::IN_PROGRESS, \App\Enums\KaizenStatus::COMPLETED => 'info',
-                                    default => 'secondary',
-                                };
-                                $actionPastLabel = match($transition->action) {
-                                    \App\Enums\WorkflowAction::APPROVE => 'Onaylandı',
-                                    \App\Enums\WorkflowAction::REQUEST_REVISION => 'Revizyon İstendi',
-                                    \App\Enums\WorkflowAction::REJECT => 'Reddedildi',
-                                    default => $transition->action->label()
-                                };
-                            @endphp
-                            <tr>
-                                <td>
-                                    <div class="fw-bold" style="color: var(--kf-primary-dark); font-family: monospace; font-size: 0.9rem;">{{ $kaizen->code }}</div>
-                                    <div class="text-truncate" style="max-width: 200px;" title="{{ $kaizen->title }}">{{ $kaizen->title }}</div>
-                                    <div class="text-secondary" style="font-size: 0.8rem;">{{ $kaizen->category->name ?? '-' }} &middot; {{ $kaizen->department->name ?? '-' }}</div>
-                                </td>
-                                <td class="kf-hide-mobile text-secondary" style="font-size: 0.9rem;">
-                                    {{ $transition->fromStage?->name ?? '-' }}
-                                </td>
-                                <td>
-                                    <span class="kf-badge kf-badge-{{ $badgeVariant }}" aria-label="İşlem: {{ $actionPastLabel }}">
-                                        {{ $actionPastLabel }}
-                                    </span>
-                                </td>
-                                <td class="kf-hide-mobile text-secondary" style="font-size: 0.9rem;">
-                                    {{ $transition->created_at->format('d.m.Y H:i') }}
-                                </td>
-                                <td class="kf-hide-mobile">
-                                    <span class="kf-badge kf-badge-{{ $kStatusVariant }}" aria-label="Kaizen durumu: {{ $kaizen->status->label() }}">
-                                        {{ $kaizen->status->label() }}
-                                    </span>
-                                </td>
-                                <td class="text-end">
-                                    @can('view', $kaizen)
-                                        <a href="{{ route('kaizens.show', $kaizen) }}"
-                                           class="kf-btn kf-btn-secondary"
-                                           style="padding: 0.35rem 0.75rem; font-size: 0.85rem;"
-                                           aria-label="{{ $kaizen->code }} detaylarını görüntüle">
-                                            İncele
-                                        </a>
-                                    @else
-                                        <span class="text-muted" style="font-size: 0.85rem;">&#8212;</span>
-                                    @endcan
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-
-            @if($reviewedTransitions->hasPages())
-                <div class="kf-list-pagination">
-                    <div class="kf-list-summary">
-                        {{ $reviewedTransitions->firstItem() }}&ndash;{{ $reviewedTransitions->lastItem() }} / {{ $reviewedTransitions->total() }} kayıt
-                    </div>
-                    <div>{{ $reviewedTransitions->links() }}</div>
-                </div>
-            @else
-                <div class="kf-list-pagination" style="justify-content: center;">
-                    <span class="kf-list-summary">Toplam {{ $reviewedTransitions->total() }} kayıt gösteriliyor.</span>
-                </div>
+        <div class="col-12 col-md-3">
+            <label for="action" class="kf-form-label mb-1">İşlem Türü</label>
+            <select name="action" id="action" class="form-select kf-form-control">
+                <option value="">Tüm İşlemler</option>
+                <option value="{{ \App\Enums\WorkflowAction::APPROVE->value }}" {{ ($filters['action'] ?? '') === \App\Enums\WorkflowAction::APPROVE->value ? 'selected' : '' }}>Onaylandı</option>
+                <option value="{{ \App\Enums\WorkflowAction::REQUEST_REVISION->value }}" {{ ($filters['action'] ?? '') === \App\Enums\WorkflowAction::REQUEST_REVISION->value ? 'selected' : '' }}>Revizyon İstendi</option>
+                <option value="{{ \App\Enums\WorkflowAction::REJECT->value }}" {{ ($filters['action'] ?? '') === \App\Enums\WorkflowAction::REJECT->value ? 'selected' : '' }}>Reddedildi</option>
+            </select>
+        </div>
+        <div class="col-6 col-md-2">
+            <label for="date_from" class="kf-form-label mb-1">Başlangıç</label>
+            <input type="date" name="date_from" id="date_from" class="form-control kf-form-control"
+                   value="{{ $filters['date_from'] ?? '' }}">
+        </div>
+        <div class="col-6 col-md-2">
+            <label for="date_to" class="kf-form-label mb-1">Bitiş</label>
+            <input type="date" name="date_to" id="date_to" class="form-control kf-form-control"
+                   value="{{ $filters['date_to'] ?? '' }}">
+        </div>
+        <div class="col-12 col-md-2 d-flex gap-2">
+            <button type="submit" class="kf-btn kf-btn-primary flex-grow-1 w-100">Filtrele</button>
+            @if(request()->anyFilled(['q', 'action', 'date_from', 'date_to']))
+                <a href="{{ route('history.index') }}" class="kf-btn kf-btn-secondary px-3" title="Temizle">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </a>
             @endif
+        </div>
+    </form>
+</x-section-card>
+
+@if($reviewedTransitions->isEmpty())
+    <x-empty-state 
+        title="Geçmişiniz boş" 
+        description="Onay süreçlerinde değerlendirme yaptığınızda geçmişiniz burada görünecek."
+    >
+        <x-slot:icon>
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+            </svg>
+        </x-slot:icon>
+    </x-empty-state>
+@else
+    <div class="kf-table-shell">
+        <div class="table-responsive">
+            <table class="kf-table">
+                <thead>
+                    <tr>
+                        <th scope="col">Kaizen</th>
+                        <th scope="col" class="d-none d-md-table-cell">Aşama</th>
+                        <th scope="col">Yaptığım İşlem</th>
+                        <th scope="col" class="d-none d-sm-table-cell">İşlem Tarihi</th>
+                        <th scope="col" class="d-none d-lg-table-cell">Güncel Durum</th>
+                        <th scope="col" class="text-end">İncele</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($reviewedTransitions as $transition)
+                        @php
+                            $kaizen = $transition->kaizen;
+                            $badgeVariant = $transition->action->badgeVariant();
+                            $actionPastLabel = match($transition->action) {
+                                \App\Enums\WorkflowAction::APPROVE => 'Onaylandı',
+                                \App\Enums\WorkflowAction::REQUEST_REVISION => 'Revizyon İstendi',
+                                \App\Enums\WorkflowAction::REJECT => 'Reddedildi',
+                                default => $transition->action->label()
+                            };
+                        @endphp
+                        <tr>
+                            <td>
+                                <div class="fw-semibold text-dark text-truncate" style="max-width: 200px;" title="{{ $kaizen->title }}">{{ $kaizen->title }}</div>
+                                <div class="font-monospace text-muted small fw-bold mt-1">{{ $kaizen->code }}</div>
+                                <div class="text-secondary small mt-1 d-md-none">{{ $kaizen->category->name ?? '-' }}</div>
+                            </td>
+                            <td class="d-none d-md-table-cell text-secondary small fw-medium">
+                                {{ $transition->fromStage?->name ?? '-' }}
+                            </td>
+                            <td>
+                                <span class="badge" style="background-color: var(--kf-{{ $badgeVariant }}-soft, var(--kf-primary-soft)); color: var(--kf-{{ $badgeVariant }}, var(--kf-primary)); font-weight: 600;">
+                                    {{ $actionPastLabel }}
+                                </span>
+                            </td>
+                            <td class="d-none d-sm-table-cell text-secondary small">
+                                {{ $transition->created_at->format('d.m.Y H:i') }}
+                            </td>
+                            <td class="d-none d-lg-table-cell">
+                                <x-status-badge :status="$kaizen->status" />
+                            </td>
+                            <td class="text-end">
+                                @can('view', $kaizen)
+                                    <a href="{{ route('kaizens.show', $kaizen) }}"
+                                       class="kf-btn kf-btn-secondary"
+                                       style="padding: 0.35rem 0.75rem; font-size: 0.85rem;"
+                                       aria-label="{{ $kaizen->code }} detaylarını görüntüle">
+                                        İncele
+                                    </a>
+                                @else
+                                    <span class="text-muted" style="font-size: 0.85rem;">&#8212;</span>
+                                @endcan
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+
+        @if($reviewedTransitions->hasPages())
+            <div class="p-3 border-top bg-light">
+                {{ $reviewedTransitions->withQueryString()->links() }}
+            </div>
         @endif
     </div>
-
-</div>
+@endif
 @endsection

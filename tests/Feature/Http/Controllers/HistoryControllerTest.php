@@ -406,8 +406,8 @@ class HistoryControllerTest extends TestCase
         $response->assertStatus(200);
 
         $response->assertSeeInOrder([
-            'Bekleyen Onaylar',
-            'Değerlendirme Geçmişi',
+            'Onaylar',
+            'Geçmiş',
         ]);
     }
 

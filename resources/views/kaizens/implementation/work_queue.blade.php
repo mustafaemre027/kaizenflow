@@ -3,95 +3,73 @@
 @section('title', 'Uygulama İşlerim')
 
 @section('content')
-<div class="container py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h3 mb-0 text-gray-800">Uygulama İşlerim</h1>
-    </div>
+<x-page-header 
+    title="Uygulama İşlerim" 
+    subtitle="Üzerinize atanmış olan ve uygulamasını gerçekleştireceğiniz Kaizenler."
+/>
 
-    @if($kaizens->isEmpty())
-        <div class="alert alert-info" role="alert">
-            Şu anda üzerinize atanmış aktif bir uygulama görevi bulunmuyor.
-        </div>
-    @else
-        <div class="row d-block d-md-none">
-            @foreach($kaizens as $kaizen)
-                <div class="col-12 mb-3">
-                    <div class="card shadow-sm">
-                        <div class="card-body">
-                            <h5 class="card-title text-truncate">
-                                <a href="{{ route('kaizens.show', $kaizen->id) }}" class="text-decoration-none">
-                                    {{ $kaizen->code }} - {{ $kaizen->title }}
-                                </a>
-                            </h5>
-                            <p class="card-text mb-1">
-                                <span class="badge bg-secondary">{{ $kaizen->category->name ?? 'Kategori Yok' }}</span>
-                                <span class="badge bg-info text-dark">{{ $kaizen->department->name ?? 'Departman Yok' }}</span>
-                            </p>
-                            <p class="card-text mb-1"><small class="text-muted">Durum: {{ $kaizen->status->label() }}</small></p>
-                            <p class="card-text">
-                                <small>
-                                    Hedef Tarih: 
-                                    @if(is_null($kaizen->target_date))
-                                        <span class="text-muted">Hedef tarih belirtilmedi</span>
-                                    @else
-                                        <time datetime="{{ $kaizen->target_date->format('Y-m-d') }}">
-                                            @if($kaizen->is_overdue)
-                                                <span class="badge bg-danger">Gecikmiş</span>
-                                                <span class="text-danger">{{ $kaizen->target_date->format('d.m.Y') }}</span>
-                                            @elseif($kaizen->target_date->isToday())
-                                                <span class="text-warning fw-bold">Bugün</span>
-                                            @else
-                                                {{ $kaizen->target_date->format('d.m.Y') }}
-                                            @endif
-                                        </time>
-                                    @endif
-                                </small>
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            @endforeach
-        </div>
-
-        <div class="table-responsive d-none d-md-block shadow-sm rounded bg-white">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
+@if($kaizens->isEmpty())
+    <x-empty-state 
+        title="Uygulama işi bulunmuyor" 
+        description="Şu anda üzerinize atanmış aktif bir uygulama görevi bulunmuyor."
+    >
+        <x-slot:icon>
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"></path><path d="M12 6v6l4 2"></path>
+            </svg>
+        </x-slot:icon>
+    </x-empty-state>
+@else
+    <div class="kf-table-shell">
+        <div class="table-responsive">
+            <table class="kf-table">
+                <thead>
                     <tr>
                         <th scope="col">Kaizen Kodu</th>
                         <th scope="col">Başlık</th>
-                        <th scope="col">Kategori</th>
-                        <th scope="col">Departman</th>
+                        <th scope="col" class="d-none d-md-table-cell">Kategori / Departman</th>
                         <th scope="col">Durum</th>
-                        <th scope="col">Hedef Tarih</th>
-                        <th scope="col">İşlemler</th>
+                        <th scope="col" class="d-none d-sm-table-cell">Hedef Tarih</th>
+                        <th scope="col" class="text-end">İşlemler</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach($kaizens as $kaizen)
                         <tr>
-                            <td><strong>{{ $kaizen->code }}</strong></td>
-                            <td class="text-truncate" style="max-width: 250px;">{{ $kaizen->title }}</td>
-                            <td>{{ $kaizen->category->name ?? 'Kategori Yok' }}</td>
-                            <td>{{ $kaizen->department->name ?? 'Departman Yok' }}</td>
-                            <td>{{ $kaizen->status->label() }}</td>
+                            <td class="font-monospace text-muted small fw-bold">{{ $kaizen->code }}</td>
                             <td>
-                                @if(is_null($kaizen->target_date))
-                                    <span class="text-muted">Hedef tarih belirtilmedi</span>
-                                @else
-                                    <time datetime="{{ $kaizen->target_date->format('Y-m-d') }}">
-                                        @if($kaizen->is_overdue)
-                                            <span class="badge bg-danger">Gecikmiş</span>
-                                            <span class="text-danger ms-1">{{ $kaizen->target_date->format('d.m.Y') }}</span>
-                                        @elseif($kaizen->target_date->isToday())
-                                            <span class="text-warning fw-bold">Bugün</span>
-                                        @else
-                                            {{ $kaizen->target_date->format('d.m.Y') }}
-                                        @endif
-                                    </time>
-                                @endif
+                                <div class="fw-semibold text-dark text-truncate" style="max-width: 250px;" title="{{ $kaizen->title }}">{{ $kaizen->title }}</div>
+                            </td>
+                            <td class="d-none d-md-table-cell">
+                                <div class="fw-medium text-dark small">{{ $kaizen->category->name ?? 'Kategori Yok' }}</div>
+                                <div class="text-secondary small">{{ $kaizen->department->name ?? 'Departman Yok' }}</div>
                             </td>
                             <td>
-                                <a href="{{ route('kaizens.show', $kaizen->id) }}" class="btn btn-sm btn-outline-primary">
+                                <span class="badge" style="background-color: var(--kf-primary-soft); color: var(--kf-primary); font-weight: 600;">
+                                    {{ $kaizen->status->label() }}
+                                </span>
+                            </td>
+                            <td class="d-none d-sm-table-cell">
+                                @if(is_null($kaizen->target_date))
+                                    <span class="text-muted small fst-italic">Hedef tarih belirtilmedi</span>
+                                @else
+                                    <div class="d-flex align-items-center gap-2">
+                                        <time datetime="{{ $kaizen->target_date->toDateString() }}">
+                                            @if($kaizen->is_overdue)
+                                                <span class="badge bg-danger rounded-pill px-2 py-1">Gecikmiş</span>
+                                                <span class="text-danger small fw-medium">{{ $kaizen->target_date->format('d.m.Y') }}</span>
+                                            @elseif($kaizen->target_date->isToday())
+                                                <span class="badge bg-warning rounded-pill px-2 py-1 text-dark">Bugün</span>
+                                                <span class="text-dark small fw-bold">{{ $kaizen->target_date->format('d.m.Y') }}</span>
+                                            @else
+                                                <span class="text-dark small">{{ $kaizen->target_date->format('d.m.Y') }}</span>
+                                            @endif
+                                        </time>
+                                    </div>
+                                @endif
+                            </td>
+                            <td class="text-end">
+                                <a href="{{ route('kaizens.show', $kaizen->id) }}" class="kf-btn kf-btn-primary" style="padding: 0.35rem 0.75rem; font-size: 0.85rem;">
                                     Detay
                                 </a>
                             </td>
@@ -100,10 +78,12 @@
                 </tbody>
             </table>
         </div>
-
-        <div class="d-flex justify-content-center mt-4">
-            {{ $kaizens->withQueryString()->links() }}
-        </div>
-    @endif
-</div>
+        
+        @if($kaizens->hasPages())
+            <div class="p-3 border-top bg-light">
+                {{ $kaizens->withQueryString()->links() }}
+            </div>
+        @endif
+    </div>
+@endif
 @endsection

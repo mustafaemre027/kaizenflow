@@ -1,103 +1,81 @@
 @extends('layouts.app')
 
-@section('title', 'KaizenFlow')
+@section('title', 'KaizenFlow - Çalışma Alanım')
 
 @section('content')
-<div class="kf-hero-container">
-    <div class="kf-hero-content">
-        <h1 class="kf-display mb-4">
-            Sürekli iyileştirmeyi<br>
-            <span style="color: var(--kf-primary);">görünür bir sürece</span><br>
-            dönüştürün.
-        </h1>
 
-        <p class="kf-lead mb-5" style="max-width: 500px;">
-            Kaizen fikirlerini oluşturun, değerlendirme sürecine hazırlayın ve iyileştirmeyi izlenebilir hale getirin.
-        </p>
-
-        <div class="d-flex align-items-center gap-3">
-            @guest
-                <a href="{{ route('login') }}" class="kf-btn kf-btn-primary px-4 py-3" style="font-size: 1.05rem;">
-                    Giriş Yap
-                </a>
-            @else
-                <a href="{{ route('kaizens.create') }}" class="kf-btn kf-btn-primary px-4 py-3" style="font-size: 1.05rem;">
-                    Yeni Kaizen Oluştur
-                </a>
-            @endguest
-        </div>
-
-        @auth
-            @if(isset($workQueueSummary))
-            <div class="card mt-4 mb-2 border-0 shadow-sm rounded-4" style="max-width: 500px; background: rgba(255,255,255,0.95); backdrop-filter: blur(10px);">
-                <div class="card-body p-4">
-                    <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
-                        <h2 class="h5 mb-0 fw-bold text-dark">Uygulama İşlerim</h2>
-                        <a href="{{ route('implementation.work-queue.index') }}" class="btn btn-sm kf-btn-primary">
-                            Tümünü Gör
-                        </a>
-                    </div>
-                    <div class="row text-center">
-                        <div class="col-12 col-md-4">
-                            <div class="display-6 mb-1 fw-bold" style="color: var(--kf-primary);">{{ $workQueueSummary['active_count'] }}</div>
-                            <div class="text-muted small fw-semibold">Aktif Görev</div>
-                        </div>
-                        <div class="col-12 col-md-4 border-start border-md-start">
-                            <div class="display-6 mb-1 text-danger fw-bold">{{ $workQueueSummary['overdue_count'] }}</div>
-                            <div class="text-muted small fw-semibold">Gecikmiş</div>
-                        </div>
-                        <div class="col-12 col-md-4 border-start border-md-start">
-                            <div class="display-6 mb-1 text-warning fw-bold">{{ $workQueueSummary['today_count'] }}</div>
-                            <div class="text-muted small fw-semibold">Bugün</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            @endif
-        @endauth
-
-        <div class="kf-capability-strip mt-4">
-            <div class="kf-capability-item">
-                <h4>Güvenli Erişim</h4>
-                <p>Session tabanlı güvenli kullanıcı girişi ile verilerinizi koruyun.</p>
-            </div>
-            <div class="kf-capability-item">
-                <h4>Kaizen Taslağı</h4>
-                <p>İyileştirme fikrini yapılandırılmış bir form ile kolayca kaydedin.</p>
-            </div>
-            <div class="kf-capability-item">
-                <h4>Detaylı Takip</h4>
-                <p>Kaizen içeriğini ve durumunu tek ekranda görüntüleyin.</p>
-            </div>
-        </div>
-    </div>
-
-    <div class="kf-hero-visual">
-        <div class="kf-process-canvas">
-            <div class="kf-process-canvas-title">Süreç Mimarisi</div>
-            <div class="kf-process-track">
-                <div class="kf-process-node active">
-                    <div class="kf-process-node-marker"></div>
-                    <span class="kf-process-node-label">Fikir</span>
-                </div>
-                <div class="kf-process-node active">
-                    <div class="kf-process-node-marker"></div>
-                    <span class="kf-process-node-label">Taslak</span>
-                </div>
-                <div class="kf-process-node">
-                    <div class="kf-process-node-marker"></div>
-                    <span class="kf-process-node-label">Değerlendirme</span>
-                </div>
-                <div class="kf-process-node">
-                    <div class="kf-process-node-marker"></div>
-                    <span class="kf-process-node-label">Uygulama</span>
-                </div>
-                <div class="kf-process-node">
-                    <div class="kf-process-node-marker"></div>
-                    <span class="kf-process-node-label">Sonuç</span>
-                </div>
-            </div>
-        </div>
+@guest
+<div class="row justify-content-center pt-5">
+    <div class="col-12 col-md-8 col-lg-6 text-center">
+        <h1 class="display-5 fw-bold mb-3">Sürekli İyileştirme Yönetimi</h1>
+        <p class="lead text-muted mb-5">KaizenFlow ile kurumunuzun iyileştirme fikirlerini toplayın, değerlendirin ve hayata geçirin.</p>
+        <a href="{{ route('login') }}" class="kf-btn kf-btn-primary kf-btn-lg px-5 py-3 rounded-pill shadow-sm">Giriş Yap</a>
     </div>
 </div>
+@endguest
+
+@auth
+<x-page-header 
+    title="Çalışma Alanım" 
+    subtitle="Hoş geldiniz, {{ auth()->user()->name }}. Bugünün genel görünümü."
+>
+    <x-slot:actions>
+        <a href="{{ route('kaizens.create') }}" class="kf-btn kf-btn-primary">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="me-1">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Yeni Kaizen Oluştur
+        </a>
+    </x-slot:actions>
+</x-page-header>
+
+<div class="row g-4 mb-4">
+    <!-- Quick Actions -->
+    <div class="col-12 col-md-4">
+        <x-section-card title="Hızlı İşlemler" class="h-100">
+            <div class="d-flex flex-column gap-2">
+                <a href="{{ route('kaizens.index') }}" class="kf-btn kf-btn-secondary w-100 justify-content-start">Tüm Kaizenlerim</a>
+                
+                @if($navContext['canViewDashboard'] ?? false)
+                    <a href="{{ route('dashboard.index') }}" class="kf-btn kf-btn-secondary w-100 justify-content-start">Yönetim Dashboardu</a>
+                @endif
+                
+                @if($navContext['canViewApprovals'] ?? false)
+                    <a href="{{ route('approvals.index') }}" class="kf-btn kf-btn-secondary w-100 justify-content-start text-primary">Onay Bekleyenler</a>
+                @endif
+            </div>
+        </x-section-card>
+    </div>
+
+    <!-- Implementation Work Queue Metrics (if available) -->
+    @if(isset($workQueueSummary))
+    <div class="col-12 col-md-8">
+        <x-section-card title="Uygulama İşlerim" class="h-100">
+            <div class="row text-center h-100 align-items-center">
+                <div class="col-4">
+                    <div class="display-5 fw-bold" style="color: var(--kf-primary);">{{ $workQueueSummary['active_count'] }}</div>
+                    <div class="text-muted small fw-medium text-uppercase tracking-wide mt-1">Aktif Görev</div>
+                </div>
+                <div class="col-4 border-start">
+                    <div class="display-5 text-warning fw-bold">{{ $workQueueSummary['today_count'] }}</div>
+                    <div class="text-muted small fw-medium text-uppercase tracking-wide mt-1">Bugün</div>
+                </div>
+                <div class="col-4 border-start">
+                    <div class="display-5 text-danger fw-bold">{{ $workQueueSummary['overdue_count'] }}</div>
+                    <div class="text-muted small fw-medium text-uppercase tracking-wide mt-1">Gecikmiş</div>
+                </div>
+            </div>
+            
+            <x-slot:footer>
+                <div class="text-end">
+                    <a href="{{ route('implementation.work-queue.index') }}" class="text-decoration-none fw-medium">Detaylara Git &rarr;</a>
+                </div>
+            </x-slot:footer>
+        </x-section-card>
+    </div>
+    @endif
+</div>
+@endauth
+
 @endsection
