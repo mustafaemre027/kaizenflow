@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Http\View\Composers\NavigationComposer;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -19,9 +21,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        \Illuminate\Support\Facades\View::composer(
+        View::composer(
             'layouts.app',
-            \App\Http\View\Composers\NavigationComposer::class
+            NavigationComposer::class
         );
     }
 }
