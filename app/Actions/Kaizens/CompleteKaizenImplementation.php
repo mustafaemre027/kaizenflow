@@ -27,7 +27,7 @@ class CompleteKaizenImplementation
         }
 
         if (trim((string) $actualResult) === '') {
-            throw new \InvalidArgumentException('Kaizen actual result is required and cannot be empty.');
+            throw new \InvalidArgumentException('Gerçekleşen sonuç alanı zorunludur.');
         }
 
         $result = DB::transaction(function () use ($kaizen, $actor, $actualResult, $benefitsPayload) {
