@@ -8,6 +8,7 @@ use App\Exceptions\AuthorizationException;
 use App\Exceptions\Workflow\InvalidApprovalWorkflowConfiguration;
 use App\Models\Kaizen;
 use App\Models\User;
+use App\Services\Notifications\KaizenBusinessNotificationDispatcher;
 use App\Services\Workflow\ApprovalStageApproverResolver;
 use App\Services\Workflow\ApprovalWorkflowNavigator;
 use Illuminate\Support\Facades\DB;
@@ -17,12 +18,13 @@ class ProgressKaizenWorkflow
 {
     public function __construct(
         private readonly ApprovalWorkflowNavigator $navigator,
-        private readonly ApprovalStageApproverResolver $resolver
+        private readonly ApprovalStageApproverResolver $resolver,
+        private readonly KaizenBusinessNotificationDispatcher $dispatcher
     ) {}
 
     public function execute(Kaizen $kaizen, User $actor, WorkflowAction $action, ?string $comment = null): Kaizen
     {
-        return DB::transaction(function () use ($kaizen, $actor, $action, $comment) {
+        $resultKaizen = DB::transaction(function () use ($kaizen, $actor, $action, $comment) {
             $lockedKaizen = Kaizen::where('id', $kaizen->id)->lockForUpdate()->firstOrFail();
             $instance = $lockedKaizen->workflowInstance()->lockForUpdate()->first();
 
@@ -154,5 +156,19 @@ class ProgressKaizenWorkflow
 
             return $lockedKaizen->refresh();
         });
+
+        if ($action === WorkflowAction::APPROVE) {
+            if ($resultKaizen->status === KaizenStatus::APPROVED) {
+                $this->dispatcher->dispatchApproved($resultKaizen);
+            } else {
+                $this->dispatcher->dispatchApprovalStageReady($resultKaizen);
+            }
+        } elseif ($action === WorkflowAction::REQUEST_REVISION) {
+            $this->dispatcher->dispatchRevisionRequested($resultKaizen);
+        } elseif ($action === WorkflowAction::REJECT) {
+            $this->dispatcher->dispatchRejected($resultKaizen);
+        }
+
+        return $resultKaizen;
     }
 }

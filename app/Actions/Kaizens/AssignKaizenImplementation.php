@@ -6,12 +6,17 @@ use App\Enums\KaizenStatus;
 use App\Models\Kaizen;
 use App\Models\User;
 use App\Services\AppendAuditLog;
+use App\Services\Notifications\KaizenBusinessNotificationDispatcher;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class AssignKaizenImplementation
 {
+    public function __construct(
+        private readonly KaizenBusinessNotificationDispatcher $dispatcher
+    ) {}
+
     public function execute(Kaizen $kaizen, User $actor, int $assigneeId, string $targetDate): Kaizen
     {
         if (! $actor->can('assignImplementation', $kaizen)) {
@@ -40,7 +45,7 @@ class AssignKaizenImplementation
             throw new \InvalidArgumentException('Target date cannot be in the past.');
         }
 
-        return DB::transaction(function () use ($kaizen, $actor, $assigneeId, $targetDate) {
+        $result = DB::transaction(function () use ($kaizen, $actor, $assigneeId, $targetDate) {
             $lockedKaizen = Kaizen::where('id', $kaizen->id)->lockForUpdate()->first();
 
             $previousAssignedId = $lockedKaizen->assigned_user_id;
@@ -61,5 +66,9 @@ class AssignKaizenImplementation
 
             return $lockedKaizen;
         });
+
+        $this->dispatcher->dispatchImplementationAssigned($result);
+
+        return $result;
     }
 }

@@ -6,11 +6,16 @@ use App\Enums\KaizenStatus;
 use App\Models\Kaizen;
 use App\Models\KaizenStatusHistory;
 use App\Models\User;
+use App\Services\Notifications\KaizenBusinessNotificationDispatcher;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 
 class StartKaizenImplementation
 {
+    public function __construct(
+        private readonly KaizenBusinessNotificationDispatcher $dispatcher
+    ) {}
+
     public function execute(Kaizen $kaizen, User $actor): Kaizen
     {
         if (! $actor->can('startImplementation', $kaizen)) {
@@ -34,7 +39,7 @@ class StartKaizenImplementation
             throw new \DomainException('The assigned user is not active.');
         }
 
-        return DB::transaction(function () use ($kaizen, $actor) {
+        $result = DB::transaction(function () use ($kaizen, $actor) {
             $lockedKaizen = Kaizen::where('id', $kaizen->id)->lockForUpdate()->first();
 
             if ($lockedKaizen->status !== KaizenStatus::APPROVED) {
@@ -56,5 +61,9 @@ class StartKaizenImplementation
 
             return $lockedKaizen;
         });
+
+        $this->dispatcher->dispatchImplementationStarted($result, $actor);
+
+        return $result;
     }
 }

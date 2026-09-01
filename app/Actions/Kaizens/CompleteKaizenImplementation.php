@@ -6,11 +6,16 @@ use App\Enums\KaizenStatus;
 use App\Models\Kaizen;
 use App\Models\KaizenStatusHistory;
 use App\Models\User;
+use App\Services\Notifications\KaizenBusinessNotificationDispatcher;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 
 class CompleteKaizenImplementation
 {
+    public function __construct(
+        private readonly KaizenBusinessNotificationDispatcher $dispatcher
+    ) {}
+
     public function execute(Kaizen $kaizen, User $actor, ?string $actualResult, array $benefitsPayload = []): Kaizen
     {
         if (! $actor->can('completeImplementation', $kaizen)) {
@@ -25,7 +30,7 @@ class CompleteKaizenImplementation
             throw new \InvalidArgumentException('Kaizen actual result is required and cannot be empty.');
         }
 
-        return DB::transaction(function () use ($kaizen, $actor, $actualResult, $benefitsPayload) {
+        $result = DB::transaction(function () use ($kaizen, $actor, $actualResult, $benefitsPayload) {
             $lockedKaizen = Kaizen::where('id', $kaizen->id)->lockForUpdate()->first();
 
             if ($lockedKaizen->status !== KaizenStatus::IN_PROGRESS) {
@@ -51,5 +56,9 @@ class CompleteKaizenImplementation
 
             return $lockedKaizen;
         });
+
+        $this->dispatcher->dispatchImplementationCompleted($result, $actor);
+
+        return $result;
     }
 }

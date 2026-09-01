@@ -9,17 +9,21 @@ use App\Enums\WorkflowAction;
 use App\Exceptions\InvalidKaizenTransition;
 use App\Models\Kaizen;
 use App\Models\User;
+use App\Services\Notifications\KaizenBusinessNotificationDispatcher;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class SubmitKaizen
 {
-    public function __construct(private readonly StartKaizenWorkflow $startWorkflowAction) {}
+    public function __construct(
+        private readonly StartKaizenWorkflow $startWorkflowAction,
+        private readonly KaizenBusinessNotificationDispatcher $dispatcher
+    ) {}
 
     public function execute(User $actor, Kaizen $kaizen, ?string $reason = null): Kaizen
     {
-        return DB::transaction(function () use ($actor, $kaizen, $reason) {
+        $result = DB::transaction(function () use ($actor, $kaizen, $reason) {
             $lockedKaizen = Kaizen::where('id', $kaizen->id)->lockForUpdate()->firstOrFail();
 
             if (! $actor->is_active) {
@@ -87,5 +91,9 @@ class SubmitKaizen
 
             return $lockedKaizen->refresh();
         });
+
+        $this->dispatcher->dispatchSubmitted($result);
+
+        return $result;
     }
 }
